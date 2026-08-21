@@ -12,6 +12,7 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
 
   return (
     <div
+      onMouseEnter={() => {}}
       onMouseLeave={onClose}
       className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 animate-in fade-in slide-in-from-top-1 duration-200"
     >
@@ -29,9 +30,9 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
                     <Link
                       to={link.href}
                       onClick={onClose}
-                      className="group flex items-center justify-between text-sm text-text-primary hover:text-neutral-600 transition-colors py-0.5"
+                      className="group flex items-center justify-between text-sm text-text-primary hover:text-text-secondary transition-colors py-0.5"
                     >
-                      <span className="group-hover:translate-x-1 transition-transform duration-200">
+                      <span className="group-hover:translate-x-1 transition-transform duration-200 font-normal">
                         {link.label}
                       </span>
                       {link.isNew && (
@@ -72,7 +73,7 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
           <Link
             to={perakendeMegaMenuData.promo.ctaHref}
             onClick={onClose}
-            className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-text-primary hover:opacity-75 transition-opacity pt-4 border-t border-border-subtle"
+            className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-primary hover:opacity-75 transition-opacity pt-4 border-t border-border-subtle"
           >
             <span>{perakendeMegaMenuData.promo.ctaText}</span>
             <ArrowRight className="w-3.5 h-3.5" />

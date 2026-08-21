@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2 } from 'lucide-react';
+import { ArrowRight, Building2, ShieldCheck } from 'lucide-react';
 import { toptanMegaMenuData } from '@/shared/mocks/navigation';
 
 export interface ToptanMegaMenuProps {
@@ -12,6 +12,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
 
   return (
     <div
+      onMouseEnter={() => {}}
       onMouseLeave={onClose}
       className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 animate-in fade-in slide-in-from-top-1 duration-200"
     >
@@ -29,9 +30,9 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
                     <Link
                       to={link.href}
                       onClick={onClose}
-                      className="group flex items-center justify-between text-sm text-text-primary hover:text-neutral-600 transition-colors py-0.5"
+                      className="group flex items-center justify-between text-sm text-text-primary hover:text-text-secondary transition-colors py-0.5"
                     >
-                      <span className="group-hover:translate-x-1 transition-transform duration-200">
+                      <span className="group-hover:translate-x-1 transition-transform duration-200 font-normal">
                         {link.label}
                       </span>
                     </Link>
@@ -48,9 +49,10 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
             <div className="w-10 h-10 bg-surface-inverse text-text-inverse flex items-center justify-center mb-2">
               <Building2 className="w-5 h-5" />
             </div>
-            <p className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-              Kurumsal & B2B Portalı
-            </p>
+            <div className="flex items-center gap-1.5 text-xs uppercase font-semibold tracking-editorial text-text-secondary">
+              <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
+              <span>Kurumsal & B2B Portalı</span>
+            </div>
             <h4 className="font-display text-xl text-text-primary">
               {toptanMegaMenuData.promo.title}
             </h4>
@@ -62,7 +64,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
           <Link
             to={toptanMegaMenuData.promo.ctaHref}
             onClick={onClose}
-            className="inline-flex items-center justify-center gap-2 text-xs font-medium uppercase tracking-wide bg-action-primary text-action-primary-text px-4 py-3 hover:bg-neutral-800 transition-colors mt-6"
+            className="inline-flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wide bg-action-primary text-action-primary-text px-4 py-3 hover:bg-neutral-800 transition-colors mt-6"
           >
             <span>{toptanMegaMenuData.promo.ctaText}</span>
             <ArrowRight className="w-3.5 h-3.5" />

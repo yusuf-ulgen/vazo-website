@@ -1,17 +1,29 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, ChevronDown, ChevronRight, Building2, ShoppingBag, ShieldCheck } from 'lucide-react';
+import {
+  X,
+  ChevronDown,
+  ChevronRight,
+  Building2,
+  ShoppingBag,
+  ShieldCheck,
+  Search,
+  Heart,
+} from 'lucide-react';
 import { perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 import { siteConfig } from '@/shared/config/site-config';
+import { useWishlist } from '@/shared/stores/wishlist-store';
 
 export interface MobileNavDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenSearch?: () => void;
 }
 
-export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
+export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDrawerProps) {
   const [retailExpanded, setRetailExpanded] = useState(false);
   const [wholesaleExpanded, setWholesaleExpanded] = useState(false);
+  const { count: wishlistCount } = useWishlist();
 
   if (!isOpen) return null;
 
@@ -20,15 +32,15 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs transition-opacity"
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-surface-primary shadow-elevated flex flex-col justify-between overflow-y-auto">
+      <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-surface-primary shadow-elevated flex flex-col justify-between overflow-y-auto z-50">
         <div>
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border-default">
-            <span className="font-display text-xl tracking-wider text-text-primary">
+            <span className="font-display text-xl tracking-wider text-text-primary uppercase">
               {siteConfig.name}
             </span>
             <button
@@ -40,10 +52,27 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
             </button>
           </div>
 
+          {/* Quick Search Action */}
+          <div className="p-4 border-b border-border-subtle">
+            <button
+              onClick={() => {
+                onClose();
+                onOpenSearch?.();
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 bg-surface-secondary text-xs text-text-secondary border border-border-subtle"
+            >
+              <span className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-text-muted" />
+                <span>Ürün veya koleksiyon ara...</span>
+              </span>
+              <span className="text-[10px] font-semibold text-text-muted uppercase">Ara</span>
+            </button>
+          </div>
+
           {/* Navigation Links */}
-          <nav className="p-5 space-y-1">
+          <nav className="p-4 space-y-1">
             <Link
-              to="/products?filter=new"
+              to="/new"
               onClick={onClose}
               className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
             >
@@ -54,6 +83,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
             {/* Perakende Accordion */}
             <div>
               <button
+                type="button"
                 onClick={() => setRetailExpanded((p) => !p)}
                 className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
               >
@@ -74,7 +104,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
                       key={link.label}
                       to={link.href}
                       onClick={onClose}
-                      className="block py-1 text-text-secondary hover:text-text-primary"
+                      className="block py-1.5 text-text-secondary hover:text-text-primary"
                     >
                       {link.label}
                     </Link>
@@ -86,6 +116,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
             {/* Toptan Accordion */}
             <div>
               <button
+                type="button"
                 onClick={() => setWholesaleExpanded((p) => !p)}
                 className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
               >
@@ -106,7 +137,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
                       key={link.label}
                       to={link.href}
                       onClick={onClose}
-                      className="block py-1 text-text-secondary hover:text-text-primary"
+                      className="block py-1.5 text-text-secondary hover:text-text-primary"
                     >
                       {link.label}
                     </Link>
@@ -116,11 +147,36 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
             </div>
 
             <Link
+              to="/collections"
+              onClick={onClose}
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+            >
+              <span>Koleksiyonlar</span>
+              <ChevronRight className="w-4 h-4 text-text-muted" />
+            </Link>
+
+            <Link
+              to="/products?filter=wishlist"
+              onClick={onClose}
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+            >
+              <span className="flex items-center gap-2">
+                <Heart className="w-4 h-4" />
+                <span>Favorilerim</span>
+              </span>
+              {wishlistCount > 0 && (
+                <span className="bg-surface-inverse text-text-inverse text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
               to="/about"
               onClick={onClose}
               className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
             >
-              <span>Hakkımızda</span>
+              <span>Hakkımızda & Zanaat</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
             </Link>
 
@@ -129,14 +185,14 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
               onClick={onClose}
               className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
             >
-              <span>İletişim & Stüdyo</span>
+              <span>İletişim & Showroom</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
             </Link>
           </nav>
         </div>
 
         {/* Footer Admin Link & Quick Info */}
-        <div className="p-5 border-t border-border-default bg-surface-secondary space-y-3">
+        <div className="p-4 border-t border-border-default bg-surface-secondary space-y-2">
           <Link
             to="/admin"
             onClick={onClose}
@@ -146,7 +202,7 @@ export function MobileNavDrawer({ isOpen, onClose }: MobileNavDrawerProps) {
             <span>Yönetici Paneli (Admin)</span>
           </Link>
           <p className="text-[11px] text-text-muted">
-            © {new Date().getFullYear()} {siteConfig.name}. Tüm hakları saklıdır.
+            © {new Date().getFullYear()} {siteConfig.name}.
           </p>
         </div>
       </div>
