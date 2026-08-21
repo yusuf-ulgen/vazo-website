@@ -12,6 +12,10 @@ import {
 } from 'lucide-react';
 import { SiteLayout } from '@/site/layouts/SiteLayout';
 import { HomePage } from '@/site/pages/HomePage';
+import { CatalogPage } from '@/site/pages/CatalogPage';
+import { CategoryPage } from '@/site/pages/CategoryPage';
+import { CollectionsIndexPage } from '@/site/pages/CollectionsIndexPage';
+import { CollectionDetailPage } from '@/site/pages/CollectionDetailPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 import { AdminLayout } from '@/admin/layouts/AdminLayout';
 import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
@@ -29,18 +33,34 @@ export const router = createBrowserRouter([
       },
       {
         path: 'products',
-        element: <HomePage />,
+        element: <CatalogPage />,
       },
       {
-        path: 'products/:slug',
-        element: <HomePage />,
+        path: 'new',
+        element: <CatalogPage />,
+      },
+      {
+        path: 'bestsellers',
+        element: <CatalogPage />,
+      },
+      {
+        path: 'categories',
+        element: <CatalogPage />,
+      },
+      {
+        path: 'categories/:slug',
+        element: <CategoryPage />,
       },
       {
         path: 'collections',
-        element: <HomePage />,
+        element: <CollectionsIndexPage />,
       },
       {
         path: 'collections/:slug',
+        element: <CollectionDetailPage />,
+      },
+      {
+        path: 'products/:slug',
         element: <HomePage />,
       },
       {
@@ -61,6 +81,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
 
   // Back-Office Admin Panel Routes
   {
