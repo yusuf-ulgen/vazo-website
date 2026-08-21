@@ -1,0 +1,105 @@
+import { Link, useLocation } from 'react-router-dom';
+import { Menu, ExternalLink, Bell, User } from 'lucide-react';
+import { Badge } from '@/shared/ui/Badge';
+
+export interface AdminHeaderProps {
+  onOpenMobileSidebar: () => void;
+}
+
+export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
+  const location = useLocation();
+
+  const getBreadcrumbTitle = (pathname: string) => {
+    switch (pathname) {
+      case '/admin':
+        return 'Gösterge Paneli';
+      case '/admin/products':
+        return 'Ürün Yönetimi';
+      case '/admin/categories':
+        return 'Kategoriler';
+      case '/admin/collections':
+        return 'Koleksiyonlar';
+      case '/admin/inventory':
+        return 'Stok & Envanter';
+      case '/admin/pricing':
+        return 'Fiyatlandırma';
+      case '/admin/wholesale':
+        return 'Toptan & B2B Portalı';
+      case '/admin/orders':
+        return 'Sipariş Yönetimi';
+      case '/admin/content':
+        return 'İçerik & CMS';
+      case '/admin/settings':
+        return 'Sistem Ayarları';
+      default:
+        return 'Yönetim Paneli';
+    }
+  };
+
+  return (
+    <header className="h-16 bg-surface-primary border-b border-border-default px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+      <div className="flex items-center gap-4">
+        {/* Mobile sidebar toggle */}
+        <button
+          onClick={onOpenMobileSidebar}
+          className="lg:hidden p-2 text-text-secondary hover:text-text-primary"
+          aria-label="Admin Menüsünü Aç"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        {/* Breadcrumb / Title */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-secondary font-medium hidden sm:inline">
+            Admin
+          </span>
+          <span className="text-xs text-text-muted hidden sm:inline">/</span>
+          <h1 className="text-sm font-semibold text-text-primary">
+            {getBreadcrumbTitle(location.pathname)}
+          </h1>
+          <Badge variant="muted" className="hidden md:inline-flex text-[10px]">
+            Phase 0 Scaffold
+          </Badge>
+        </div>
+      </div>
+
+      {/* Right actions */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* View Public Store */}
+        <Link
+          to="/"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary px-3 py-1.5 border border-border-default rounded transition-colors"
+        >
+          <span>Mağazayı Gör</span>
+          <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
+
+        {/* Notification Bell */}
+        <button
+          aria-label="Bildirimler"
+          className="p-2 text-text-secondary hover:text-text-primary relative"
+        >
+          <Bell className="w-4 h-4" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-feedback-danger rounded-full" />
+        </button>
+
+        {/* Admin Avatar Placeholder */}
+        <div className="flex items-center gap-2 pl-2 border-l border-border-subtle">
+          <div className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold">
+            <User className="w-4 h-4" />
+          </div>
+          <div className="hidden sm:block text-left">
+            <span className="block text-xs font-medium text-text-primary leading-tight">
+              Yönetici
+            </span>
+            <span className="block text-[10px] text-text-secondary">
+              Super Admin
+            </span>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}

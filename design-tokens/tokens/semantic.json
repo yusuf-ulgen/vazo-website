@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "vazo-semantic-tokens",
+  "version": "0.1.0",
+  "description": "Semantic tokens mapping design intent to primitive values. Components must consume these tokens.",
+  "tokens": {
+    "color": {
+      "canvas": {
+        "default": "{color.neutral.0}",
+        "subtle": "{color.neutral.50}",
+        "muted": "{color.neutral.100}",
+        "warm": "{color.warm-stone.100}"
+      },
+      "surface": {
+        "primary": "{color.neutral.0}",
+        "secondary": "{color.neutral.50}",
+        "tertiary": "{color.neutral.100}",
+        "muted": "{color.warm-stone.100}",
+        "accent": "{color.sand.100}",
+        "inverse": "{color.neutral.900}"
+      },
+      "text": {
+        "primary": "{color.neutral.900}",
+        "secondary": "{color.neutral.600}",
+        "muted": "{color.neutral.400}",
+        "inverse": "{color.neutral.0}",
+        "accent": "{color.neutral.800}"
+      },
+      "border": {
+        "subtle": "{color.neutral.100}",
+        "default": "{color.neutral.200}",
+        "strong": "{color.neutral.400}",
+        "inverse": "{color.neutral.700}",
+        "focus": "{color.neutral.900}"
+      },
+      "action": {
+        "primary": {
+          "bg": "{color.neutral.900}",
+          "hover": "{color.neutral.800}",
+          "active": "{color.neutral.950}",
+          "text": "{color.neutral.0}"
+        },
+        "secondary": {
+          "bg": "{color.neutral.100}",
+          "hover": "{color.neutral.200}",
+          "active": "{color.neutral.300}",
+          "text": "{color.neutral.900}"
+        },
+        "outline": {
+          "border": "{color.neutral.900}",
+          "hover-bg": "{color.neutral.50}",
+          "text": "{color.neutral.900}"
+        },
+        "ghost": {
+          "hover-bg": "{color.neutral.100}",
+          "text": "{color.neutral.800}"
+        }
+      },
+      "feedback": {
+        "success": "{color.status.success.base}",
+        "success-surface": "{color.status.success.light}",
+        "warning": "{color.status.warning.base}",
+        "warning-surface": "{color.status.warning.light}",
+        "danger": "{color.status.danger.base}",
+        "danger-surface": "{color.status.danger.light}",
+        "info": "{color.status.info.base}",
+        "info-surface": "{color.status.info.light}"
+      },
+      "brand": {
+        "stone": "{color.warm-stone.300}",
+        "sand": "{color.sand.300}",
+        "taupe": "{color.taupe.300}",
+        "terracotta": "{color.terracotta.500}",
+        "olive": "{color.olive.500}"
+      }
+    },
+    "typography": {
+      "hero": {
+        "family": "{fontFamily.display}",
+        "size": "{fontSize.6xl}",
+        "lineHeight": "1.05",
+        "letterSpacing": "-0.02em",
+        "weight": "300"
+      },
+      "h1": {
+        "family": "{fontFamily.display}",
+        "size": "{fontSize.4xl}",
+        "lineHeight": "1.15",
+        "letterSpacing": "-0.015em",
+        "weight": "400"
+      },
+      "h2": {
+        "family": "{fontFamily.display}",
+        "size": "{fontSize.3xl}",
+        "lineHeight": "1.2",
+        "letterSpacing": "-0.01em",
+        "weight": "400"
+      },
+      "h3": {
+        "family": "{fontFamily.display}",
+        "size": "{fontSize.2xl}",
+        "lineHeight": "1.25",
+        "letterSpacing": "0",
+        "weight": "500"
+      },
+      "editorialSubtitle": {
+        "family": "{fontFamily.sans}",
+        "size": "{fontSize.sm}",
+        "lineHeight": "1.5",
+        "letterSpacing": "0.15em",
+        "weight": "600",
+        "textTransform": "uppercase"
+      },
+      "body": {
+        "family": "{fontFamily.sans}",
+        "size": "{fontSize.base}",
+        "lineHeight": "1.6",
+        "weight": "400"
+      },
+      "bodySmall": {
+        "family": "{fontFamily.sans}",
+        "size": "{fontSize.sm}",
+        "lineHeight": "1.5",
+        "weight": "400"
+      },
+      "caption": {
+        "family": "{fontFamily.sans}",
+        "size": "{fontSize.xs}",
+        "lineHeight": "1.4",
+        "weight": "400"
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+name: CI Verification Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Verify Quality & Architecture Gates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Check Repository Safety & Secrets
+        run: npm run check:repo
+
+      - name: Check File Line Length Limit (Max 600)
+        run: npm run check:lines
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript Compiler Check
+        run: npm run typecheck
+
+      - name: Run Vitest Unit Tests
+        run: npm run test
+
+      - name: Build Production Bundle
+        run: npm run build

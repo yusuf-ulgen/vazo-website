@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "vazo-primitive-tokens",
+  "version": "0.1.0",
+  "description": "Primitive raw scale values for the Vazo design system. Not to be used directly in components.",
+  "tokens": {
+    "color": {
+      "neutral": {
+        "0": "#FFFFFF",
+        "50": "#FAF9F6",
+        "100": "#F5F3EF",
+        "200": "#EAE6DF",
+        "300": "#DDD7CD",
+        "400": "#B8B0A2",
+        "500": "#8E8679",
+        "600": "#635D53",
+        "700": "#413D36",
+        "800": "#262420",
+        "900": "#141311",
+        "950": "#0A0A09"
+      },
+      "warm-stone": {
+        "100": "#F7F5F0",
+        "200": "#EFECE3",
+        "300": "#DFD9CB",
+        "500": "#A39B8B",
+        "700": "#5E574B",
+        "900": "#2D2923"
+      },
+      "sand": {
+        "100": "#FAF6EE",
+        "200": "#F2EBDB",
+        "300": "#E4D9C0",
+        "500": "#B3A27D",
+        "700": "#6E6244",
+        "900": "#362F1E"
+      },
+      "taupe": {
+        "100": "#F4F2F1",
+        "200": "#E6E2E0",
+        "300": "#CFC9C5",
+        "500": "#918882",
+        "700": "#544E49",
+        "900": "#2B2724"
+      },
+      "terracotta": {
+        "100": "#FAF0EC",
+        "300": "#E9BFB0",
+        "500": "#C86D51",
+        "700": "#8D3E25",
+        "900": "#4C1C0E"
+      },
+      "olive": {
+        "100": "#F3F5EE",
+        "300": "#CBD3BB",
+        "500": "#84936A",
+        "700": "#4B5639",
+        "900": "#252C1A"
+      },
+      "status": {
+        "success": { "light": "#EDF7EE", "base": "#2E7D32", "dark": "#1B5E20" },
+        "warning": { "light": "#FFF8E1", "base": "#ED6C02", "dark": "#E65100" },
+        "danger": { "light": "#FDEDED", "base": "#D32F2F", "dark": "#C62828" },
+        "info": { "light": "#E5F6FD", "base": "#0288D1", "dark": "#01579B" }
+      }
+    },
+    "fontFamily": {
+      "display": "'Cormorant Garamond', 'Playfair Display', 'Didot', Georgia, serif",
+      "sans": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+      "mono": "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace"
+    },
+    "fontSize": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem",
+      "5xl": "3rem",
+      "6xl": "3.75rem",
+      "7xl": "4.5rem"
+    },
+    "spacing": {
+      "0": "0px",
+      "1": "0.25rem",
+      "2": "0.5rem",
+      "3": "0.75rem",
+      "4": "1rem",
+      "5": "1.25rem",
+      "6": "1.5rem",
+      "8": "2rem",
+      "10": "2.5rem",
+      "12": "3rem",
+      "16": "4rem",
+      "20": "5rem",
+      "24": "6rem",
+      "32": "8rem"
+    },
+    "radius": {
+      "none": "0px",
+      "sm": "2px",
+      "base": "4px",
+      "md": "6px",
+      "lg": "8px",
+      "xl": "12px",
+      "2xl": "16px",
+      "full": "9999px"
+    },
+    "shadow": {
+      "none": "none",
+      "subtle": "0 1px 2px 0 rgba(20, 19, 17, 0.04)",
+      "card": "0 4px 12px -2px rgba(20, 19, 17, 0.06), 0 2px 4px -1px rgba(20, 19, 17, 0.03)",
+      "elevated": "0 10px 30px -4px rgba(20, 19, 17, 0.08), 0 4px 8px -2px rgba(20, 19, 17, 0.04)",
+      "dropdown": "0 16px 40px -8px rgba(20, 19, 17, 0.12), 0 6px 12px -2px rgba(20, 19, 17, 0.05)"
+    },
+    "transition": {
+      "fast": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "base": "250ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "slow": "400ms cubic-bezier(0.4, 0, 0.2, 1)",
+      "editorial": "600ms cubic-bezier(0.16, 1, 0.3, 1)"
+    }
+  }
+}

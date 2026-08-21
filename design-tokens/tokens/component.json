@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "vazo-component-tokens",
+  "version": "0.1.0",
+  "description": "Component-specific token mappings for global shells, cards, buttons, and navigation.",
+  "tokens": {
+    "header": {
+      "announcement": {
+        "bg": "{color.surface.inverse}",
+        "text": "{color.text.inverse}",
+        "height": "36px"
+      },
+      "navbar": {
+        "bg": "rgba(255, 255, 255, 0.95)",
+        "border": "{color.border.subtle}",
+        "height": "76px"
+      },
+      "megamenu": {
+        "bg": "{color.surface.primary}",
+        "border": "{color.border.subtle}",
+        "shadow": "{shadow.dropdown}"
+      }
+    },
+    "card": {
+      "product": {
+        "bg": "{color.surface.secondary}",
+        "hover-bg": "{color.surface.tertiary}",
+        "radius": "{radius.none}",
+        "border": "{color.border.subtle}"
+      },
+      "editorial": {
+        "bg": "{color.surface.muted}",
+        "radius": "{radius.none}"
+      }
+    },
+    "button": {
+      "radius": "{radius.none}",
+      "paddingY": "{spacing.3}",
+      "paddingX": "{spacing.6}",
+      "fontSize": "{fontSize.sm}",
+      "letterSpacing": "0.08em"
+    },
+    "admin": {
+      "sidebar": {
+        "bg": "{color.neutral.950}",
+        "text": "{color.neutral.300}",
+        "active-bg": "{color.neutral.800}",
+        "active-text": "{color.neutral.0}",
+        "width": "260px"
+      },
+      "topbar": {
+        "bg": "{color.surface.primary}",
+        "border": "{color.border.default}",
+        "height": "64px"
+      }
+    }
+  }
+}

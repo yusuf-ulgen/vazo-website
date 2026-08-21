@@ -1,0 +1,65 @@
+:root {
+  /* Canvas & Surface Colors */
+  --color-canvas-default: #FFFFFF;
+  --color-canvas-subtle: #FAF9F6;
+  --color-canvas-muted: #F5F3EF;
+  --color-canvas-warm: #F7F5F0;
+
+  --color-surface-primary: #FFFFFF;
+  --color-surface-secondary: #FAF9F6;
+  --color-surface-tertiary: #F5F3EF;
+  --color-surface-muted: #EFECE3;
+  --color-surface-accent: #FAF6EE;
+  --color-surface-inverse: #141311;
+
+  /* Text Colors */
+  --color-text-primary: #141311;
+  --color-text-secondary: #635D53;
+  --color-text-muted: #8E8679;
+  --color-text-inverse: #FFFFFF;
+  --color-text-accent: #2D2923;
+
+  /* Border Colors */
+  --color-border-subtle: #F5F3EF;
+  --color-border-default: #EAE6DF;
+  --color-border-strong: #B8B0A2;
+  --color-border-inverse: #413D36;
+  --color-border-focus: #141311;
+
+  /* Action Buttons */
+  --color-action-primary-bg: #141311;
+  --color-action-primary-hover: #262420;
+  --color-action-primary-text: #FFFFFF;
+
+  --color-action-secondary-bg: #F5F3EF;
+  --color-action-secondary-hover: #EAE6DF;
+  --color-action-secondary-text: #141311;
+
+  /* Feedback Colors */
+  --color-feedback-success: #2E7D32;
+  --color-feedback-success-surface: #EDF7EE;
+  --color-feedback-warning: #ED6C02;
+  --color-feedback-warning-surface: #FFF8E1;
+  --color-feedback-danger: #D32F2F;
+  --color-feedback-danger-surface: #FDEDED;
+  --color-feedback-info: #0288D1;
+  --color-feedback-info-surface: #E5F6FD;
+
+  /* Brand Glaze Palette */
+  --color-brand-stone: #DFD9CB;
+  --color-brand-sand: #E4D9C0;
+  --color-brand-taupe: #CFC9C5;
+  --color-brand-terracotta: #C86D51;
+  --color-brand-olive: #84936A;
+
+  /* Font Families */
+  --font-display: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Shadows */
+  --shadow-subtle: 0 1px 2px 0 rgba(20, 19, 17, 0.04);
+  --shadow-card: 0 4px 12px -2px rgba(20, 19, 17, 0.06), 0 2px 4px -1px rgba(20, 19, 17, 0.03);
+  --shadow-elevated: 0 10px 30px -4px rgba(20, 19, 17, 0.08), 0 4px 8px -2px rgba(20, 19, 17, 0.04);
+  --shadow-dropdown: 0 16px 40px -8px rgba(20, 19, 17, 0.12), 0 6px 12px -2px rgba(20, 19, 17, 0.05);
+}
