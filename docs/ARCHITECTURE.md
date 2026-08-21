@@ -110,8 +110,12 @@ The platform serves both individual retail buyers and commercial wholesale partn
 
 ## 5. Backend & Data Layer Abstraction
 
-No backend, database, or payment gateway has been finalized yet (see [`ADR.md`](file:///D:/freelance/vazo-website/docs/ADR.md#adr-007)).
+Following [`ADR.md`](file:///D:/freelance/vazo-website/docs/ADR.md#adr-009), **Supabase** is selected as the primary backend platform (PostgreSQL, Data API, Auth, Storage, Edge Functions). Payment gateway selection remains pending.
 
-All data access is channeled through typed repository contracts in `src/shared/api/`:
-- **Current Phase**: Backed by typed mock adapters in `src/shared/mocks/`.
-- **Future Integration**: The mock adapters will be swapped with real REST or GraphQL clients without requiring architectural changes to page components or domain models.
+### Data Access Rules
+1. **Repository / Query Adapter Layer**: All database access is channeled through typed repository functions in `src/entities/*/api/` or `src/shared/api/`.
+2. **No Raw DB Calls in UI**: UI components must **never** invoke `supabase.from(...)` directly.
+3. **Public Publishable Key**: Browser code uses exclusively `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`). Service-role secrets are forbidden.
+4. **Mandatory Row Level Security (RLS)**: Public anonymous users can only query active/published records.
+5. **Deterministic Mock Fallback**: When `VITE_ENABLE_MOCK_DATA="true"` or when Supabase is unconfigured, the application runs against isolated mock adapters in `src/shared/mocks/`. Real mode failure triggers clear error handling rather than silent fallback.
+

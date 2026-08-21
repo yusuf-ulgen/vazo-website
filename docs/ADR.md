@@ -84,14 +84,12 @@ This document records the foundational architectural decisions for the **Vazo E-
 
 ## ADR-007: Backend, Database, and Payment Provider Selection Deferred
 
-- **Status**: Deferred / Pending Architectural Decision
-- **Date**: 2026-08-21
-- **Context**: The backend infrastructure (Supabase, Firebase, custom Node API, PostgreSQL), authentication provider, and payment processor (iyzico, Stripe) have not been finalized.
-- **Decision**: Do not guess or scaffold any speculative backend framework. Build provider-neutral API contracts and mock data adapters in `src/shared/api/` and `src/shared/mocks/`.
-- **Consequences**:
-  - Positive: Zero vendor lock-in; clean separation of concerns; instant frontend mocking.
-  - Negative: Backend integrations will require explicit implementation in a subsequent phase.
-- **Verification**: Recorded in `docs/ADR.md` and `docs/ARCHITECTURE.md`.
+- **Status**: Superseded by ADR-009 (for Database & Backend Platform)
+- **Date**: 2026-08-21 (Superseded 2026-08-21)
+- **Context**: The backend infrastructure was initially deferred during Phase 0 foundation.
+- **Decision**: Replaced by ADR-009 which selects Supabase. Payment provider remains undecided.
+- **Consequences**: Retained in ADR log for complete historical traceability.
+- **Verification**: Cross-referenced with ADR-009.
 
 ---
 
@@ -105,3 +103,22 @@ This document records the foundational architectural decisions for the **Vazo E-
   - Positive: True headless CMS-like control for store managers; consistent layout templates.
   - Negative: Storefront components must be resilient to missing or draft CMS fields.
 - **Verification**: Verified via `src/entities/content/types.ts` and `docs/ADMIN.md`.
+
+---
+
+## ADR-009: Supabase Platform Selection (Database, Data API, Auth, Storage, Edge Functions)
+
+- **Status**: Approved
+- **Date**: 2026-08-21
+- **Context**: The storefront requires a robust PostgreSQL database, client Data API, and future Auth/Storage infrastructure without spinning up custom Node backend servers in early phases.
+- **Decision**: Select **Supabase** as the primary platform:
+  1. PostgreSQL for relational product, catalog, and CMS models.
+  2. Supabase Data API accessed exclusively via public publishable keys (`VITE_SUPABASE_PUBLISHABLE_KEY` / `VITE_SUPABASE_ANON_KEY`).
+  3. Mandatory Row Level Security (RLS) on all exposed tables with strict anonymous read-only access for published records.
+  4. Repository / data adapter abstraction (`src/entities/*/api/`) so presentation components never invoke raw `supabase.from(...)`.
+  5. Service-role secrets (`sb_secret_*`) are strictly forbidden in client-side code.
+  6. Payment gateway selection (Stripe, iyzico, PayTR) remains deferred as a pending architectural decision.
+- **Consequences**:
+  - Positive: Fast relational queries, out-of-the-box RLS, declarative migrations, seamless future Auth integration.
+  - Negative: Requires disciplined query adapter boundary and strict RLS policy auditing.
+- **Verification**: Verified via `supabase/migrations/`, `src/shared/lib/supabase.ts`, and `docs/SECURITY.md`.

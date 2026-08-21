@@ -32,6 +32,9 @@ cp .env.example .env.local
 ```
 *(On Windows PowerShell: `Copy-Item .env.example .env.local`)*
 
+By default, `VITE_ENABLE_MOCK_DATA="true"` allows complete local development without live backend dependencies. To connect to Supabase, set `VITE_ENABLE_MOCK_DATA="false"` and configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
+
 ### Step 4: Launch Development Server
 ```bash
 npm run dev

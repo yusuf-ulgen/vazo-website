@@ -16,6 +16,13 @@ This document establishes the security standards and operational policies for th
 - **Rule**: Never store private keys, webhook signing secrets, or database passwords in `VITE_*` variables.
 - `VITE_*` variables are strictly limited to public endpoints, public feature flags, and non-sensitive application titles.
 
+### 1.3 Supabase Key Policy & Row Level Security (RLS)
+- Only the public **publishable/anon key** (`VITE_SUPABASE_PUBLISHABLE_KEY` / `VITE_SUPABASE_ANON_KEY`) may be exposed to the browser.
+- **Secret/service-role keys (`sb_secret_*`) are strictly forbidden** in browser bundles and source control.
+- **Mandatory RLS**: Every PostgreSQL table exposed via the Supabase Data API must have Row Level Security enabled.
+- Anonymous/public browser users are granted **SELECT ONLY** on published/active records. Unrestricted public write, update, and delete access is prohibited.
+
+
 ---
 
 ## 2. Authentication & Admin Panel Security
