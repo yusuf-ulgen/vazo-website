@@ -23,6 +23,12 @@ import { WholesaleHowItWorksPage } from '@/site/pages/wholesale/WholesaleHowItWo
 import { WholesaleApplyPage } from '@/site/pages/wholesale/WholesaleApplyPage';
 import { WishlistPage } from '@/site/pages/WishlistPage';
 import { CartPage } from '@/site/pages/CartPage';
+import { AboutPage } from '@/site/pages/AboutPage';
+import { ContactPage } from '@/site/pages/ContactPage';
+import { FaqPage } from '@/site/pages/FaqPage';
+import { ShippingReturnsPolicyPage } from '@/site/pages/policies/ShippingReturnsPolicyPage';
+import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPage';
+import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 import { AdminLayout } from '@/admin/layouts/AdminLayout';
 import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
@@ -96,11 +102,35 @@ export const router = createBrowserRouter([
       },
       {
         path: 'about',
-        element: <HomePage />,
+        element: <AboutPage />,
       },
       {
         path: 'contact',
-        element: <HomePage />,
+        element: <ContactPage />,
+      },
+      {
+        path: 'faq',
+        element: <FaqPage />,
+      },
+      {
+        path: 'policies/shipping-returns',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
+        path: 'policies/privacy-kvkk',
+        element: <PrivacyKvkkPolicyPage />,
+      },
+      {
+        path: 'policies/terms',
+        element: <TermsOfServicePage />,
+      },
+      {
+        path: 'privacy',
+        element: <PrivacyKvkkPolicyPage />,
+      },
+      {
+        path: 'terms',
+        element: <TermsOfServicePage />,
       },
       {
         path: '*',
