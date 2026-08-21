@@ -96,7 +96,8 @@ export const cartStore = {
     const availableStock = chosenVariant ? (chosenVariant.stockQuantity ?? 0) : 0;
     if (availableStock <= 0) return;
 
-    const rawQty = Math.floor(Number(quantity) || 1);
+    if (quantity === undefined || Number.isNaN(quantity) || quantity <= 0) return;
+    const rawQty = Math.floor(Number(quantity));
     if (!Number.isFinite(rawQty) || rawQty <= 0) return;
 
     const itemId = `${product.id}_${chosenVariant?.id || 'default'}`;

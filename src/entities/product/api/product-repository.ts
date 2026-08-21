@@ -12,6 +12,8 @@ export interface ProductFilterOptions {
   retailOnly?: boolean;
   searchQuery?: string;
   sortBy?: 'recommended' | 'price_asc' | 'price_desc' | 'newest';
+  limit?: number;
+  offset?: number;
 }
 
 interface SupabaseProductRow {
@@ -193,6 +195,12 @@ export const productRepository = {
         filtered.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
 
+      if (options?.offset !== undefined || options?.limit !== undefined) {
+        const offset = options.offset || 0;
+        const limit = options.limit !== undefined ? options.limit : filtered.length;
+        filtered = filtered.slice(offset, offset + limit);
+      }
+
       return filtered;
     }
 
@@ -288,6 +296,9 @@ export const productRepository = {
       .maybeSingle();
 
     if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
       console.error('[productRepository.getProductBySlug] Live Supabase error:', error.message);
       throw new Error(`Failed to fetch product by slug from Supabase: ${error.message}`);
     }
