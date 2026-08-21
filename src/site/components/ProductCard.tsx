@@ -1,77 +1,111 @@
 import { Link } from 'react-router-dom';
+import { Heart } from 'lucide-react';
 import { Product } from '@/entities/product/types';
-import { formatCurrency, formatDimensions } from '@/shared/lib/formatters';
-import { Badge } from '@/shared/ui/Badge';
+import { formatCurrency } from '@/shared/lib/formatters';
+import { useWishlist } from '@/shared/stores/wishlist-store';
+import { ProductImage } from '@/shared/ui/ProductImage';
+import { cn } from '@/shared/lib/cn';
 
 export interface ProductCardProps {
   product: Product;
+  aspectRatio?: 'portrait' | 'square';
+  className?: string;
+  showWholesaleBadge?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const primaryImage = product.images.find((img) => img.isPrimary) || product.images[0];
-  const primaryVariant = product.variants[0];
+export function ProductCard({
+  product,
+  aspectRatio = 'portrait',
+  className,
+  showWholesaleBadge = false,
+}: ProductCardProps) {
+  const { has, toggle } = useWishlist();
+  const isFavorite = has(product.id);
+
+  const primaryImage =
+    product.images.find((img) => img.isPrimary) || product.images[0];
+  const lowestWholesalePrice = product.wholesale.tiers[product.wholesale.tiers.length - 1]?.unitPrice;
 
   return (
-    <article className="group flex flex-col bg-surface-primary border border-border-subtle hover:border-border-default transition-all duration-300">
-      {/* Image Container */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-secondary">
-        {primaryImage && (
-          <img
-            src={primaryImage.url}
-            alt={primaryImage.alt || product.name}
-            className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-            loading="lazy"
+    <div className={cn('group relative flex flex-col', className)}>
+      {/* Image Container with Badges and Wishlist Button */}
+      <div className="relative w-full overflow-hidden bg-surface-secondary">
+        <Link to={`/products/${product.slug}`} className="block">
+          <ProductImage
+            src={primaryImage?.url}
+            alt={primaryImage?.alt || product.name}
+            aspectRatio={aspectRatio}
+            className="w-full"
           />
-        )}
+        </Link>
 
-        {/* Badges Overlay */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          {product.isNewArrival && <Badge variant="muted">Yeni</Badge>}
-          {product.isBestseller && <Badge variant="default">Bestseller</Badge>}
+        {/* Top Badges */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10 pointer-events-none">
+          {product.isNewArrival && (
+            <span className="bg-surface-primary/95 text-text-primary text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 shadow-xs border border-border-subtle">
+              Yeni
+            </span>
+          )}
+          {product.isBestseller && !product.isNewArrival && (
+            <span className="bg-canvas-warm/95 text-text-primary text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 shadow-xs border border-border-subtle">
+              Çok Satan
+            </span>
+          )}
         </div>
 
-        {/* Wholesale indicator */}
-        {product.wholesale.isWholesaleEnabled && (
-          <div className="absolute bottom-3 left-3 z-10">
-            <Badge variant="wholesale">
-              Toptan MOQ: {product.wholesale.minOrderQuantity} Adet
-            </Badge>
-          </div>
-        )}
+        {/* Wishlist Toggle Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggle(product.id);
+          }}
+          aria-label={isFavorite ? 'Favorilerden Çıkar' : 'Favorilere Ekle'}
+          className="absolute top-2.5 right-2.5 p-2 bg-surface-primary/80 hover:bg-surface-primary text-text-primary transition-all duration-200 shadow-xs z-10 focus:outline-none"
+        >
+          <Heart
+            className={cn(
+              'w-4 h-4 transition-colors duration-200',
+              isFavorite ? 'fill-current text-text-primary' : 'text-text-secondary hover:text-text-primary'
+            )}
+          />
+        </button>
       </div>
 
-      {/* Content */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-2.5">
+      {/* Product Details */}
+      <div className="pt-3.5 space-y-1 text-left flex-1 flex flex-col justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-editorial text-text-secondary font-medium">
-            {product.material} • {formatDimensions(primaryVariant?.dimensions)}
+          <Link
+            to={`/products/${product.slug}`}
+            className="font-display text-sm md:text-base font-normal tracking-wide text-text-primary uppercase hover:opacity-70 transition-opacity line-clamp-1"
+          >
+            {product.name}
+          </Link>
+          <p className="text-[11px] text-text-secondary font-sans font-normal tracking-wide line-clamp-1">
+            {product.material}
           </p>
-          <h3 className="font-display text-lg text-text-primary group-hover:opacity-75 transition-opacity">
-            <Link to={`/products/${product.slug}`}>
-              {product.name}
-            </Link>
-          </h3>
         </div>
 
-        {/* Price Row: Retail & Wholesale Context */}
-        <div className="pt-2 border-t border-border-subtle flex items-baseline justify-between text-xs">
-          <div>
-            <span className="text-text-muted text-[10px] block uppercase">Perakende</span>
-            <span className="font-sans font-semibold text-text-primary">
+        <div className="pt-1 flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="font-sans text-xs md:text-sm font-semibold text-text-primary">
               {formatCurrency(product.retailPrice)}
             </span>
+            {product.compareAtPrice && product.compareAtPrice > product.retailPrice && (
+              <span className="text-[11px] text-text-muted line-through">
+                {formatCurrency(product.compareAtPrice)}
+              </span>
+            )}
           </div>
 
-          {product.wholesale.isWholesaleEnabled && product.wholesale.tiers[0] && (
-            <div className="text-right">
-              <span className="text-text-muted text-[10px] block uppercase">Toptan Başlangıç</span>
-              <span className="font-sans font-medium text-feedback-success">
-                {formatCurrency(product.wholesale.tiers[0].unitPrice)}
-              </span>
-            </div>
+          {showWholesaleBadge && lowestWholesalePrice && (
+            <span className="text-[10px] text-feedback-success font-medium tracking-wide">
+              B2B: {formatCurrency(lowestWholesalePrice)}
+            </span>
           )}
         </div>
       </div>
-    </article>
+    </div>
   );
 }
