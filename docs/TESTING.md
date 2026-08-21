@@ -1,4 +1,4 @@
-# Vazo E-Commerce — Phase T1 Testing Architecture & Test Matrix
+# Vazo E-Commerce — Testing Architecture & Test Matrix (Phases T1 & T2)
 
 This document defines the automated test architecture, testing standards, test harness conventions, and coverage contract for the **Vazo E-Commerce Platform (Phase 1 Storefront)**.
 
@@ -6,18 +6,19 @@ This document defines the automated test architecture, testing standards, test h
 
 ## 1. Testing Stack & Philosophy
 
-The test suite runs on **Vitest** in combination with **React Testing Library** and **JSDOM**:
+The repository implements a multi-tier testing pyramid ensuring correctness, security, accessibility, and visual fidelity without reliance on production dependencies:
 
-- **Test Runner**: Vitest (v3) with `@vitest/coverage-v8`
-- **Component Testing**: `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
-- **DOM Environment**: JSDOM with clean globals and automatic DOM cleanup
-- **Deterministic Test Design**: Zero network calls to production Supabase or external CDNs; deterministic test factories and mock adapters.
+- **Unit, Component & Integration**: **Vitest** (v3) + **React Testing Library** + **JSDOM** + `@vitest/coverage-v8`
+- **Database Security & RLS**: **pgTAP** schema and Row-Level Security assertions in `supabase/tests/database_security.sql` validated via `scripts/check-db-tests.mjs`
+- **Browser E2E & User Journeys**: **Playwright** (Chromium Desktop 1440x900 & Mobile Pixel 5)
+- **Automated Accessibility (A11y)**: **@axe-core/playwright** (WCAG 2.1 AA zero critical/serious violation gate)
+- **Deterministic Test Design**: Zero network calls to production Supabase or external CDNs; deterministic test factories, local preview server, and mock adapters.
 
 ### Core Testing Principles
 1. **Behavioral Testing Over Implementation Details**: Tests assert what users and domain services observe (rendering, user events, accessible semantics, API calls, state updates), not private component state or CSS styling details.
 2. **Exhaustive Branch & Error Coverage**: Every success, empty, invalid input, timeout/race condition, and network/database failure branch is explicitly exercised.
-3. **Strict Console Hygiene**: Unexpected `console.error` or `console.warn` outputs immediately fail the test suite.
-4. **Isolated Storage State**: `localStorage` is completely mocked and cleared between every test run to prevent bleed.
+3. **Strict Console & Secret Hygiene**: Unexpected `console.error` logs fail tests. Production client bundle is scanned to ensure zero leaks of service role keys or environment secrets.
+4. **Isolated Storage State**: `localStorage` is completely isolated and corrupted data recovery is asserted.
 
 ---
 
@@ -38,41 +39,14 @@ tests/
     render-utils.tsx
     test-helpers.ts
   unit/                      # Pure function, store, configuration, and entity repository tests
-    shared/
-      cn.test.ts
-      formatters.test.ts
-      seo.test.ts
-      supabase-config.test.ts
-      hooks.test.ts
-      site-config.test.ts
-    entities/
-      product-repository.test.ts
-      category-repository.test.ts
-      collection-repository.test.ts
-      content-repository.test.ts
-      mutations.test.ts
-    stores/
-      cart-store.test.ts
-      wishlist-store.test.ts
+    shared/                  # cn, formatters, seo, supabase config, hooks, site-config
+    entities/                # product, category, collection, content repositories & mutations
+    stores/                  # cart-store, wishlist-store
   component/                 # UI primitives and composite storefront component tests
-    shared-ui/
-      ui-primitives.test.tsx
-      quantity-selector.test.tsx
-    site/
-      announcement-bar.test.tsx
-      site-navbar.test.tsx
-      mega-menus.test.tsx
-      mobile-nav-drawer.test.tsx
-      search-modal.test.tsx
-      cart-drawer.test.tsx
-      product-card.test.tsx
-      site-footer.test.tsx
-    pdp/
-      product-gallery.test.tsx
-      product-purchase-panel.test.tsx
-      pdp-supporting.test.tsx
-    home/
-      homepage-sections.test.tsx
+    shared-ui/               # primitives, quantity-selector
+    site/                    # announcement-bar, navbar, mega-menus, drawers, modals, cards, footer
+    pdp/                     # gallery, purchase-panel, tiers, story, inspiration, accordions
+    home/                    # hero, editorial, split, categories, benefits, newsletter
   integration/               # Full route integrations with mock data & router harness
     catalog-pages.test.tsx
     category-page.test.tsx
@@ -81,59 +55,72 @@ tests/
     wholesale-pages.test.tsx
     content-pages.test.tsx
     router-integration.test.tsx
+  e2e/                       # Playwright Browser End-to-End Test Suite
+    smoke.spec.ts            # 21 public routes clean load & title checks (42 tests Desktop/Mobile)
+    homepage.spec.ts         # Announcement dismissal, hero dual toggle, newsletter, category nav
+    navigation.spec.ts       # CMD+K search modal, debounced results, mega menus, mobile drawer
+    catalog.spec.ts          # Category filters, price sorting, zero result recovery
+    pdp.spec.ts              # Flagship PDP, swatches, accordions, add to cart, zoom modal
+    cart-wishlist.spec.ts    # Cart lifecycle, wishlist persistence, corrupt localStorage recovery
+    wholesale-trade.spec.ts  # B2B landing, models, Trade application form submission
+    a11y.spec.ts             # Axe-core automated WCAG 2.1 AA audit across all templates
+    responsive.spec.ts       # 9-viewport matrix (320px to 1920px) zero horizontal scroll audit
+    visual-regression.spec.ts# Layout alignment with approved design references 01-05
+    security-resilience.spec.ts # Production bundle secret scan & offline degradation
+supabase/tests/
+  database_security.sql      # 28 pgTAP assertions checking RLS and anonymous restrictions
 ```
 
 ---
 
-## 3. Coverage Contract & Documented Exclusions
+## 3. Database Security & RLS Test Contract
 
-The test target for all first-party storefront logic is **100% Statements, 100% Branches, 100% Functions, 100% Lines**.
+The database test suite (`supabase/tests/database_security.sql`) enforces Postgres Row-Level Security rules:
 
-### Legitimate Documented Exclusions
-The following files are strictly excluded from code coverage calculation:
-1. `src/**/*.d.ts` & `src/vite-env.d.ts`: Pure TypeScript type definitions with no emitted JavaScript runtime code.
-2. `src/entities/*/types.ts`: Pure TypeScript interfaces and types.
-3. `src/main.tsx`: Application DOM mount bootstrap point (`ReactDOM.createRoot`).
-4. `src/admin/**`: Phase 2 Back-office admin panel scaffold modules. (Tested at router lazy boundary level to ensure storefront does not break).
+1. **Table RLS Status**: All 6 public tables (`products`, `product_variants`, `trade_applications`, `contact_messages`, `newsletter_subscriptions`, `site_settings`) must have Row-Level Security enabled.
+2. **Catalog & Settings Read Protection**: Anonymous `anon` role can SELECT only `status = 'published'` products/variants and active site settings.
+3. **Catalog Write Prohibition**: Anonymous `anon` role CANNOT INSERT, UPDATE, or DELETE any catalog items or site settings.
+4. **Lead & Form Ingestion Security**: Anonymous role can INSERT into `trade_applications`, `contact_messages`, and `newsletter_subscriptions` but CANNOT SELECT, UPDATE, or DELETE records from other users.
+5. **Newsletter Idempotency**: Unique constraint on `newsletter_subscriptions(email)` prevents duplicate insertions.
 
 ---
 
-## 4. Test Matrix by Module
+## 4. E2E & Accessibility Test Matrix
 
-| Category | Target Module / Component | Key Scenarios Tested |
+| Suite | Target Area | Key Scenarios Verified |
 | :--- | :--- | :--- |
-| **Pure Utilities** | `src/shared/lib/cn.ts` | Single class, multiple classes, conditionals, falsy values, Tailwind conflict resolution (`px-2 px-4`). |
-| **Pure Utilities** | `src/shared/lib/formatters.ts` | Currency (`₺`, decimals, zero, negative), dimension specs, date formatters. |
-| **Pure Utilities** | `src/shared/lib/seo.ts` | Document title, meta description, OG tags, canonical link creation, unmount restoration/cleanup. |
-| **Pure Utilities** | `src/shared/lib/supabase.ts` | Mock mode, live client configuration, missing credentials, invalid placeholder, secret prevention. |
-| **Hooks** | `src/shared/hooks/useDisclosure.ts` | Default state, open, close, toggle, controlled handlers. |
-| **Hooks** | `src/shared/hooks/useMediaQuery.ts` | MatchMedia mock, resize listener, state update, cleanup on unmount. |
-| **Stores** | `src/shared/stores/cart-store.ts` | Initial state, add new product, add existing product + variant (increment), different variant, stock clamping, out-of-stock rejection, retail-disabled rejection, update quantity, remove, clear, subtotal/free shipping calculations, localStorage persistence, malformed/corrupted JSON recovery, immutability, subscription listener. |
-| **Stores** | `src/shared/stores/wishlist-store.ts` | Empty, toggle add/remove, has, remove, clear, duplicates prevention, hydration, corrupt JSON recovery, listener subscription/unsubscription. |
-| **Repositories** | `src/entities/product/api/product-repository.ts` | Mock & Live parity, retailOnly, wholesaleOnly, category filtering, collection filtering, searchQuery sanitization, sort options (recommended, newest, price_asc, price_desc), pagination, getProductBySlug, not found (PGRST116), error throwing in live mode without silent mock fallback, multi-category matching, zero stock mapping. |
-| **Repositories** | `src/entities/category/api/category-repository.ts` | Mock & Live parity, getCategories, active filter, sort order, getCategoryBySlug, missing slug, error throwing in live mode. |
-| **Repositories** | `src/entities/collection/api/collection-repository.ts` | Mock & Live parity, getCollections, featured filter, getCollectionBySlug, missing slug, error throwing in live mode. |
-| **Repositories** | `src/entities/content/api/content-repository.ts` | Mock & Live parity for getSiteSettings, getAnnouncement, getHeroContent, getEditorialSections, getWholesaleBenefits, getMegaMenu ('retail_mega', 'wholesale_mega'), error throwing in live mode, mutation clients (submitTradeApplication, submitContactMessage, subscribeNewsletter) with edge function fallback. |
-| **UI Primitives** | `Badge`, `Button`, `IconButton`, `PriceDisplay`, `ProductImage`, `Container`, `Section`, `Divider`, `EditorialHeading`, `Eyebrow`, `SectionHeader`, `QuantitySelector` | Render, variants, sizes, onClick events, disabled states, accessibility attributes (`aria-label`, keyboard interaction, min/max limits). |
-| **Navigation & Header** | `AnnouncementBar`, `SiteNavbar`, `PerakendeMegaMenu`, `ToptanMegaMenu`, `MobileNavDrawer` | Live CMS fetch, open/close hover & click, keyboard Escape, focus management, active links, mobile drawer accordions, search trigger. |
-| **Storefront Modals** | `SearchModal` | Open/close, autofocus, 200ms debounce, query results, empty results, error state, race condition prevention (stale search sequencing), keyboard Escape, backdrop click, body scroll locking, A11y dialog attributes. |
-| **Storefront Modals** | `CartDrawer` | Open/close, item display, quantity change, removal, free shipping meter, empty state, checkout action, Escape key, body scroll locking. |
-| **Product Detail Components** | `ProductGallery`, `ProductPurchasePanel`, `ProductWholesaleTiers`, `ProductStoryHighlights`, `ProductInspirationGrid`, `ProductAccordions` | Thumbnails click, zoom modal open/close with Escape, variant selection, price update, stock zero handling (disables Add to Cart, shows Stokta Yok), quantity clamping, wholesale MOQ tier calculations, accordion expand/collapse with aria-expanded. |
-| **Homepage Sections** | `HeroSection`, `FeaturedProductsSection`, `AlternatingEditorialSection`, `RetailWholesaleSplitSection`, `CategoryTilesSection`, `WholesaleBenefitsSection`, `FeaturedCollectionSection`, `InspirationStorySection`, `NewsletterSection` | CMS and mock rendering, product grid, collection links, real newsletter submit with loading/success/error. |
-| **Storefront Pages** | `HomePage`, `CatalogPage` (`/products`, `/new`, `/bestsellers`), `CategoryPage`, `CollectionsIndexPage`, `CollectionDetailPage`, `ProductDetailPage`, `WholesaleLandingPage`, `WholesaleProductsPage`, `WholesaleHowItWorksPage`, `WholesaleApplyPage`, `WishlistPage`, `CartPage`, `AboutPage`, `ContactPage`, `FaqPage`, `PolicyPages`, `NotFoundPage` | Initial load, query filters, sort dropdown, error state retry, trade application form submission, contact form submission, SEO tag updates, 404 handling. |
-| **Router** | `src/app/router/index.tsx` | Route table resolution, SiteLayout rendering, 404 wildcard matching, lazy admin route suspense boundary. |
+| **Smoke** | 21 Public Routes | HTTP 200, clean React render, expected heading/title, zero console errors. |
+| **Homepage** | Hero & Interactivity | Announcement bar dismissal, Hero dual Retail/B2B toggle, newsletter submission feedback, category tile routing. |
+| **Navigation** | Header & Drawers | Search trigger via CMD+K / button, 200ms debounce, desktop mega menus on hover, mobile drawer accordion navigation. |
+| **Catalog** | Catalog & Filtering | Product grid, category filter badge toggle, price sort (low-to-high, high-to-low), clear filters empty state recovery. |
+| **PDP** | Flagship Product | Gallery thumbs, color variant selection, out-of-stock badge behavior, accordions, add to cart, zoom modal with Escape. |
+| **Cart & Wishlist** | Persistence & State | Cart drawer, item quantity change, item removal, wishlist toggle, wishlist page display, corrupted `localStorage` graceful recovery. |
+| **Wholesale** | B2B & Application | Wholesale landing page, target audience tiles, volume discount tiers, Trade Application form submit with success confirmation. |
+| **Accessibility** | Axe-core & WCAG AA | Automated axe-core scan on all templates with zero critical/serious violations; modal dialog focus trapping & restoration. |
+| **Responsive** | 9 Viewports | 320px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px verified with zero horizontal overflow (`scrollWidth <= clientWidth`). |
+| **Visual Regr.** | Approved References | Layout alignment against Reference 01 (Mega Menu), 02 (Editorial), 03 (Split), 04 (PDP), and 05 (Hybrid Hero). |
+| **Security** | Secrets & Resilience | Client JS bundle scan ensures 0 secret keys; offline/network error graceful degradation. |
 
 ---
 
-## 5. Verification Commands
+## 5. Verification Commands & CI Pipeline
 
 ```bash
 # Run unit & component test suite
-npm run test
+npm run test:unit
 
-# Run tests with strict coverage report
+# Run tests with coverage threshold gate (98%+ line coverage)
 npm run test:coverage
 
-# Full automated project gate
+# Run database security RLS validation
+npm run test:db
+
+# Run Playwright Browser E2E tests (Desktop & Mobile)
+npm run test:e2e
+
+# Run Axe-core WCAG 2.1 AA Accessibility audit
+npm run test:a11y
+
+# Run full project verification gate (repo safety, line limits, linter, typecheck, DB, coverage, build)
 npm run verify
 ```

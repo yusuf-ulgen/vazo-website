@@ -95,8 +95,9 @@ export function ContactPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1.5">
-                    <label className="font-medium text-text-primary">Adınız Soyadınız *</label>
+                    <label htmlFor="contactName" className="font-medium text-text-primary">Adınız Soyadınız *</label>
                     <input
+                      id="contactName"
                       type="text"
                       required
                       value={name}
@@ -107,8 +108,9 @@ export function ContactPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="font-medium text-text-primary">E-Posta Adresiniz *</label>
+                    <label htmlFor="contactEmail" className="font-medium text-text-primary">E-Posta Adresiniz *</label>
                     <input
+                      id="contactEmail"
                       type="email"
                       required
                       value={email}
@@ -120,8 +122,9 @@ export function ContactPage() {
                 </div>
 
                 <div className="space-y-1.5 text-xs">
-                  <label className="font-medium text-text-primary">Konu / Departman</label>
+                  <label htmlFor="contactSubject" className="font-medium text-text-primary">Konu / Departman</label>
                   <select
+                    id="contactSubject"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
@@ -135,8 +138,9 @@ export function ContactPage() {
                 </div>
 
                 <div className="space-y-1.5 text-xs">
-                  <label className="font-medium text-text-primary">Mesajınız *</label>
+                  <label htmlFor="contactMessage" className="font-medium text-text-primary">Mesajınız *</label>
                   <textarea
+                    id="contactMessage"
                     rows={5}
                     required
                     value={message}

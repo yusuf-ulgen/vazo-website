@@ -1,18 +1,16 @@
-import { useState, type FormEvent } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { Building2, CheckCircle2, ShieldCheck, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
-import { contentRepository, TradeApplicationPayload } from '@/entities/content/api/content-repository';
+import { useState, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { Building2, ShieldCheck, CheckCircle2, AlertCircle, RefreshCcw, ArrowRight } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
+import { contentRepository, TradeApplicationPayload } from '@/entities/content/api/content-repository';
 import { useSEO } from '@/shared/lib/seo';
 
 export function WholesaleApplyPage() {
   useSEO({
-    title: 'Toptan Satış & B2B Başvuru',
-    description: 'Vazo Studio mimari projeler, otel/restoran ve kurumsal toptan alım başvuru formu.',
+    title: 'Toptan Satış & B2B Başvuru Formu | Vazo Studio',
+    description:
+      'İç mimarlar, tasarım ofisleri, oteller ve perakende mağazalar için kurumsal B2B iş ortaklığı ve toptan teklif başvuru formu.',
   });
-
-  const [searchParams] = useSearchParams();
-  const preselectedProduct = searchParams.get('product');
 
   const [formData, setFormData] = useState<TradeApplicationPayload>({
     companyName: '',
@@ -24,11 +22,11 @@ export function WholesaleApplyPage() {
     phone: '',
     website: '',
     estimatedMonthlyVolume: '6 - 20 Adet',
-    customerMessage: preselectedProduct ? `İlgilenilen Model: ${preselectedProduct}` : '',
+    customerMessage: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -37,63 +35,53 @@ export function WholesaleApplyPage() {
     setErrorMessage(null);
 
     try {
-      const res = await contentRepository.submitTradeApplication(formData);
-      if (res.success) {
-        setIsSuccess(true);
-      }
+      await contentRepository.submitTradeApplication(formData);
+      setIsSubmitted(true);
     } catch (err: unknown) {
-      setErrorMessage(err instanceof Error ? err.message : 'Başvuru gönderilirken bir sorun oluştu.');
+      const msg = err instanceof Error ? err.message : 'Başvuru iletilirken beklenmeyen bir hata oluştu.';
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full bg-canvas-default min-h-screen py-12 md:py-20">
-      <Container size="md">
-        {/* Header */}
-        <div className="text-left space-y-3 mb-10 border-b border-border-subtle pb-6">
-          <nav className="text-xs text-text-muted flex items-center gap-1.5 font-sans">
-            <Link to="/" className="hover:text-text-primary transition-colors">Ana Sayfa</Link>
-            <span>/</span>
-            <Link to="/wholesale" className="hover:text-text-primary transition-colors">Toptan & B2B</Link>
-            <span>/</span>
-            <span className="text-text-primary font-medium">Ticari Hesap Başvurusu</span>
-          </nav>
-
-          <div className="flex items-center gap-2 text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-            <Building2 className="w-4 h-4" />
-            <span>B2B & Mimari İş Ortaklığı</span>
-          </div>
-
-          <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light text-text-primary">
+    <div className="w-full bg-canvas-default py-12 md:py-16">
+      <Container size="md" className="space-y-12">
+        {/* Page Header */}
+        <div className="text-center space-y-4 max-w-2xl mx-auto">
+          <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
+            B2B & Kurumsal Ortaklık
+          </span>
+          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-light text-text-primary leading-[1.12]">
             Toptan Satış & Teklif Talebi
           </h1>
-          <p className="text-xs sm:text-sm text-text-secondary max-w-lg leading-relaxed font-sans">
-            Toptan fiyat listesi, numune seti veya projelerinize özel fiyat teklifi almak için formu doldurabilirsiniz.
+          <p className="text-sm sm:text-base text-text-secondary leading-relaxed font-sans">
+            Mimari projeleriniz, otel/restoran tefrişatları ve konsept mağazalarınız için toptan fiyatlandırma ve özel üretim teklifi almak üzere aşağıdaki formu doldurunuz.
           </p>
         </div>
 
-        {/* Success Confirmation Card */}
-        {isSuccess ? (
-          <div className="p-8 sm:p-12 bg-surface-secondary border border-border-default space-y-6 text-center transition-opacity duration-300">
-            <div className="w-14 h-14 bg-feedback-success/10 text-feedback-success rounded-full flex items-center justify-center mx-auto">
+        {/* Form Container */}
+        {isSubmitted ? (
+          /* Success Screen */
+          <div className="p-8 sm:p-12 bg-surface-secondary border border-border-default text-center space-y-6 max-w-xl mx-auto shadow-sm">
+            <div className="w-16 h-16 bg-feedback-success-surface rounded-full flex items-center justify-center mx-auto text-feedback-success">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <h2 className="font-display text-2xl sm:text-3xl text-text-primary">
+              <h2 className="font-display text-2xl sm:text-3xl text-text-primary font-normal">
                 Başvurunuz Başarıyla Alındı
               </h2>
-              <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
-                Talebiniz B2B satış ekibimize iletilmiştir. Kurumsal müşteri temsilcimiz en kısa sürede kayıtlı e-posta veya telefonunuz üzerinden sizinle irtibata geçecektir.
+              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans max-w-md mx-auto">
+                Talebiniz kurumsal satış ve proje ekibimize ulaştı. Vergi ve şirket bilgileriniz incelendikten sonra en geç 24 saat içinde toptan fiyat listesi ve koşullarla tarafınıza dönüş yapılacaktır.
               </p>
             </div>
 
             <div className="pt-4 flex flex-col sm:flex-row justify-center gap-3">
               <Link
                 to="/wholesale/products"
-                className="inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-6 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors"
+                className="inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-6 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
               >
                 <span>B2B Kataloğuna Dön</span>
                 <ArrowRight className="w-4 h-4" />
@@ -127,8 +115,9 @@ export function WholesaleApplyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Şirket / Firma Ünvanı *</label>
+                  <label htmlFor="companyName" className="font-medium text-text-primary">Şirket / Firma Ünvanı *</label>
                   <input
+                    id="companyName"
                     type="text"
                     required
                     value={formData.companyName}
@@ -139,8 +128,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Faaliyet Alanı / İş Türü *</label>
+                  <label htmlFor="businessType" className="font-medium text-text-primary">Faaliyet Alanı / İş Türü *</label>
                   <select
+                    id="businessType"
                     value={formData.businessType}
                     onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
@@ -155,8 +145,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Vergi Numarası *</label>
+                  <label htmlFor="taxNumber" className="font-medium text-text-primary">Vergi Numarası *</label>
                   <input
+                    id="taxNumber"
                     type="text"
                     required
                     value={formData.taxNumber}
@@ -167,8 +158,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Vergi Dairesi *</label>
+                  <label htmlFor="taxOffice" className="font-medium text-text-primary">Vergi Dairesi *</label>
                   <input
+                    id="taxOffice"
                     type="text"
                     required
                     value={formData.taxOffice}
@@ -188,8 +180,9 @@ export function WholesaleApplyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Yetkili Adı & Soyadı *</label>
+                  <label htmlFor="contactPerson" className="font-medium text-text-primary">Yetkili Adı & Soyadı *</label>
                   <input
+                    id="contactPerson"
                     type="text"
                     required
                     value={formData.contactPerson}
@@ -200,8 +193,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Kurumsal E-Posta *</label>
+                  <label htmlFor="email" className="font-medium text-text-primary">Kurumsal E-Posta *</label>
                   <input
+                    id="email"
                     type="email"
                     required
                     value={formData.email}
@@ -212,8 +206,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Telefon Numarası *</label>
+                  <label htmlFor="phone" className="font-medium text-text-primary">Telefon Numarası *</label>
                   <input
+                    id="phone"
                     type="tel"
                     required
                     value={formData.phone}
@@ -224,8 +219,9 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Web Sitesi / Instagram (Opsiyonel)</label>
+                  <label htmlFor="website" className="font-medium text-text-primary">Web Sitesi / Instagram (Opsiyonel)</label>
                   <input
+                    id="website"
                     type="text"
                     value={formData.website || ''}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
@@ -244,8 +240,9 @@ export function WholesaleApplyPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="space-y-1.5">
-                  <label className="font-medium text-text-primary">Tahmini Sipariş / Aylık Hacim</label>
+                  <label htmlFor="estimatedMonthlyVolume" className="font-medium text-text-primary">Tahmini Sipariş / Aylık Hacim</label>
                   <select
+                    id="estimatedMonthlyVolume"
                     value={formData.estimatedMonthlyVolume || ''}
                     onChange={(e) => setFormData({ ...formData, estimatedMonthlyVolume: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
@@ -259,8 +256,9 @@ export function WholesaleApplyPage() {
               </div>
 
               <div className="space-y-1.5 text-xs">
-                <label className="font-medium text-text-primary">Proje Detayları & Talep Notları</label>
+                <label htmlFor="customerMessage" className="font-medium text-text-primary">Proje Detayları & Talep Notları</label>
                 <textarea
+                  id="customerMessage"
                   rows={4}
                   value={formData.customerMessage || ''}
                   onChange={(e) => setFormData({ ...formData, customerMessage: e.target.value })}
@@ -289,8 +287,8 @@ export function WholesaleApplyPage() {
                   </>
                 ) : (
                   <>
+                    <Building2 className="w-4 h-4" />
                     <span>Başvuruyu Tamamla</span>
-                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>

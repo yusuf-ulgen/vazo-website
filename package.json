@@ -12,10 +12,15 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test tests/e2e/a11y.spec.ts",
+    "test:db": "node scripts/check-db-tests.mjs",
+    "test:visual": "playwright test tests/e2e/visual-regression.spec.ts",
+    "test:all": "npm run test:coverage && npm run test:e2e && npm run test:db",
     "test:watch": "vitest",
     "check:lines": "node scripts/check-file-length.mjs",
     "check:repo": "node scripts/check-repository-safety.mjs",
-    "verify": "npm run check:repo && npm run check:lines && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
+    "verify": "npm run check:repo && npm run check:lines && npm run lint && npm run typecheck && npm run test:coverage && npm run test:db && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -27,7 +32,9 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.20.0",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.5",
