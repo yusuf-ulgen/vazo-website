@@ -11,8 +11,8 @@ on:
       - main
 
 jobs:
-  verify:
-    name: Verify Quality & Architecture Gates
+  quality:
+    name: Code Quality & Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -40,8 +40,66 @@ jobs:
       - name: Run TypeScript Compiler Check
         run: npm run typecheck
 
-      - name: Run Vitest Unit Tests
-        run: npm run test
+      - name: Run Vitest Unit Tests & Coverage
+        run: npm run test:coverage
 
       - name: Build Production Bundle
         run: npm run build
+
+  database:
+    name: Database Security & RLS Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate Database Security & pgTAP Test Assertions
+        run: npm run test:db
+
+  e2e:
+    name: Browser E2E & A11y Verification
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Storefront for Production Preview
+        run: npm run build
+
+      - name: Run Playwright E2E Tests
+        run: npm run test:e2e
+
+      - name: Run Axe-core Accessibility Audits
+        run: npm run test:a11y
+
+      - name: Upload Playwright Test Report on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

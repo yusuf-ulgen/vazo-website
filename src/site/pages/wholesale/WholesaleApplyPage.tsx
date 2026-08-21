@@ -100,6 +100,18 @@ export function WholesaleApplyPage() {
             onSubmit={handleSubmit}
             className="p-6 sm:p-10 bg-surface-secondary border border-border-subtle space-y-6 text-left"
           >
+            {/* Honeypot field for bot protection */}
+            <input
+              type="text"
+              name="company_website_confirm"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ display: 'none' }}
+              value={formData.company_website_confirm || ''}
+              onChange={(e) => setFormData({ ...formData, company_website_confirm: e.target.value })}
+            />
+
             {errorMessage && (
               <div className="p-4 bg-feedback-danger/10 border border-feedback-danger/30 text-feedback-danger text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />

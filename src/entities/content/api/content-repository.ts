@@ -31,6 +31,7 @@ export interface TradeApplicationPayload {
   estimatedMonthlyVolume?: string;
   customerMessage?: string;
   notes?: string;
+  company_website_confirm?: string;
 }
 
 export interface ContactMessagePayload {
@@ -38,11 +39,13 @@ export interface ContactMessagePayload {
   email: string;
   subject: string;
   message: string;
+  company_website_confirm?: string;
 }
 
 export interface NewsletterSubscriptionPayload {
   email: string;
   source?: string;
+  company_website_confirm?: string;
 }
 
 const mockAnnouncement: AnnouncementBarConfig = {
@@ -68,27 +71,27 @@ const mockHero: HeroBannerConfig = {
 const mockEditorialSections: EditorialSectionConfig[] = [
   {
     id: 'e0000000-0000-0000-0000-000000000001',
-    eyebrow: 'Zanaat & Felsefe',
-    title: 'Toprağın Doğallığı, Mimari Heykelsilik.',
+    eyebrow: 'Yeni Koleksiyon',
+    title: 'Formun sadeliği, mekâna anlam katar.',
     description:
-      'Her bir parça, mineral zengini stoneware kilinin geleneksel el tornasında şekillendirilmesi ve 1250°C fırınlama ile monolitik dayanıklılığa kavuşmasıyla üretilir. Seri üretimin tekdüzeliğinden uzak, her vazoda hafif ton ve doku farklılıkları barındıran özgün bir karaktere sahiptir.',
+      'Zamana meydan okuyan tasarımları ve doğal mineral malzemeleri buluşturarak yaşam alanlarınıza sade ve güçlü bir estetik kazandırıyoruz.',
     imageUrl:
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1000&q=85',
     imagePosition: 'left',
-    ctaText: 'Stüdyo Hikayemiz',
-    ctaUrl: '/about',
+    ctaText: 'Keşfet',
+    ctaUrl: '/collections/nordik-sessizlik',
   },
   {
     id: 'e0000000-0000-0000-0000-000000000002',
-    eyebrow: 'Materyal ve Doku',
-    title: 'Ham Mineraller, Dingin Renk Paleti.',
+    eyebrow: 'El Yapımı Seramik',
+    title: 'Doğadan ilham alan özgün tasarımlar.',
     description:
-      'Toprağın ham minerallerini yüzeyde hissettiren mat dokular, İskandinav nötr renk skalasıyla birleşiyor. Parlak yapay cilalar yerine tebeşir, kum, bazalt ve ham terakota yüzeyler tercih ediyoruz.',
+      'Her bir parça, usta ellerde el tornasında şekillenir ve 1250°C fırınlama ile kendine has yüzey dokusu ve ton farklılıklarına kavuşur.',
     imageUrl:
-      'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=900&q=80',
+      'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1000&q=85',
     imagePosition: 'right',
     ctaText: 'Koleksiyonu İncele',
-    ctaUrl: '/collections/nordic-silence',
+    ctaUrl: '/products',
   },
 ];
 
@@ -122,6 +125,17 @@ const mockWholesaleBenefits: WholesaleBenefit[] = [
     order: 4,
   },
 ];
+
+const emptyMegaMenu: MegaMenuData = {
+  groups: [],
+  promo: {
+    title: '',
+    subtitle: '',
+    imageUrl: '',
+    ctaText: 'Keşfet',
+    ctaHref: '/products',
+  },
+};
 
 export const contentRepository = {
   async getAnnouncement(): Promise<AnnouncementBarConfig | null> {
@@ -280,7 +294,7 @@ export const contentRepository = {
     }
 
     if (!data || data.length === 0) {
-      return menuType === 'retail_mega' ? perakendeMegaMenuData : toptanMegaMenuData;
+      return emptyMegaMenu;
     }
 
     const firstGroupWithPromo = data.find((g) => g.promo_title);
@@ -306,16 +320,14 @@ export const contentRepository = {
           ctaText: firstGroupWithPromo.promo_cta_text || 'Keşfet',
           ctaHref: firstGroupWithPromo.promo_cta_url || '/products',
         }
-      : menuType === 'retail_mega'
-      ? perakendeMegaMenuData.promo
-      : toptanMegaMenuData.promo;
+      : emptyMegaMenu.promo;
 
     return { groups, promo };
   },
 
   async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
         message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
@@ -326,36 +338,33 @@ export const contentRepository = {
       throw new Error('Supabase client is not available in live mode.');
     }
 
-    const { error } = await supabase.from('trade_applications').insert({
-      company_name: payload.companyName.trim(),
-      tax_number: payload.taxNumber.trim(),
-      tax_office: payload.taxOffice.trim(),
-      business_type: payload.businessType.trim(),
-      contact_person: payload.contactPerson.trim(),
-      email: payload.email.trim().toLowerCase(),
-      phone: payload.phone.trim(),
-      website: payload.website ? payload.website.trim() : null,
-      estimated_monthly_volume: payload.estimatedMonthlyVolume ? payload.estimatedMonthlyVolume.trim() : null,
-      customer_message: (payload.customerMessage || payload.notes || '').trim() || null,
-      status: 'pending',
-      reviewed_at: null,
-      admin_notes: null,
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-trade-application', {
+        body: payload,
+      });
 
-    if (error) {
-      console.error('[contentRepository.submitTradeApplication] Error:', error.message);
-      throw new Error(`Başvuru iletilemedi: ${error.message}`);
+      if (error) {
+        throw new Error(error.message || 'Başvuru sunucuya iletilemedi.');
+      }
+
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+
+      return {
+        success: true,
+        message: data?.message || 'Toptan / Trade başvurunuz başarıyla alındı.',
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Başvuru iletilirken beklenmeyen bir hata oluştu.';
+      console.error('[contentRepository.submitTradeApplication] Error:', msg);
+      throw new Error(msg);
     }
-
-    return {
-      success: true,
-      message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
-    };
   },
 
   async submitContactMessage(payload: ContactMessagePayload): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
         message: 'Mesajınız stüdyo ekibimize iletilmiştir.',
@@ -366,30 +375,33 @@ export const contentRepository = {
       throw new Error('Supabase client is not available in live mode.');
     }
 
-    const { error } = await supabase.from('contact_messages').insert({
-      name: payload.name.trim(),
-      email: payload.email.trim().toLowerCase(),
-      subject: payload.subject.trim(),
-      message: payload.message.trim(),
-      status: 'new',
-      reviewed_at: null,
-      admin_notes: null,
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-contact-message', {
+        body: payload,
+      });
 
-    if (error) {
-      console.error('[contentRepository.submitContactMessage] Error:', error.message);
-      throw new Error(`Mesaj iletilemedi: ${error.message}`);
+      if (error) {
+        throw new Error(error.message || 'Mesaj sunucuya iletilemedi.');
+      }
+
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+
+      return {
+        success: true,
+        message: data?.message || 'Mesajınız stüdyo ekibimize iletilmiştir.',
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Mesaj iletilirken bir hata oluştu.';
+      console.error('[contentRepository.submitContactMessage] Error:', msg);
+      throw new Error(msg);
     }
-
-    return {
-      success: true,
-      message: 'Mesajınız stüdyo ekibimize iletilmiştir.',
-    };
   },
 
   async subscribeNewsletter(payload: NewsletterSubscriptionPayload): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
         message: 'Bülten kaydınız tamamlandı.',
@@ -400,20 +412,27 @@ export const contentRepository = {
       throw new Error('Supabase client is not available in live mode.');
     }
 
-    const { error } = await supabase.from('newsletter_subscriptions').insert({
-      normalized_email: payload.email.trim().toLowerCase(),
-      source: (payload.source || 'storefront').slice(0, 50),
-      status: 'active',
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('subscribe-newsletter', {
+        body: payload,
+      });
 
-    if (error && error.code !== '23505') {
-      console.error('[contentRepository.subscribeNewsletter] Error:', error.message);
-      throw new Error(`Bülten kaydı oluşturulamadı: ${error.message}`);
+      if (error) {
+        throw new Error(error.message || 'Bülten kaydı oluşturulamadı.');
+      }
+
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
+
+      return {
+        success: true,
+        message: data?.message || 'Bülten kaydınız tamamlandı.',
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Bülten kaydı oluşturulamadı.';
+      console.error('[contentRepository.subscribeNewsletter] Error:', msg);
+      throw new Error(msg);
     }
-
-    return {
-      success: true,
-      message: 'Bülten kaydınız tamamlandı.',
-    };
   },
 };

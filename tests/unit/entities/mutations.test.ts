@@ -43,10 +43,12 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
     });
   });
 
-  describe('Live Mode Mutations', () => {
-    it('inserts into trade_applications table in live mode', async () => {
-      const mockClient = createMockSupabaseClient({
-        trade_applications: { data: null, error: null },
+  describe('Live Mode Mutations (Edge Functions Boundary)', () => {
+    it('invokes submit-trade-application Edge Function in live mode', async () => {
+      const mockClient = createMockSupabaseClient({});
+      mockClient.functions.invoke = vi.fn().mockResolvedValue({
+        data: { success: true, message: 'Başvuru alındı.' },
+        error: null,
       });
 
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
@@ -63,12 +65,16 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
       });
 
       expect(res.success).toBe(true);
-      expect(mockClient.from).toHaveBeenCalledWith('trade_applications');
+      expect(mockClient.functions.invoke).toHaveBeenCalledWith('submit-trade-application', {
+        body: expect.objectContaining({ companyName: 'Arkhe Mimarlık' }),
+      });
     });
 
-    it('throws when trade_applications insert returns error', async () => {
-      const mockClient = createMockSupabaseClient({
-        trade_applications: { data: null, error: { message: 'Veri hatası' } },
+    it('throws when submit-trade-application returns error object or error status', async () => {
+      const mockClient = createMockSupabaseClient({});
+      mockClient.functions.invoke = vi.fn().mockResolvedValue({
+        data: { error: 'Geçersiz kurumsal vergi numarası.' },
+        error: null,
       });
 
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
@@ -84,12 +90,14 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
           email: 'hata@example.com',
           phone: '05000000000',
         })
-      ).rejects.toThrow('Başvuru iletilemedi: Veri hatası');
+      ).rejects.toThrow('Geçersiz kurumsal vergi numarası.');
     });
 
-    it('throws when contact_messages insert returns error', async () => {
-      const mockClient = createMockSupabaseClient({
-        contact_messages: { data: null, error: { message: 'Geçersiz veri' } },
+    it('throws when submit-contact-message returns network error or data error', async () => {
+      const mockClient = createMockSupabaseClient({});
+      mockClient.functions.invoke = vi.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Sunucuya bağlanılamadı.' },
       });
 
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
@@ -102,27 +110,49 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
           subject: 'Bilgi',
           message: 'Mesajım',
         })
-      ).rejects.toThrow('Mesaj iletilemedi: Geçersiz veri');
+      ).rejects.toThrow('Sunucuya bağlanılamadı.');
+
+      mockClient.functions.invoke = vi.fn().mockResolvedValueOnce({
+        data: { error: 'Mesaj alanı boş bırakılamaz.' },
+        error: null,
+      });
+
+      await expect(
+        contentRepository.submitContactMessage({
+          name: 'Ali Veli',
+          email: 'ali@example.com',
+          subject: 'Bilgi',
+          message: '',
+        })
+      ).rejects.toThrow('Mesaj alanı boş bırakılamaz.');
     });
 
-    it('handles unique constraint error safely for newsletter idempotency', async () => {
-      const mockClient = createMockSupabaseClient({
-        newsletter_subscriptions: { data: null, error: { message: 'duplicate key', code: '23505' } },
+    it('invokes subscribe-newsletter Edge Function successfully', async () => {
+      const mockClient = createMockSupabaseClient({});
+      mockClient.functions.invoke = vi.fn().mockResolvedValue({
+        data: { success: true, message: 'Bülten kaydınız tamamlandı.' },
+        error: null,
       });
 
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
       const res = await contentRepository.subscribeNewsletter({
-        email: 'duplicate@example.com',
+        email: 'b2b@example.com',
+        source: 'footer',
       });
 
       expect(res.success).toBe(true);
+      expect(mockClient.functions.invoke).toHaveBeenCalledWith('subscribe-newsletter', {
+        body: { email: 'b2b@example.com', source: 'footer' },
+      });
     });
 
-    it('throws when newsletter insert returns non-duplicate error', async () => {
-      const mockClient = createMockSupabaseClient({
-        newsletter_subscriptions: { data: null, error: { message: 'Sunucu hatası', code: '500' } },
+    it('throws when subscribe-newsletter function invocation fails or returns data error', async () => {
+      const mockClient = createMockSupabaseClient({});
+      mockClient.functions.invoke = vi.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Edge Function invocation error' },
       });
 
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
@@ -132,7 +162,50 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         contentRepository.subscribeNewsletter({
           email: 'hata@example.com',
         })
-      ).rejects.toThrow('Bülten kaydı oluşturulamadı: Sunucu hatası');
+      ).rejects.toThrow('Edge Function invocation error');
+
+      mockClient.functions.invoke = vi.fn().mockResolvedValueOnce({
+        data: { error: 'Geçersiz e-posta formatı.' },
+        error: null,
+      });
+
+      await expect(
+        contentRepository.subscribeNewsletter({
+          email: 'hata@example.com',
+        })
+      ).rejects.toThrow('Geçersiz e-posta formatı.');
+    });
+
+    it('throws when supabase client is null in live mode', async () => {
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null as never);
+
+      await expect(
+        contentRepository.submitTradeApplication({
+          companyName: 'X',
+          taxNumber: '1',
+          taxOffice: 'Y',
+          businessType: 'Z',
+          contactPerson: 'A',
+          email: 'a@b.com',
+          phone: '1',
+        })
+      ).rejects.toThrow('Supabase client is not available in live mode.');
+
+      await expect(
+        contentRepository.submitContactMessage({
+          name: 'A',
+          email: 'a@b.com',
+          subject: 'S',
+          message: 'M',
+        })
+      ).rejects.toThrow('Supabase client is not available in live mode.');
+
+      await expect(
+        contentRepository.subscribeNewsletter({
+          email: 'a@b.com',
+        })
+      ).rejects.toThrow('Supabase client is not available in live mode.');
     });
   });
 });

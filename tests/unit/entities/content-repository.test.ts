@@ -63,6 +63,18 @@ describe('contentRepository', () => {
       expect(announcement?.message).toBe('Live Duyuru');
     });
 
+    it('returns null when announcement query has zero rows in live mode', async () => {
+      const mockClient = createMockSupabaseClient({
+        announcement_bars: { data: null, error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const announcement = await contentRepository.getAnnouncement();
+      expect(announcement).toBeNull();
+    });
+
     it('throws error when live database query fails (NO silent mock fallback)', async () => {
       const mockClient = createMockSupabaseClient({
         announcement_bars: { data: null, error: { message: 'Database query failed' } },
@@ -99,6 +111,18 @@ describe('contentRepository', () => {
       expect(hero?.title).toBe('Live Hero');
     });
 
+    it('returns null when hero query has zero rows in live mode', async () => {
+      const mockClient = createMockSupabaseClient({
+        hero_slides: { data: null, error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const hero = await contentRepository.getHero();
+      expect(hero).toBeNull();
+    });
+
     it('maps editorial sections from editorial_sections', async () => {
       const mockSection = {
         id: 'ed-1',
@@ -123,6 +147,18 @@ describe('contentRepository', () => {
       const sections = await contentRepository.getEditorialSections();
       expect(sections.length).toBe(1);
       expect(sections[0]?.title).toBe('Heykel');
+    });
+
+    it('returns empty array when editorial sections have zero rows in live mode', async () => {
+      const mockClient = createMockSupabaseClient({
+        editorial_sections: { data: [], error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const sections = await contentRepository.getEditorialSections();
+      expect(sections).toEqual([]);
     });
 
     it('maps wholesale benefits from wholesale_benefits', async () => {
@@ -171,6 +207,32 @@ describe('contentRepository', () => {
       expect(mega.groups.length).toBe(1);
       expect(mega.groups[0]?.title).toBe('Kategoriler');
       expect(mega.promo?.title).toBe('Özel Seri');
+    });
+
+    it('returns empty menu object when live menu query returns zero rows (NO silent mock fallback)', async () => {
+      const mockClient = createMockSupabaseClient({
+        menu_groups: { data: [], error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const mega = await contentRepository.getMegaMenu('retail_mega');
+      expect(mega.groups).toEqual([]);
+      expect(mega.promo?.title).toBe('');
+    });
+
+    it('throws error when live menu query fails (NO silent mock fallback)', async () => {
+      const mockClient = createMockSupabaseClient({
+        menu_groups: { data: null, error: { message: 'Menu fetch error' } },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      await expect(contentRepository.getMegaMenu('retail_mega')).rejects.toThrow(
+        'Failed to fetch navigation menu from Supabase'
+      );
     });
   });
 });

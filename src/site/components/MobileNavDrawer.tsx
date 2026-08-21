@@ -14,6 +14,7 @@ import { contentRepository } from '@/entities/content/api/content-repository';
 import { MegaMenuData, perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
 export interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -28,34 +29,23 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
   const [wholesaleMenu, setWholesaleMenu] = useState<MegaMenuData>(toptanMegaMenuData);
   const { count: wishlistCount } = useWishlist();
 
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       contentRepository.getMegaMenu('retail_mega').then(setRetailMenu).catch(() => {});
       contentRepository.getMegaMenu('wholesale_mega').then(setWholesaleMenu).catch(() => {});
-    } else {
-      document.body.style.overflow = '';
     }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-modal="true"
       aria-label="Mobil Gezinme Menüsü"

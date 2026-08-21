@@ -51,6 +51,16 @@ export function NewsletterSection() {
             onSubmit={handleSubmit}
             className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-md mx-auto pt-2"
           >
+            {/* Honeypot field for bot protection */}
+            <input
+              type="text"
+              name="company_website_confirm"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ display: 'none' }}
+              onChange={() => {}}
+            />
             <input
               type="email"
               required

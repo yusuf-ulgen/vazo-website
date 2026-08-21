@@ -4,6 +4,7 @@ import { Search, X, ArrowRight } from 'lucide-react';
 import { productRepository } from '@/entities/product/api/product-repository';
 import { Product } from '@/entities/product/types';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
 export interface SearchModalProps {
   isOpen: boolean;
@@ -18,21 +19,19 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const searchSequenceRef = useRef<number>(0);
 
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+    initialFocusRef: inputRef,
+  });
+
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      document.body.style.overflow = '';
+    if (!isOpen) {
       setQuery('');
       setResults([]);
       setIsSearching(false);
       setSearchError(null);
     }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -73,21 +72,11 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     };
   }, [query]);
 
-  // Handle ESC key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   return (
     <div
+      ref={containerRef}
       role="dialog"
       aria-modal="true"
       aria-label="Ürün Arama Modalı"

@@ -106,66 +106,67 @@ describe('productRepository', () => {
   });
 
   describe('Live Supabase Mode', () => {
-    it('fetches and maps products correctly from Supabase client', async () => {
-      const mockRawProduct = {
-        id: 'db-prod-1',
-        slug: 'db-vazo',
-        name: 'DB Vazo',
-        subtitle: 'DB Alt Başlık',
-        description: 'DB Açıklama',
-        material: 'Stoneware',
-        finish: 'Mat',
-        retail_price: 2500,
-        compare_at_price: 3000,
-        is_retail_enabled: true,
-        is_wholesale_enabled: true,
-        featured: true,
-        is_new_arrival: false,
-        is_bestseller: true,
-        min_order_quantity: 6,
-        starting_wholesale_price: 1800,
-        product_categories: [{ category_id: 'cat-1', is_primary: true }],
-        product_collections: [{ collection_id: 'col-1' }],
-        product_media: [
-          {
-            id: 'm1',
-            public_url: 'https://images.unsplash.com/photo-1',
-            alt_text: 'DB Görsel',
-            is_primary: true,
-            sort_order: 1,
-          },
-        ],
-        product_variants: [
-          {
-            id: 'v1',
-            sku: 'DB-SKU-1',
-            name: 'DB Varyant',
-            color_name: 'Antrasit',
-            color_hex: '#333333',
-            finish: 'Mat',
-            retail_price: 2500,
-            compare_at_price: 3000,
-            stock_quantity: 15,
-            is_available_for_retail: true,
-            is_available_for_wholesale: true,
-            height_cm: 30,
-            diameter_cm: 20,
-            weight_kg: 2.5,
-          },
-        ],
-        wholesale_price_tiers: [
-          {
-            id: 't1',
-            min_quantity: 6,
-            max_quantity: 19,
-            discount_percentage: 25,
-            unit_price: 1875,
-            tier_label: '6-19 Adet',
-            sort_order: 1,
-          },
-        ],
-      };
+    const mockRawProduct = {
+      id: 'db-prod-1',
+      slug: 'db-vazo',
+      name: 'DB Vazo',
+      subtitle: 'DB Alt Başlık',
+      description: 'DB Açıklama',
+      material: 'Stoneware',
+      finish: 'Mat',
+      retail_price: 2500,
+      compare_at_price: 3000,
+      is_retail_enabled: true,
+      is_wholesale_enabled: true,
+      featured: true,
+      is_new_arrival: false,
+      is_bestseller: true,
+      min_order_quantity: 6,
+      starting_wholesale_price: 1800,
+      primary_category_id: 'cat-1',
+      product_categories: [{ category_id: 'cat-1', is_primary: true }],
+      product_collections: [{ collection_id: 'col-1' }],
+      product_media: [
+        {
+          id: 'm1',
+          public_url: 'https://images.unsplash.com/photo-1',
+          alt_text: 'DB Görsel',
+          is_primary: true,
+          sort_order: 1,
+        },
+      ],
+      product_variants: [
+        {
+          id: 'v1',
+          sku: 'DB-SKU-1',
+          name: 'DB Varyant',
+          color_name: 'Antrasit',
+          color_hex: '#333333',
+          finish: 'Mat',
+          retail_price: 2500,
+          compare_at_price: 3000,
+          stock_quantity: 15,
+          is_available_for_retail: true,
+          is_available_for_wholesale: true,
+          height_cm: 30,
+          diameter_cm: 20,
+          weight_kg: 2.5,
+        },
+      ],
+      wholesale_price_tiers: [
+        {
+          id: 't1',
+          min_quantity: 6,
+          max_quantity: 19,
+          discount_percentage: 25,
+          unit_price: 1875,
+          tier_label: '6-19 Adet',
+          sort_order: 1,
+        },
+      ],
+    };
 
+    it('fetches and maps products correctly from Supabase client with various filters', async () => {
       const mockClient = createMockSupabaseClient({
         products: { data: [mockRawProduct], error: null },
       });
@@ -173,7 +174,19 @@ describe('productRepository', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      const products = await productRepository.getProducts();
+      const products = await productRepository.getProducts({
+        retailOnly: true,
+        wholesaleOnly: true,
+        isFeatured: true,
+        isNewArrival: false,
+        isBestseller: true,
+        searchQuery: 'Vazo',
+        sortBy: 'price_desc',
+        categoryId: 'cat-1',
+        collectionId: 'col-1',
+        limit: 10,
+        offset: 0,
+      });
       expect(products.length).toBe(1);
       expect(products[0]?.id).toBe('db-prod-1');
       expect(products[0]?.categoryIds).toEqual(['cat-1']);
@@ -181,6 +194,21 @@ describe('productRepository', () => {
       expect(products[0]?.images.length).toBe(1);
       expect(products[0]?.variants.length).toBe(1);
       expect(products[0]?.wholesale.tiers.length).toBe(1);
+    });
+
+    it('executes live queries with price_asc and newest sorting', async () => {
+      const mockClient = createMockSupabaseClient({
+        products: { data: [mockRawProduct], error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const ascProducts = await productRepository.getProducts({ sortBy: 'price_asc' });
+      expect(ascProducts.length).toBe(1);
+
+      const newestProducts = await productRepository.getProducts({ sortBy: 'newest' });
+      expect(newestProducts.length).toBe(1);
     });
 
     it('throws error when database query fails in live mode (NO silent fallback)', async () => {
@@ -194,6 +222,19 @@ describe('productRepository', () => {
       await expect(productRepository.getProducts()).rejects.toThrow('Failed to fetch products');
     });
 
+    it('fetches single product by slug in live mode', async () => {
+      const mockClient = createMockSupabaseClient({
+        products: { data: mockRawProduct, error: null },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      const product = await productRepository.getProductBySlug('db-vazo');
+      expect(product).not.toBeNull();
+      expect(product?.slug).toBe('db-vazo');
+    });
+
     it('handles PGRST116 not found error for single product query', async () => {
       const mockClient = createMockSupabaseClient({
         products: { data: null, error: { message: 'Row not found', code: 'PGRST116' } },
@@ -204,6 +245,19 @@ describe('productRepository', () => {
 
       const product = await productRepository.getProductBySlug('non-existent');
       expect(product).toBeNull();
+    });
+
+    it('throws error when single product query fails with non-PGRST116 error', async () => {
+      const mockClient = createMockSupabaseClient({
+        products: { data: null, error: { message: 'Database error', code: '500' } },
+      });
+
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      await expect(productRepository.getProductBySlug('db-vazo')).rejects.toThrow(
+        'Failed to fetch product by slug from Supabase'
+      );
     });
   });
 });

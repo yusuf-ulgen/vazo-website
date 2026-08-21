@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { ProductImage as ProductImageType } from '@/entities/product/types';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
 export interface ProductGalleryProps {
   media: ProductImageType[];
@@ -10,6 +11,11 @@ export interface ProductGalleryProps {
 export function ProductGallery({ media, productName }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
+
+  const { containerRef: zoomContainerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen: isZoomModalOpen,
+    onClose: () => setIsZoomModalOpen(false),
+  });
 
   const images = media.length > 0
     ? media
@@ -24,28 +30,6 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
   const handleNext = () => {
     setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   };
-
-  useEffect(() => {
-    if (isZoomModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isZoomModalOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isZoomModalOpen) {
-        setIsZoomModalOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isZoomModalOpen]);
 
   return (
     <>
@@ -118,6 +102,7 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
       {/* Fullscreen Zoom Modal */}
       {isZoomModalOpen && (
         <div
+          ref={zoomContainerRef}
           role="dialog"
           aria-modal="true"
           aria-label="Büyütülmüş Ürün Görseli"

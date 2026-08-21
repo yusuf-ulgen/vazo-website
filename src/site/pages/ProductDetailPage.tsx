@@ -39,7 +39,8 @@ export function ProductDetailPage() {
         }
 
         setProduct(prod);
-        setSelectedVariant(prod.variants[0]);
+        const defaultRetailVariant = prod.variants.find((v) => v.isAvailableForRetail) || prod.variants[0];
+        setSelectedVariant(defaultRetailVariant);
 
         // Load related products
         const allProds = await productRepository.getProducts({

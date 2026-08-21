@@ -71,14 +71,38 @@ describe('useSEO hook', () => {
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
   });
 
-  it('removes existing canonical link if canonicalUrl is not provided', () => {
-    const existingCanonical = document.createElement('link');
-    existingCanonical.setAttribute('rel', 'canonical');
-    existingCanonical.setAttribute('href', 'https://vazostudio.com/old');
-    document.head.appendChild(existingCanonical);
+  it('resets route-specific og:image on route transition (prevents cross-route contamination)', () => {
+    // Route A with custom ogImage and canonical
+    const routeA = renderHook(() =>
+      useSEO({
+        title: 'Route A',
+        ogImage: 'https://vazostudio.com/route-a-og.jpg',
+        canonicalUrl: 'https://vazostudio.com/route-a',
+      })
+    );
 
-    renderHook(() => useSEO({ canonicalUrl: undefined }));
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe(
+      'https://vazostudio.com/route-a-og.jpg'
+    );
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://vazostudio.com/route-a'
+    );
 
+    // Unmount Route A (simulate navigation)
+    routeA.unmount();
+
+    // Route B without custom ogImage or canonical
+    const routeB = renderHook(() =>
+      useSEO({
+        title: 'Route B',
+      })
+    );
+
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).not.toBe(
+      'https://vazostudio.com/route-a-og.jpg'
+    );
     expect(document.querySelector('link[rel="canonical"]')).toBeNull();
+
+    routeB.unmount();
   });
 });

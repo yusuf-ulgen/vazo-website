@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 
 const sqlTestPath = path.resolve(process.cwd(), 'supabase/tests/database_security.sql');
 
@@ -10,6 +11,7 @@ if (!fs.existsSync(sqlTestPath)) {
 
 const content = fs.readFileSync(sqlTestPath, 'utf-8');
 
+// Required security invariants that must be verified in the SQL test suite
 const requiredChecks = [
   'row_level_security_is_active',
   'SET LOCAL ROLE anon',
@@ -18,6 +20,13 @@ const requiredChecks = [
   'contact_messages',
   'newsletter_subscriptions',
   'site_settings',
+  'Direct anonymous INSERT into trade_applications must fail',
+  'Direct anonymous INSERT into contact_messages must fail',
+  'Direct anonymous INSERT into newsletter_subscriptions must fail',
+  'Child variant of draft product is completely invisible to anonymous visitors',
+  'Child media of draft product is completely invisible to anonymous visitors',
+  'SELECT * FROM finish()',
+  'ROLLBACK',
 ];
 
 const missing = requiredChecks.filter((check) => !content.includes(check));
@@ -27,5 +36,31 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-console.log('✅ Database security test suite (pgTAP) validated successfully.');
+// Check plan count matches test items
+const planMatch = content.match(/plan\((\d+)\)/);
+if (!planMatch) {
+  console.error('❌ Error: pgTAP plan(...) not declared in database_security.sql');
+  process.exit(1);
+}
+
+const plannedCount = parseInt(planMatch[1], 10);
+const selectAssertions = (content.match(/SELECT\s+(has_table|row_level_security_is_active|ok|is|throws_ok|lives_ok)/g) || []).length;
+
+if (plannedCount !== selectAssertions) {
+  console.error(`❌ Error: pgTAP plan(${plannedCount}) does not match assertion count (${selectAssertions}).`);
+  process.exit(1);
+}
+
+// If local Supabase CLI is active and accessible, run live pgTAP suite
+if (process.env.CI_SUPABASE_TEST === 'true' || process.env.DATABASE_URL) {
+  try {
+    console.log('Running pgTAP against active database test runner...');
+    execSync('supabase test db', { stdio: 'inherit' });
+  } catch (err) {
+    console.error('❌ Error executing supabase test db:', err);
+    process.exit(1);
+  }
+}
+
+console.log(`✅ Database security test suite (${plannedCount} pgTAP assertions) validated successfully.`);
 process.exit(0);

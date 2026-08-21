@@ -14,6 +14,12 @@ export interface SiteConfig {
     phone: string;
     address: string;
   };
+  commerce: {
+    freeShippingThreshold: number;
+    shippingEstimateText: string;
+    shippingSummary: string;
+    returnsPolicyText: string;
+  };
   social: {
     instagram: string;
     pinterest: string;
@@ -35,6 +41,12 @@ export const siteConfig: SiteConfig = {
     wholesaleEmail: 'b2b@vazostudio.com',
     phone: '+90 (212) 555 0192',
     address: 'Karaköy Tasarım Bölgesi, Kemankeş Cad. No: 42, Beyoğlu / İstanbul',
+  },
+  commerce: {
+    freeShippingThreshold: 5000,
+    shippingEstimateText: 'Ödeme adımında hesaplanır',
+    shippingSummary: 'Güvenli Alışveriş ve Sigortalı Sevkiyat',
+    returnsPolicyText: 'Teslimattan itibaren 14 gün içinde iade imkanı.',
   },
   social: {
     instagram: 'https://instagram.com',

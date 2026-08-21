@@ -1,4 +1,4 @@
-# Vazo E-Commerce — Testing Architecture & Test Matrix (Phases T1 & T2)
+# Vazo E-Commerce — Testing Architecture & Test Matrix (Phases T1, T2 & Green Gate)
 
 This document defines the automated test architecture, testing standards, test harness conventions, and coverage contract for the **Vazo E-Commerce Platform (Phase 1 Storefront)**.
 
@@ -10,6 +10,7 @@ The repository implements a multi-tier testing pyramid ensuring correctness, sec
 
 - **Unit, Component & Integration**: **Vitest** (v3) + **React Testing Library** + **JSDOM** + `@vitest/coverage-v8`
 - **Database Security & RLS**: **pgTAP** schema and Row-Level Security assertions in `supabase/tests/database_security.sql` validated via `scripts/check-db-tests.mjs`
+- **Edge Functions Security**: Service role authority, payload allowlists, size limits, and honeypot anti-spam verification in `tests/unit/functions/edge-functions.test.ts`
 - **Browser E2E & User Journeys**: **Playwright** (Chromium Desktop 1440x900 & Mobile Pixel 5)
 - **Automated Accessibility (A11y)**: **@axe-core/playwright** (WCAG 2.1 AA zero critical/serious violation gate)
 - **Deterministic Test Design**: Zero network calls to production Supabase or external CDNs; deterministic test factories, local preview server, and mock adapters.
@@ -17,8 +18,9 @@ The repository implements a multi-tier testing pyramid ensuring correctness, sec
 ### Core Testing Principles
 1. **Behavioral Testing Over Implementation Details**: Tests assert what users and domain services observe (rendering, user events, accessible semantics, API calls, state updates), not private component state or CSS styling details.
 2. **Exhaustive Branch & Error Coverage**: Every success, empty, invalid input, timeout/race condition, and network/database failure branch is explicitly exercised.
-3. **Strict Console & Secret Hygiene**: Unexpected `console.error` logs fail tests. Production client bundle is scanned to ensure zero leaks of service role keys or environment secrets.
-4. **Isolated Storage State**: `localStorage` is completely isolated and corrupted data recovery is asserted.
+3. **Public Mutation Security Boundary**: Browser client communicates with Edge Functions (`supabase.functions.invoke(...)`) with Service Role authority for public mutations (`trade_applications`, `contact_messages`, `newsletter_subscriptions`). Direct anonymous PostgreSQL INSERT is prohibited by RLS.
+4. **Strict Console & Secret Hygiene**: Unexpected `console.error` logs fail tests. Production client bundle is scanned to ensure zero leaks of service role keys or environment secrets.
+5. **Isolated Storage State**: `localStorage` is completely isolated and corrupted data recovery is asserted.
 
 ---
 
@@ -41,6 +43,7 @@ tests/
   unit/                      # Pure function, store, configuration, and entity repository tests
     shared/                  # cn, formatters, seo, supabase config, hooks, site-config
     entities/                # product, category, collection, content repositories & mutations
+    functions/               # edge functions security rules, allowlists, honeypot
     stores/                  # cart-store, wishlist-store
   component/                 # UI primitives and composite storefront component tests
     shared-ui/               # primitives, quantity-selector
@@ -68,7 +71,7 @@ tests/
     visual-regression.spec.ts# Layout alignment with approved design references 01-05
     security-resilience.spec.ts # Production bundle secret scan & offline degradation
 supabase/tests/
-  database_security.sql      # 28 pgTAP assertions checking RLS and anonymous restrictions
+  database_security.sql      # 30 pgTAP assertions checking RLS and direct anonymous mutation denials
 ```
 
 ---
@@ -77,11 +80,11 @@ supabase/tests/
 
 The database test suite (`supabase/tests/database_security.sql`) enforces Postgres Row-Level Security rules:
 
-1. **Table RLS Status**: All 6 public tables (`products`, `product_variants`, `trade_applications`, `contact_messages`, `newsletter_subscriptions`, `site_settings`) must have Row-Level Security enabled.
-2. **Catalog & Settings Read Protection**: Anonymous `anon` role can SELECT only `status = 'published'` products/variants and active site settings.
+1. **Table RLS Status**: All public tables (`products`, `product_variants`, `product_media`, `wholesale_price_tiers`, `site_settings`, `trade_applications`, `contact_messages`, `newsletter_subscriptions`) have Row-Level Security enabled.
+2. **Catalog & Settings Read Protection**: Anonymous `anon` role can SELECT only `status = 'published'` products/variants and active public site settings.
 3. **Catalog Write Prohibition**: Anonymous `anon` role CANNOT INSERT, UPDATE, or DELETE any catalog items or site settings.
-4. **Lead & Form Ingestion Security**: Anonymous role can INSERT into `trade_applications`, `contact_messages`, and `newsletter_subscriptions` but CANNOT SELECT, UPDATE, or DELETE records from other users.
-5. **Newsletter Idempotency**: Unique constraint on `newsletter_subscriptions(email)` prevents duplicate insertions.
+4. **Public Mutation Edge Function Boundary**: Direct anonymous INSERT into `trade_applications`, `contact_messages`, and `newsletter_subscriptions` is explicitly DENIED (SQL code 42501). Ingestion occurs strictly via validated Edge Functions executing with `service_role` authority.
+5. **Hidden Parent Isolation**: Draft parent products completely hide associated child variants and media from anonymous users.
 
 ---
 
@@ -96,7 +99,7 @@ The database test suite (`supabase/tests/database_security.sql`) enforces Postgr
 | **PDP** | Flagship Product | Gallery thumbs, color variant selection, out-of-stock badge behavior, accordions, add to cart, zoom modal with Escape. |
 | **Cart & Wishlist** | Persistence & State | Cart drawer, item quantity change, item removal, wishlist toggle, wishlist page display, corrupted `localStorage` graceful recovery. |
 | **Wholesale** | B2B & Application | Wholesale landing page, target audience tiles, volume discount tiers, Trade Application form submit with success confirmation. |
-| **Accessibility** | Axe-core & WCAG AA | Automated axe-core scan on all templates with zero critical/serious violations; modal dialog focus trapping & restoration. |
+| **Accessibility** | Axe-core & WCAG AA | Automated axe-core scan on all templates with zero critical/serious violations; modal dialog focus trapping & restoration (`useDialogFocusTrap`). |
 | **Responsive** | 9 Viewports | 320px, 375px, 390px, 430px, 768px, 1024px, 1280px, 1440px, 1920px verified with zero horizontal overflow (`scrollWidth <= clientWidth`). |
 | **Visual Regr.** | Approved References | Layout alignment against Reference 01 (Mega Menu), 02 (Editorial), 03 (Split), 04 (PDP), and 05 (Hybrid Hero). |
 | **Security** | Secrets & Resilience | Client JS bundle scan ensures 0 secret keys; offline/network error graceful degradation. |

@@ -23,6 +23,7 @@ interface SupabaseProductRow {
   short_description: string;
   description: string;
   status: 'draft' | 'published' | 'archived' | 'out_of_stock';
+  primary_category_id?: string | null;
   material: string;
   finish: string;
   origin_country: string;
@@ -112,7 +113,7 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
     }));
 
   const categoryIds = (row.product_categories || []).map((c) => c.category_id);
-  const primaryCategoryId = categoryIds[0] || undefined;
+  const primaryCategoryId = row.primary_category_id || categoryIds[0] || undefined;
 
   return {
     id: row.id,
@@ -191,7 +192,6 @@ export const productRepository = {
       } else if (options?.sortBy === 'newest') {
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       } else {
-        // default / recommended: featured first then newest
         filtered.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
 
@@ -208,6 +208,13 @@ export const productRepository = {
       throw new Error('Supabase client is not available in live mode.');
     }
 
+    const categorySelect = options?.categoryId
+      ? 'product_categories!inner (category_id)'
+      : 'product_categories (category_id)';
+    const collectionSelect = options?.collectionId
+      ? 'product_collections!inner (collection_id)'
+      : 'product_collections (collection_id)';
+
     let query = supabase
       .from('products')
       .select(`
@@ -215,8 +222,8 @@ export const productRepository = {
         product_variants (*),
         product_media (*),
         wholesale_price_tiers (*),
-        product_categories (category_id),
-        product_collections (collection_id)
+        ${categorySelect},
+        ${collectionSelect}
       `)
       .eq('status', 'published');
 
@@ -225,6 +232,12 @@ export const productRepository = {
     }
     if (options?.wholesaleOnly) {
       query = query.eq('wholesale_enabled', true);
+    }
+    if (options?.categoryId) {
+      query = query.eq('product_categories.category_id', options.categoryId);
+    }
+    if (options?.collectionId) {
+      query = query.eq('product_collections.collection_id', options.collectionId);
     }
     if (options?.isFeatured !== undefined) {
       query = query.eq('featured', options.isFeatured);
@@ -239,7 +252,7 @@ export const productRepository = {
     if (options?.searchQuery) {
       const sanitized = options.searchQuery.replace(/[%_'"\\]/g, '').trim();
       if (sanitized) {
-        query = query.or(`name.ilike.%${sanitized}%,material.ilike.%${sanitized}%`);
+        query = query.or(`name.ilike.%${sanitized}%,material.ilike.%${sanitized}%,finish.ilike.%${sanitized}%`);
       }
     }
 
@@ -261,11 +274,10 @@ export const productRepository = {
 
     let products = (data as unknown as SupabaseProductRow[]).map(mapRowToProduct);
 
-    if (options?.categoryId) {
-      products = products.filter((p) => p.categoryIds.includes(options.categoryId!));
-    }
-    if (options?.collectionId) {
-      products = products.filter((p) => p.collectionIds.includes(options.collectionId!));
+    if (options?.offset !== undefined || options?.limit !== undefined) {
+      const offset = options.offset || 0;
+      const limit = options.limit !== undefined ? options.limit : products.length;
+      products = products.slice(offset, offset + limit);
     }
 
     return products;
