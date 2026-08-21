@@ -156,7 +156,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             </Link>
 
             <Link
-              to="/products?filter=wishlist"
+              to="/wishlist"
               onClick={onClose}
               className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
             >

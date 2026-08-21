@@ -189,7 +189,7 @@ export function SiteNavbar() {
 
               {/* Wishlist Trigger with Badge */}
               <Link
-                to="/products?filter=wishlist"
+                to="/wishlist"
                 aria-label="Favoriler"
                 className="p-2 text-text-primary hover:text-text-secondary transition-colors relative hidden sm:inline-block"
               >

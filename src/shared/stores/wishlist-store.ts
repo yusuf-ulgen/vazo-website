@@ -78,5 +78,6 @@ export function useWishlist() {
     has: (id: string) => items.includes(id),
     toggle: (id: string) => wishlistStore.toggle(id),
     remove: (id: string) => wishlistStore.remove(id),
+    clear: () => wishlistStore.clear(),
   };
 }

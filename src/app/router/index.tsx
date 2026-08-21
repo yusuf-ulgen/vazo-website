@@ -21,6 +21,8 @@ import { WholesaleLandingPage } from '@/site/pages/wholesale/WholesaleLandingPag
 import { WholesaleProductsPage } from '@/site/pages/wholesale/WholesaleProductsPage';
 import { WholesaleHowItWorksPage } from '@/site/pages/wholesale/WholesaleHowItWorksPage';
 import { WholesaleApplyPage } from '@/site/pages/wholesale/WholesaleApplyPage';
+import { WishlistPage } from '@/site/pages/WishlistPage';
+import { CartPage } from '@/site/pages/CartPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 import { AdminLayout } from '@/admin/layouts/AdminLayout';
 import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
@@ -67,6 +69,14 @@ export const router = createBrowserRouter([
       {
         path: 'products/:slug',
         element: <ProductDetailPage />,
+      },
+      {
+        path: 'wishlist',
+        element: <WishlistPage />,
+      },
+      {
+        path: 'cart',
+        element: <CartPage />,
       },
       {
         path: 'wholesale',
