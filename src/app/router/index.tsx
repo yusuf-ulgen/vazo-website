@@ -16,6 +16,7 @@ import { CatalogPage } from '@/site/pages/CatalogPage';
 import { CategoryPage } from '@/site/pages/CategoryPage';
 import { CollectionsIndexPage } from '@/site/pages/CollectionsIndexPage';
 import { CollectionDetailPage } from '@/site/pages/CollectionDetailPage';
+import { ProductDetailPage } from '@/site/pages/ProductDetailPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 import { AdminLayout } from '@/admin/layouts/AdminLayout';
 import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
@@ -61,8 +62,9 @@ export const router = createBrowserRouter([
       },
       {
         path: 'products/:slug',
-        element: <HomePage />,
+        element: <ProductDetailPage />,
       },
+
       {
         path: 'wholesale',
         element: <HomePage />,
