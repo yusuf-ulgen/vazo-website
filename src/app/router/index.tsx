@@ -17,6 +17,10 @@ import { CategoryPage } from '@/site/pages/CategoryPage';
 import { CollectionsIndexPage } from '@/site/pages/CollectionsIndexPage';
 import { CollectionDetailPage } from '@/site/pages/CollectionDetailPage';
 import { ProductDetailPage } from '@/site/pages/ProductDetailPage';
+import { WholesaleLandingPage } from '@/site/pages/wholesale/WholesaleLandingPage';
+import { WholesaleProductsPage } from '@/site/pages/wholesale/WholesaleProductsPage';
+import { WholesaleHowItWorksPage } from '@/site/pages/wholesale/WholesaleHowItWorksPage';
+import { WholesaleApplyPage } from '@/site/pages/wholesale/WholesaleApplyPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 import { AdminLayout } from '@/admin/layouts/AdminLayout';
 import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
@@ -64,10 +68,21 @@ export const router = createBrowserRouter([
         path: 'products/:slug',
         element: <ProductDetailPage />,
       },
-
       {
         path: 'wholesale',
-        element: <HomePage />,
+        element: <WholesaleLandingPage />,
+      },
+      {
+        path: 'wholesale/products',
+        element: <WholesaleProductsPage />,
+      },
+      {
+        path: 'wholesale/how-it-works',
+        element: <WholesaleHowItWorksPage />,
+      },
+      {
+        path: 'wholesale/apply',
+        element: <WholesaleApplyPage />,
       },
       {
         path: 'about',
