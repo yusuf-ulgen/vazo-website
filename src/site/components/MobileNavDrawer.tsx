@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   X,
@@ -10,7 +10,8 @@ import {
   Search,
   Heart,
 } from 'lucide-react';
-import { perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
+import { contentRepository } from '@/entities/content/api/content-repository';
+import { MegaMenuData, perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 
@@ -23,20 +24,51 @@ export interface MobileNavDrawerProps {
 export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDrawerProps) {
   const [retailExpanded, setRetailExpanded] = useState(false);
   const [wholesaleExpanded, setWholesaleExpanded] = useState(false);
+  const [retailMenu, setRetailMenu] = useState<MegaMenuData>(perakendeMegaMenuData);
+  const [wholesaleMenu, setWholesaleMenu] = useState<MegaMenuData>(toptanMegaMenuData);
   const { count: wishlistCount } = useWishlist();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      contentRepository.getMegaMenu('retail_mega').then(setRetailMenu).catch(() => {});
+      contentRepository.getMegaMenu('wholesale_mega').then(setWholesaleMenu).catch(() => {});
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 lg:hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mobil Gezinme Menüsü"
+      className="fixed inset-0 z-50 lg:hidden"
+    >
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm transition-opacity duration-200"
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-surface-primary shadow-elevated flex flex-col justify-between overflow-y-auto z-50">
+      <div className="fixed inset-y-0 left-0 max-w-xs w-full bg-surface-primary shadow-elevated flex flex-col justify-between overflow-y-auto z-50 text-left">
         <div>
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border-default">
@@ -44,6 +76,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               {siteConfig.name}
             </span>
             <button
+              type="button"
               onClick={onClose}
               className="p-1.5 text-text-secondary hover:text-text-primary"
               aria-label="Menüyü Kapat"
@@ -55,6 +88,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
           {/* Quick Search Action */}
           <div className="p-4 border-b border-border-subtle">
             <button
+              type="button"
               onClick={() => {
                 onClose();
                 onOpenSearch?.();
@@ -63,7 +97,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             >
               <span className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-text-muted" />
-                <span>Ürün veya koleksiyon ara...</span>
+                <span>Ürün veya model ara...</span>
               </span>
               <span className="text-[10px] font-semibold text-text-muted uppercase">Ara</span>
             </button>
@@ -74,7 +108,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             <Link
               to="/new"
               onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span>Yeni Gelenler</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
@@ -85,7 +119,8 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               <button
                 type="button"
                 onClick={() => setRetailExpanded((p) => !p)}
-                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+                aria-expanded={retailExpanded}
+                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
               >
                 <span className="flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4" />
@@ -99,7 +134,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               </button>
               {retailExpanded && (
                 <div className="bg-surface-secondary px-4 py-2 space-y-2 text-xs">
-                  {perakendeMegaMenuData.groups.flatMap((g) => g.links).map((link) => (
+                  {retailMenu.groups.flatMap((g) => g.links).map((link) => (
                     <Link
                       key={link.label}
                       to={link.href}
@@ -118,7 +153,8 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               <button
                 type="button"
                 onClick={() => setWholesaleExpanded((p) => !p)}
-                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+                aria-expanded={wholesaleExpanded}
+                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
               >
                 <span className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
@@ -132,7 +168,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               </button>
               {wholesaleExpanded && (
                 <div className="bg-surface-muted px-4 py-2 space-y-2 text-xs">
-                  {toptanMegaMenuData.groups.flatMap((g) => g.links).map((link) => (
+                  {wholesaleMenu.groups.flatMap((g) => g.links).map((link) => (
                     <Link
                       key={link.label}
                       to={link.href}
@@ -149,7 +185,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             <Link
               to="/collections"
               onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span>Koleksiyonlar</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
@@ -158,7 +194,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             <Link
               to="/wishlist"
               onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span className="flex items-center gap-2">
                 <Heart className="w-4 h-4" />
@@ -174,7 +210,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             <Link
               to="/about"
               onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span>Hakkımızda & Zanaat</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
@@ -183,7 +219,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
             <Link
               to="/contact"
               onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle"
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span>İletişim & Showroom</span>
               <ChevronRight className="w-4 h-4 text-text-muted" />

@@ -9,6 +9,7 @@ export interface ProductFilterOptions {
   isNewArrival?: boolean;
   isBestseller?: boolean;
   wholesaleOnly?: boolean;
+  retailOnly?: boolean;
   searchQuery?: string;
   sortBy?: 'recommended' | 'price_asc' | 'price_desc' | 'newest';
 }
@@ -108,6 +109,9 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
       discountPercentage: t.discount_percentage ? Number(t.discount_percentage) : undefined,
     }));
 
+  const categoryIds = (row.product_categories || []).map((c) => c.category_id);
+  const primaryCategoryId = categoryIds[0] || undefined;
+
   return {
     id: row.id,
     slug: row.slug,
@@ -115,7 +119,9 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
     shortDescription: row.short_description,
     description: row.description,
     status: row.status,
-    categoryId: row.product_categories?.[0]?.category_id || '',
+    categoryIds,
+    primaryCategoryId,
+    categoryId: primaryCategoryId || '',
     collectionIds: (row.product_collections || []).map((c) => c.collection_id),
     material: row.material,
     finish: row.finish,
@@ -124,6 +130,7 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
     variants,
     retailPrice: Number(row.retail_price),
     compareAtPrice: row.compare_at_price ? Number(row.compare_at_price) : undefined,
+    retailEnabled: row.retail_enabled ?? true,
     wholesale: {
       isWholesaleEnabled: row.wholesale_enabled,
       minOrderQuantity: row.wholesale_moq,
@@ -144,8 +151,14 @@ export const productRepository = {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
       let filtered = [...mockProducts];
 
+      if (options?.retailOnly) {
+        filtered = filtered.filter((p) => p.retailEnabled !== false);
+      }
+      if (options?.wholesaleOnly) {
+        filtered = filtered.filter((p) => p.wholesale.isWholesaleEnabled);
+      }
       if (options?.categoryId) {
-        filtered = filtered.filter((p) => p.categoryId === options.categoryId);
+        filtered = filtered.filter((p) => p.categoryIds.includes(options.categoryId!));
       }
       if (options?.collectionId) {
         filtered = filtered.filter((p) => p.collectionIds.includes(options.collectionId!));
@@ -159,11 +172,8 @@ export const productRepository = {
       if (options?.isBestseller !== undefined) {
         filtered = filtered.filter((p) => p.isBestseller === options.isBestseller);
       }
-      if (options?.wholesaleOnly) {
-        filtered = filtered.filter((p) => p.wholesale.isWholesaleEnabled);
-      }
       if (options?.searchQuery) {
-        const q = options.searchQuery.toLowerCase();
+        const q = options.searchQuery.toLowerCase().trim();
         filtered = filtered.filter(
           (p) =>
             p.name.toLowerCase().includes(q) ||
@@ -178,13 +188,16 @@ export const productRepository = {
         filtered.sort((a, b) => b.retailPrice - a.retailPrice);
       } else if (options?.sortBy === 'newest') {
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      } else {
+        // default / recommended: featured first then newest
+        filtered.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
 
       return filtered;
     }
 
     if (!supabase) {
-      throw new Error('Supabase client is not available.');
+      throw new Error('Supabase client is not available in live mode.');
     }
 
     let query = supabase
@@ -199,6 +212,12 @@ export const productRepository = {
       `)
       .eq('status', 'published');
 
+    if (options?.retailOnly) {
+      query = query.eq('retail_enabled', true);
+    }
+    if (options?.wholesaleOnly) {
+      query = query.eq('wholesale_enabled', true);
+    }
     if (options?.isFeatured !== undefined) {
       query = query.eq('featured', options.isFeatured);
     }
@@ -209,16 +228,33 @@ export const productRepository = {
       query = query.eq('bestseller', options.isBestseller);
     }
 
+    if (options?.searchQuery) {
+      const sanitized = options.searchQuery.replace(/[%_'"\\]/g, '').trim();
+      if (sanitized) {
+        query = query.or(`name.ilike.%${sanitized}%,material.ilike.%${sanitized}%`);
+      }
+    }
+
+    if (options?.sortBy === 'price_asc') {
+      query = query.order('retail_price', { ascending: true });
+    } else if (options?.sortBy === 'price_desc') {
+      query = query.order('retail_price', { ascending: false });
+    } else if (options?.sortBy === 'newest') {
+      query = query.order('created_at', { ascending: false });
+    } else {
+      query = query.order('featured', { ascending: false }).order('created_at', { ascending: false });
+    }
+
     const { data, error } = await query;
     if (error) {
-      console.error('[productRepository.getProducts] Supabase error:', error);
-      throw new Error(`Failed to fetch products: ${error.message}`);
+      console.error('[productRepository.getProducts] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch products from Supabase: ${error.message}`);
     }
 
     let products = (data as unknown as SupabaseProductRow[]).map(mapRowToProduct);
 
     if (options?.categoryId) {
-      products = products.filter((p) => p.categoryId === options.categoryId);
+      products = products.filter((p) => p.categoryIds.includes(options.categoryId!));
     }
     if (options?.collectionId) {
       products = products.filter((p) => p.collectionIds.includes(options.collectionId!));
@@ -234,7 +270,7 @@ export const productRepository = {
     }
 
     if (!supabase) {
-      throw new Error('Supabase client is not available.');
+      throw new Error('Supabase client is not available in live mode.');
     }
 
     const { data, error } = await supabase
@@ -249,12 +285,11 @@ export const productRepository = {
       `)
       .eq('slug', slug)
       .eq('status', 'published')
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code === 'PGRST116') return null; // not found
-      console.error('[productRepository.getProductBySlug] Error:', error);
-      throw new Error(`Failed to fetch product by slug: ${error.message}`);
+      console.error('[productRepository.getProductBySlug] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch product by slug from Supabase: ${error.message}`);
     }
 
     return data ? mapRowToProduct(data as unknown as SupabaseProductRow) : null;

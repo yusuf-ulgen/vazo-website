@@ -53,6 +53,9 @@ export interface Product {
   shortDescription: string;
   description: string;
   status: ProductStatus;
+  categoryIds: string[];
+  primaryCategoryId?: string;
+  /** @deprecated use primaryCategoryId or categoryIds */
   categoryId: string;
   categoryName?: string;
   collectionIds: string[];
@@ -63,6 +66,7 @@ export interface Product {
   variants: ProductVariant[];
   retailPrice: number;
   compareAtPrice?: number;
+  retailEnabled: boolean;
   wholesale: WholesaleConfig;
   tags: string[];
   isFeatured: boolean;

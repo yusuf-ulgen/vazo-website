@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { ProductImage as ProductImageType } from '@/entities/product/types';
 
 export interface ProductGalleryProps {
@@ -25,6 +25,28 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
     setSelectedIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   };
 
+  useEffect(() => {
+    if (isZoomModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isZoomModalOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZoomModalOpen) {
+        setIsZoomModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomModalOpen]);
+
   return (
     <>
       <div className="flex flex-col-reverse lg:flex-row gap-4 sm:gap-6">
@@ -35,6 +57,7 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
               key={img.id || idx}
               type="button"
               onClick={() => setSelectedIndex(idx)}
+              aria-label={`${productName} görsel ${idx + 1}`}
               className={`relative w-16 h-20 sm:w-20 sm:h-24 shrink-0 overflow-hidden bg-surface-secondary border transition-all ${
                 selectedIndex === idx
                   ? 'border-text-primary ring-1 ring-text-primary'
@@ -95,9 +118,20 @@ export function ProductGallery({ media, productName }: ProductGalleryProps) {
       {/* Fullscreen Zoom Modal */}
       {isZoomModalOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Büyütülmüş Ürün Görseli"
           onClick={() => setIsZoomModalOpen(false)}
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
         >
+          <button
+            type="button"
+            onClick={() => setIsZoomModalOpen(false)}
+            aria-label="Kapat"
+            className="absolute top-4 right-4 text-white hover:opacity-80 p-2"
+          >
+            <X className="w-6 h-6" />
+          </button>
           <img
             src={currentImage?.url}
             alt={currentImage?.alt || productName}

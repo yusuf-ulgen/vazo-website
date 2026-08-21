@@ -9,7 +9,10 @@ function getInitialWishlist(): string[] {
   if (typeof window === 'undefined') return [];
   try {
     const saved = localStorage.getItem(WISHLIST_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
   } catch {
     return [];
   }
@@ -32,10 +35,12 @@ export const wishlistStore = {
   },
 
   has(productId: string): boolean {
+    if (!productId || typeof productId !== 'string') return false;
     return wishlistItems.includes(productId);
   },
 
   toggle(productId: string): boolean {
+    if (!productId || typeof productId !== 'string') return false;
     if (wishlistItems.includes(productId)) {
       wishlistItems = wishlistItems.filter((id) => id !== productId);
       notify();
@@ -48,6 +53,7 @@ export const wishlistStore = {
   },
 
   remove(productId: string) {
+    if (!productId || typeof productId !== 'string') return;
     wishlistItems = wishlistItems.filter((id) => id !== productId);
     notify();
   },
@@ -75,7 +81,7 @@ export function useWishlist() {
   return {
     items,
     count: items.length,
-    has: (id: string) => items.includes(id),
+    has: (id: string) => wishlistStore.has(id),
     toggle: (id: string) => wishlistStore.toggle(id),
     remove: (id: string) => wishlistStore.remove(id),
     clear: () => wishlistStore.clear(),

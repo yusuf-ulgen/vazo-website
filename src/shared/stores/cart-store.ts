@@ -12,6 +12,7 @@ export interface CartItem {
   sku: string;
   retailPrice: number;
   quantity: number;
+  maxStock?: number;
   imageUrl?: string;
 }
 
@@ -20,11 +21,51 @@ const CART_STORAGE_KEY = 'vazo_cart_items';
 type CartListener = (items: CartItem[]) => void;
 const listeners = new Set<CartListener>();
 
+function sanitizeCartItem(raw: unknown): CartItem | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const item = raw as Record<string, unknown>;
+
+  if (
+    typeof item.id !== 'string' ||
+    typeof item.productId !== 'string' ||
+    typeof item.productSlug !== 'string' ||
+    typeof item.productName !== 'string' ||
+    typeof item.retailPrice !== 'number' ||
+    !Number.isFinite(item.retailPrice) ||
+    item.retailPrice < 0 ||
+    typeof item.quantity !== 'number' ||
+    !Number.isFinite(item.quantity) ||
+    item.quantity <= 0
+  ) {
+    return null;
+  }
+
+  return {
+    id: item.id,
+    productId: item.productId,
+    productSlug: item.productSlug,
+    productName: item.productName,
+    variantId: typeof item.variantId === 'string' ? item.variantId : '',
+    variantName: typeof item.variantName === 'string' ? item.variantName : 'Standart',
+    colorName: typeof item.colorName === 'string' ? item.colorName : '',
+    sku: typeof item.sku === 'string' ? item.sku : item.productSlug,
+    retailPrice: item.retailPrice,
+    quantity: Math.floor(item.quantity),
+    maxStock: typeof item.maxStock === 'number' && Number.isFinite(item.maxStock) ? item.maxStock : undefined,
+    imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : undefined,
+  };
+}
+
 function getInitialCart(): CartItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const saved = localStorage.getItem(CART_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+
+    const sanitized = parsed.map(sanitizeCartItem).filter((item): item is CartItem => item !== null);
+    return sanitized;
   } catch {
     return [];
   }
@@ -47,18 +88,30 @@ export const cartStore = {
   },
 
   addItem(product: Product, variant?: ProductVariant, quantity = 1) {
-    const chosenVariant = variant || product.variants[0];
-    const itemId = `${product.id}_${chosenVariant?.id || 'default'}`;
+    if (product.retailEnabled === false) return;
 
+    const chosenVariant = variant || product.variants[0];
+    if (chosenVariant && chosenVariant.isAvailableForRetail === false) return;
+
+    const availableStock = chosenVariant ? (chosenVariant.stockQuantity ?? 0) : 0;
+    if (availableStock <= 0) return;
+
+    const rawQty = Math.floor(Number(quantity) || 1);
+    if (!Number.isFinite(rawQty) || rawQty <= 0) return;
+
+    const itemId = `${product.id}_${chosenVariant?.id || 'default'}`;
     const existingIndex = cartItems.findIndex((item) => item.id === itemId);
 
     if (existingIndex > -1) {
       const existing = cartItems[existingIndex]!;
+      const newQuantity = Math.min(availableStock, existing.quantity + rawQty);
       cartItems[existingIndex] = {
         ...existing,
-        quantity: existing.quantity + quantity,
+        quantity: newQuantity,
+        maxStock: availableStock,
       };
     } else {
+      const initialQuantity = Math.min(availableStock, rawQty);
       cartItems.push({
         id: itemId,
         productId: product.id,
@@ -68,8 +121,9 @@ export const cartStore = {
         variantName: chosenVariant?.name || 'Standart',
         colorName: chosenVariant?.colorName || '',
         sku: chosenVariant?.sku || product.slug,
-        retailPrice: chosenVariant?.retailPrice || product.retailPrice,
-        quantity,
+        retailPrice: chosenVariant?.retailPrice ?? product.retailPrice,
+        quantity: initialQuantity,
+        maxStock: availableStock,
         imageUrl: chosenVariant?.imageUrl || product.images[0]?.url,
       });
     }
@@ -78,14 +132,17 @@ export const cartStore = {
   },
 
   updateQuantity(itemId: string, quantity: number) {
-    if (quantity <= 0) {
+    const rawQty = Math.floor(Number(quantity));
+    if (!Number.isFinite(rawQty) || rawQty <= 0) {
       this.removeItem(itemId);
       return;
     }
 
-    cartItems = cartItems.map((item) =>
-      item.id === itemId ? { ...item, quantity } : item
-    );
+    cartItems = cartItems.map((item) => {
+      if (item.id !== itemId) return item;
+      const targetQty = item.maxStock ? Math.min(item.maxStock, rawQty) : rawQty;
+      return { ...item, quantity: targetQty };
+    });
     notify();
   },
 

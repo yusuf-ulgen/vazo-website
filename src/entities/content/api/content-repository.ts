@@ -5,6 +5,11 @@ import {
 } from '../types';
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
 import { siteConfig } from '@/shared/config/site-config';
+import {
+  MegaMenuData,
+  perakendeMegaMenuData,
+  toptanMegaMenuData,
+} from '@/shared/mocks/navigation';
 
 export interface WholesaleBenefit {
   id: string;
@@ -24,7 +29,20 @@ export interface TradeApplicationPayload {
   phone: string;
   website?: string;
   estimatedMonthlyVolume?: string;
+  customerMessage?: string;
   notes?: string;
+}
+
+export interface ContactMessagePayload {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
+export interface NewsletterSubscriptionPayload {
+  email: string;
+  source?: string;
 }
 
 const mockAnnouncement: AnnouncementBarConfig = {
@@ -106,68 +124,74 @@ const mockWholesaleBenefits: WholesaleBenefit[] = [
 ];
 
 export const contentRepository = {
-  async getAnnouncement(): Promise<AnnouncementBarConfig> {
+  async getAnnouncement(): Promise<AnnouncementBarConfig | null> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
       return mockAnnouncement;
     }
 
-    if (!supabase) return mockAnnouncement;
-
-    try {
-      const { data, error } = await supabase
-        .from('announcement_bars')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (error || !data) return mockAnnouncement;
-
-      return {
-        isEnabled: data.active,
-        message: data.message,
-        linkText: data.link_text || undefined,
-        linkUrl: data.link_url || undefined,
-        backgroundColor: data.background_color || undefined,
-        textColor: data.text_color || undefined,
-      };
-    } catch {
-      return mockAnnouncement;
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
     }
+
+    const { data, error } = await supabase
+      .from('announcement_bars')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[contentRepository.getAnnouncement] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch announcement from Supabase: ${error.message}`);
+    }
+
+    if (!data) return null;
+
+    return {
+      isEnabled: data.active,
+      message: data.message,
+      linkText: data.link_text || undefined,
+      linkUrl: data.link_url || undefined,
+      backgroundColor: data.background_color || undefined,
+      textColor: data.text_color || undefined,
+    };
   },
 
-  async getHero(): Promise<HeroBannerConfig> {
+  async getHero(): Promise<HeroBannerConfig | null> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
       return mockHero;
     }
 
-    if (!supabase) return mockHero;
-
-    try {
-      const { data, error } = await supabase
-        .from('hero_slides')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (error || !data) return mockHero;
-
-      return {
-        title: data.title,
-        subtitle: data.subtitle || '',
-        description: data.description,
-        imageUrl: data.image_url,
-        primaryCtaText: data.primary_cta_text,
-        primaryCtaUrl: data.primary_cta_url,
-        secondaryCtaText: data.secondary_cta_text || '',
-        secondaryCtaUrl: data.secondary_cta_url || '',
-      };
-    } catch {
-      return mockHero;
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
     }
+
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[contentRepository.getHero] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch hero from Supabase: ${error.message}`);
+    }
+
+    if (!data) return null;
+
+    return {
+      title: data.title,
+      subtitle: data.subtitle || '',
+      description: data.description,
+      imageUrl: data.image_url,
+      primaryCtaText: data.primary_cta_text,
+      primaryCtaUrl: data.primary_cta_url,
+      secondaryCtaText: data.secondary_cta_text || '',
+      secondaryCtaUrl: data.secondary_cta_url || '',
+    };
   },
 
   async getEditorialSections(): Promise<EditorialSectionConfig[]> {
@@ -175,30 +199,31 @@ export const contentRepository = {
       return mockEditorialSections;
     }
 
-    if (!supabase) return mockEditorialSections;
-
-    try {
-      const { data, error } = await supabase
-        .from('editorial_sections')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
-
-      if (error || !data || data.length === 0) return mockEditorialSections;
-
-      return data.map((row) => ({
-        id: row.id,
-        eyebrow: row.eyebrow,
-        title: row.title,
-        description: row.description,
-        imageUrl: row.image_url,
-        imagePosition: (row.image_position as 'left' | 'right') || 'left',
-        ctaText: row.cta_text || '',
-        ctaUrl: row.cta_url || '',
-      }));
-    } catch {
-      return mockEditorialSections;
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
     }
+
+    const { data, error } = await supabase
+      .from('editorial_sections')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('[contentRepository.getEditorialSections] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch editorial sections from Supabase: ${error.message}`);
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      eyebrow: row.eyebrow,
+      title: row.title,
+      description: row.description,
+      imageUrl: row.image_url,
+      imagePosition: (row.image_position as 'left' | 'right') || 'left',
+      ctaText: row.cta_text || '',
+      ctaUrl: row.cta_url || '',
+    }));
   },
 
   async getWholesaleBenefits(): Promise<WholesaleBenefit[]> {
@@ -206,65 +231,189 @@ export const contentRepository = {
       return mockWholesaleBenefits;
     }
 
-    if (!supabase) return mockWholesaleBenefits;
-
-    try {
-      const { data, error } = await supabase
-        .from('wholesale_benefits')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
-
-      if (error || !data || data.length === 0) return mockWholesaleBenefits;
-
-      return data.map((row) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        iconName: row.icon_name,
-        order: row.sort_order,
-      }));
-    } catch {
-      return mockWholesaleBenefits;
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
     }
+
+    const { data, error } = await supabase
+      .from('wholesale_benefits')
+      .select('*')
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('[contentRepository.getWholesaleBenefits] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch wholesale benefits from Supabase: ${error.message}`);
+    }
+
+    return (data || []).map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      iconName: row.icon_name,
+      order: row.sort_order,
+    }));
+  },
+
+  async getMegaMenu(menuType: 'retail_mega' | 'wholesale_mega'): Promise<MegaMenuData> {
+    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      return menuType === 'retail_mega' ? perakendeMegaMenuData : toptanMegaMenuData;
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
+    }
+
+    const { data, error } = await supabase
+      .from('menu_groups')
+      .select(`
+        *,
+        menu_items (*)
+      `)
+      .eq('menu_type', menuType)
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('[contentRepository.getMegaMenu] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch navigation menu from Supabase: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return menuType === 'retail_mega' ? perakendeMegaMenuData : toptanMegaMenuData;
+    }
+
+    const firstGroupWithPromo = data.find((g) => g.promo_title);
+
+    const groups = data.map((g) => ({
+      title: g.title,
+      links: (g.menu_items || [])
+        .filter((item: { active: boolean }) => item.active)
+        .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+        .map((item: { label: string; href: string; is_new: boolean; is_popular: boolean }) => ({
+          label: item.label,
+          href: item.href,
+          isNew: item.is_new,
+          isPopular: item.is_popular,
+        })),
+    }));
+
+    const promo = firstGroupWithPromo
+      ? {
+          title: firstGroupWithPromo.promo_title || '',
+          subtitle: firstGroupWithPromo.promo_subtitle || '',
+          imageUrl: firstGroupWithPromo.promo_image_url || '',
+          ctaText: firstGroupWithPromo.promo_cta_text || 'Keşfet',
+          ctaHref: firstGroupWithPromo.promo_cta_url || '/products',
+        }
+      : menuType === 'retail_mega'
+      ? perakendeMegaMenuData.promo
+      : toptanMegaMenuData.promo;
+
+    return { groups, promo };
   },
 
   async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {
     if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-      // Simulate successful submission in mock mode
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      await new Promise((resolve) => setTimeout(resolve, 400));
       return {
         success: true,
-        message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz 24 saat içinde sizinle iletişime geçecektir.',
+        message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
       };
     }
 
     if (!supabase) {
-      throw new Error('Supabase client is not available.');
+      throw new Error('Supabase client is not available in live mode.');
     }
 
     const { error } = await supabase.from('trade_applications').insert({
-      company_name: payload.companyName,
-      tax_number: payload.taxNumber,
-      tax_office: payload.taxOffice,
-      business_type: payload.businessType,
-      contact_person: payload.contactPerson,
-      email: payload.email,
-      phone: payload.phone,
-      website: payload.website || null,
-      estimated_monthly_volume: payload.estimatedMonthlyVolume || null,
-      notes: payload.notes || null,
+      company_name: payload.companyName.trim(),
+      tax_number: payload.taxNumber.trim(),
+      tax_office: payload.taxOffice.trim(),
+      business_type: payload.businessType.trim(),
+      contact_person: payload.contactPerson.trim(),
+      email: payload.email.trim().toLowerCase(),
+      phone: payload.phone.trim(),
+      website: payload.website ? payload.website.trim() : null,
+      estimated_monthly_volume: payload.estimatedMonthlyVolume ? payload.estimatedMonthlyVolume.trim() : null,
+      customer_message: (payload.customerMessage || payload.notes || '').trim() || null,
       status: 'pending',
+      reviewed_at: null,
+      admin_notes: null,
     });
 
     if (error) {
-      console.error('[contentRepository.submitTradeApplication] Error:', error);
+      console.error('[contentRepository.submitTradeApplication] Error:', error.message);
       throw new Error(`Başvuru iletilemedi: ${error.message}`);
     }
 
     return {
       success: true,
       message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
+    };
+  },
+
+  async submitContactMessage(payload: ContactMessagePayload): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return {
+        success: true,
+        message: 'Mesajınız stüdyo ekibimize iletilmiştir.',
+      };
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
+    }
+
+    const { error } = await supabase.from('contact_messages').insert({
+      name: payload.name.trim(),
+      email: payload.email.trim().toLowerCase(),
+      subject: payload.subject.trim(),
+      message: payload.message.trim(),
+      status: 'new',
+      reviewed_at: null,
+      admin_notes: null,
+    });
+
+    if (error) {
+      console.error('[contentRepository.submitContactMessage] Error:', error.message);
+      throw new Error(`Mesaj iletilemedi: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      message: 'Mesajınız stüdyo ekibimize iletilmiştir.',
+    };
+  },
+
+  async subscribeNewsletter(payload: NewsletterSubscriptionPayload): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return {
+        success: true,
+        message: 'Bülten kaydınız tamamlandı.',
+      };
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client is not available in live mode.');
+    }
+
+    const { error } = await supabase.from('newsletter_subscriptions').insert({
+      normalized_email: payload.email.trim().toLowerCase(),
+      source: (payload.source || 'storefront').slice(0, 50),
+      status: 'active',
+    });
+
+    if (error && error.code !== '23505') {
+      console.error('[contentRepository.subscribeNewsletter] Error:', error.message);
+      throw new Error(`Bülten kaydı oluşturulamadı: ${error.message}`);
+    }
+
+    return {
+      success: true,
+      message: 'Bülten kaydınız tamamlandı.',
     };
   },
 };

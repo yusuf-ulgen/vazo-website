@@ -37,7 +37,7 @@ export function WholesaleHowItWorksPage() {
       title: 'Sigortalı Paletli Sevkiyat',
       description:
         'Ürünler darbe sönümleyici özel kesim süngerlerle sandıklanır, paletlenir ve şantiye ya da mağaza adresinize tam kasko sigortalı teslim edilir.',
-      subPoints: ['Yurtiçi Kargo / Özel Ambar lojistik takibi', 'Yurt dışı projeler için ihracat ve gümrük belgeleri'],
+      subPoints: ['Anlaşmalı kargo ve özel ambar lojistik takibi', 'Yurt dışı projeler için ihracat ve gümrük belgeleri'],
     },
   ];
 

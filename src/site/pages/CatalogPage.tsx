@@ -8,8 +8,13 @@ import { Category } from '@/entities/category/types';
 import { Container } from '@/shared/ui/Container';
 import { ProductCard } from '@/site/components/ProductCard';
 import { useWishlist } from '@/shared/stores/wishlist-store';
+import { useSEO } from '@/shared/lib/seo';
 
-export function CatalogPage() {
+export interface CatalogPageProps {
+  mode?: 'all' | 'new' | 'bestseller';
+}
+
+export function CatalogPage({ mode = 'all' }: CatalogPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { items: wishlistIds } = useWishlist();
 
@@ -18,12 +23,14 @@ export function CatalogPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-
   // Active filters from URL
   const selectedCategory = searchParams.get('category') || '';
   const selectedMaterial = searchParams.get('material') || '';
   const selectedSort = (searchParams.get('sort') || 'recommended') as ProductFilterOptions['sortBy'];
   const filterParam = searchParams.get('filter'); // 'new', 'bestseller', 'wishlist'
+
+  const isNewArrival = mode === 'new' || filterParam === 'new';
+  const isBestseller = mode === 'bestseller' || filterParam === 'bestseller';
 
   const updateParam = (key: string, value: string | null) => {
     const newParams = new URLSearchParams(searchParams);
@@ -39,6 +46,22 @@ export function CatalogPage() {
     setSearchParams(new URLSearchParams());
   };
 
+  const getPageTitle = () => {
+    if (filterParam === 'wishlist') return 'Favorilerim';
+    if (isNewArrival) return 'Yeni Gelenler';
+    if (isBestseller) return 'Çok Satan Vazo Modelleri';
+    if (selectedCategory) {
+      const cat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+      if (cat) return cat.name;
+    }
+    return 'Tüm Vazo Koleksiyonu';
+  };
+
+  useSEO({
+    title: getPageTitle(),
+    description: 'El işçiliği seramik, stoneware ve mineral mat heykelsi vazo koleksiyonu.',
+  });
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -46,9 +69,10 @@ export function CatalogPage() {
 
     Promise.all([
       productRepository.getProducts({
+        retailOnly: true,
         categoryId: selectedCategory || undefined,
-        isNewArrival: filterParam === 'new' ? true : undefined,
-        isBestseller: filterParam === 'bestseller' ? true : undefined,
+        isNewArrival: isNewArrival ? true : undefined,
+        isBestseller: isBestseller ? true : undefined,
         sortBy: selectedSort,
       }),
       categoryRepository.getCategories(),
@@ -68,7 +92,7 @@ export function CatalogPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedCategory, filterParam, selectedSort]);
+  }, [selectedCategory, isNewArrival, isBestseller, selectedSort]);
 
   // Client-side additional filtering (materials, wishlist)
   const filteredProducts = useMemo(() => {
@@ -89,17 +113,6 @@ export function CatalogPage() {
 
   // Unique materials for filter dropdown
   const materials = ['Stoneware', 'Seramik', 'Doğal Bazalt Kili', 'Doğal Kırmızı Kil', 'Porselen'];
-
-  const getPageTitle = () => {
-    if (filterParam === 'wishlist') return 'Favorilerim';
-    if (filterParam === 'new') return 'Yeni Gelenler';
-    if (filterParam === 'bestseller') return 'Çok Satan Vazo Modelleri';
-    if (selectedCategory) {
-      const cat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
-      if (cat) return cat.name;
-    }
-    return 'Tüm Vazo Koleksiyonu';
-  };
 
   return (
     <div className="w-full bg-canvas-default min-h-screen py-10 md:py-16">
@@ -192,7 +205,6 @@ export function CatalogPage() {
 
         {/* Content State Handling */}
         {loading ? (
-          /* Loading Skeleton */
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="space-y-3 animate-pulse">
@@ -203,7 +215,6 @@ export function CatalogPage() {
             ))}
           </div>
         ) : error ? (
-          /* Error State */
           <div className="py-20 text-center space-y-4 max-w-md mx-auto">
             <p className="font-display text-xl text-feedback-danger">Katalog Yüklenemedi</p>
             <p className="text-xs text-text-secondary">{error}</p>
@@ -216,7 +227,6 @@ export function CatalogPage() {
             </button>
           </div>
         ) : filteredProducts.length === 0 ? (
-          /* Empty State */
           <div className="py-20 text-center space-y-4 max-w-md mx-auto">
             <div className="w-12 h-12 bg-surface-muted mx-auto flex items-center justify-center text-text-muted">
               <Sparkles className="w-6 h-6" />
@@ -234,7 +244,6 @@ export function CatalogPage() {
             </button>
           </div>
         ) : (
-          /* 4-Column Product Grid */
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
             {filteredProducts.map((product) => (
               <ProductCard

@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { MapPin, Mail, Phone, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { MapPin, Mail, Phone, Clock, ArrowRight, CheckCircle2, AlertCircle, RefreshCcw } from 'lucide-react';
 import { siteConfig } from '@/shared/config/site-config';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
+import { contentRepository } from '@/entities/content/api/content-repository';
 
 export function ContactPage() {
   useSEO({
@@ -14,12 +15,31 @@ export function ContactPage() {
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('Genel Bilgi & Sipariş');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !message) return;
-    setIsSent(true);
+    if (!name.trim() || !email.trim() || !message.trim()) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await contentRepository.submitContactMessage({
+        name: name.trim(),
+        email: email.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+      });
+      setIsSent(true);
+    } catch (err: unknown) {
+      const error = err as Error;
+      setErrorMessage(error.message || 'Mesajınız iletilirken bir hata oluştu. Lütfen tekrar deneyiniz.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -52,7 +72,10 @@ export function ContactPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setIsSent(false)}
+                  onClick={() => {
+                    setIsSent(false);
+                    setMessage('');
+                  }}
                   className="mt-4 inline-flex items-center gap-2 bg-action-primary text-action-primary-text px-6 py-3 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800"
                 >
                   Yeni Mesaj Gönder
@@ -63,6 +86,13 @@ export function ContactPage() {
                 onSubmit={handleSubmit}
                 className="p-6 sm:p-10 bg-surface-secondary border border-border-subtle space-y-5"
               >
+                {errorMessage && (
+                  <div className="p-3.5 bg-feedback-danger/10 border border-feedback-danger text-feedback-danger text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1.5">
                     <label className="font-medium text-text-primary">Adınız Soyadınız *</label>
@@ -118,10 +148,20 @@ export function ContactPage() {
 
                 <button
                   type="submit"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs disabled:opacity-60"
                 >
-                  <span>Mesajı Gönder</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCcw className="w-4 h-4 animate-spin" />
+                      <span>Gönderiliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Mesajı Gönder</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </form>
             )}

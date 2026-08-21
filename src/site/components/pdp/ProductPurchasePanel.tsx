@@ -26,19 +26,16 @@ export function ProductPurchasePanel({
   const isFavorite = has(product.id);
 
   const activeVariant = selectedVariant || product.variants[0];
-  const activePrice = activeVariant?.retailPrice || product.retailPrice;
-  const comparePrice = activeVariant?.compareAtPrice || product.compareAtPrice;
+  const activePrice = activeVariant?.retailPrice ?? product.retailPrice;
+  const comparePrice = activeVariant?.compareAtPrice ?? product.compareAtPrice;
 
-  // Swatch colors with default fallback palette
-  const variants = product.variants.length > 0
-    ? product.variants
-    : [
-        { id: '1', sku: product.slug, name: 'Tebeşir Beyazı', colorName: 'Tebeşir Beyazı', colorHex: '#FAF9F6', finish: 'matte' as const, dimensions: { heightCm: 28, diameterCm: 18, weightKg: 1.8 }, retailPrice: product.retailPrice, stockQuantity: 20, isAvailableForRetail: true, isAvailableForWholesale: true },
-        { id: '2', sku: `${product.slug}-snd`, name: 'Kum Beji', colorName: 'Kum Beji', colorHex: '#E4D9C0', finish: 'matte' as const, dimensions: { heightCm: 28, diameterCm: 18, weightKg: 1.8 }, retailPrice: product.retailPrice, stockQuantity: 15, isAvailableForRetail: true, isAvailableForWholesale: true },
-        { id: '3', sku: `${product.slug}-chr`, name: 'Antrasit Taş', colorName: 'Antrasit Taş', colorHex: '#2D2923', finish: 'textured' as const, dimensions: { heightCm: 28, diameterCm: 18, weightKg: 1.8 }, retailPrice: product.retailPrice, stockQuantity: 10, isAvailableForRetail: true, isAvailableForWholesale: true },
-      ];
+  const variants = product.variants;
+  const stock = activeVariant ? (activeVariant.stockQuantity ?? 0) : 0;
+  const isOutOfStock = stock <= 0;
+  const isRetailAvailable = (product.retailEnabled ?? true) && (activeVariant?.isAvailableForRetail ?? true);
 
   const handleAddToCart = () => {
+    if (isOutOfStock || !isRetailAvailable) return;
     addItem(product, activeVariant, quantity);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2500);
@@ -46,7 +43,7 @@ export function ProductPurchasePanel({
 
   return (
     <div className="space-y-6 text-left">
-      {/* Brand & Title (Reference 04) */}
+      {/* Brand & Title */}
       <div className="space-y-1.5 border-b border-border-subtle pb-4">
         <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
           Vazo Studio
@@ -69,49 +66,55 @@ export function ProductPurchasePanel({
             </span>
           )}
           <span className="text-xs text-text-muted font-normal">
-            (Vergi / KDV Dahil)
+            (KDV Dahil)
           </span>
         </div>
       </div>
 
-      {/* Color Swatches (Reference 04) */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold uppercase tracking-wider text-text-primary">
-            Renk: <span className="font-normal text-text-secondary">{activeVariant?.colorName || 'Standart'}</span>
-          </span>
-        </div>
+      {/* Color Swatches (if variants exist) */}
+      {variants.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold uppercase tracking-wider text-text-primary">
+              Renk:{' '}
+              <span className="font-normal text-text-secondary">
+                {activeVariant?.colorName || 'Standart'}
+              </span>
+            </span>
+          </div>
 
-        <div className="flex items-center gap-2.5">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => onSelectVariant(v as ProductVariant)}
-              title={v.colorName}
-              className={`w-7 h-7 rounded-full transition-all relative flex items-center justify-center ${
-                activeVariant?.id === v.id
-                  ? 'ring-2 ring-text-primary ring-offset-2 scale-110'
-                  : 'ring-1 ring-border-strong opacity-80 hover:opacity-100'
-              }`}
-              style={{ backgroundColor: v.colorHex || '#E5E0D8' }}
-            />
-          ))}
+          <div className="flex items-center gap-2.5">
+            {variants.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                onClick={() => onSelectVariant(v)}
+                title={v.colorName}
+                aria-label={`Renk: ${v.colorName}`}
+                className={`w-7 h-7 rounded-full transition-all relative flex items-center justify-center ${
+                  activeVariant?.id === v.id
+                    ? 'ring-2 ring-text-primary ring-offset-2 scale-110'
+                    : 'ring-1 ring-border-strong opacity-80 hover:opacity-100'
+                }`}
+                style={{ backgroundColor: v.colorHex || '#E5E0D8' }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Material & Dimension Specs (Reference 04) */}
+      {/* Material & Dimension Specs */}
       <div className="space-y-1.5 py-3 border-y border-border-subtle text-xs font-sans">
         <p className="text-text-secondary">
           <strong className="font-medium text-text-primary uppercase tracking-wide">Malzeme:</strong>{' '}
-          {product.material}
+          {product.material} ({product.finish})
         </p>
-        <p className="text-text-secondary">
-          <strong className="font-medium text-text-primary uppercase tracking-wide">Ölçüler:</strong>{' '}
-          {activeVariant?.dimensions?.heightCm
-            ? `Yükseklik: ${activeVariant.dimensions.heightCm} cm • Çap: ${activeVariant.dimensions.diameterCm || 16} cm • Ağırlık: ${activeVariant.dimensions.weightKg || 1.8} kg`
-            : 'Yükseklik: 28 cm • Genişlik: 18 cm • Ağız Çapı: 6 cm'}
-        </p>
+        {activeVariant?.dimensions && (
+          <p className="text-text-secondary">
+            <strong className="font-medium text-text-primary uppercase tracking-wide">Ölçüler:</strong>{' '}
+            {`Yükseklik: ${activeVariant.dimensions.heightCm} cm • Çap: ${activeVariant.dimensions.diameterCm} cm • Ağırlık: ${activeVariant.dimensions.weightKg} kg`}
+          </p>
+        )}
       </div>
 
       {/* Quantity & Stock Indicator */}
@@ -121,26 +124,49 @@ export function ProductPurchasePanel({
         </span>
         <div className="flex items-center gap-4">
           <QuantitySelector
-            quantity={quantity}
+            quantity={isOutOfStock ? 0 : quantity}
             onChange={(q) => setQuantity(q)}
-            min={1}
-            max={activeVariant?.stockQuantity || 50}
+            min={isOutOfStock ? 0 : 1}
+            max={isOutOfStock ? 0 : stock}
+            disabled={isOutOfStock || !isRetailAvailable}
           />
-          <span className="text-xs text-feedback-success font-medium flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-feedback-success inline-block" />
-            Stokta var (Hızlı Kargo)
-          </span>
+          {isOutOfStock ? (
+            <span className="text-xs text-feedback-danger font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-feedback-danger inline-block" />
+              Tükendi (Stokta Yok)
+            </span>
+          ) : !isRetailAvailable ? (
+            <span className="text-xs text-text-muted font-medium">
+              Yalnızca Toptan Satış
+            </span>
+          ) : (
+            <span className="text-xs text-feedback-success font-medium flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-feedback-success inline-block" />
+              Stokta Mevcut ({stock} adet)
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Add to Cart & Wishlist Buttons (Reference 04) */}
+      {/* Add to Cart & Wishlist Buttons */}
       <div className="flex gap-3 pt-2">
         <button
           type="button"
+          disabled={isOutOfStock || !isRetailAvailable}
           onClick={handleAddToCart}
-          className="flex-1 bg-action-primary text-action-primary-text py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
+          className={`flex-1 py-4 px-6 text-xs uppercase font-semibold tracking-wider transition-colors shadow-xs ${
+            isOutOfStock || !isRetailAvailable
+              ? 'bg-surface-muted text-text-muted cursor-not-allowed'
+              : 'bg-action-primary text-action-primary-text hover:bg-neutral-800'
+          }`}
         >
-          {addedNotice ? 'Sepete Eklendi ✓' : 'Sepete Ekle'}
+          {isOutOfStock
+            ? 'Stokta Yok'
+            : !isRetailAvailable
+            ? 'Perakende Kapalı'
+            : addedNotice
+            ? 'Sepete Eklendi ✓'
+            : 'Sepete Ekle'}
         </button>
 
         <button
@@ -155,29 +181,31 @@ export function ProductPurchasePanel({
         </button>
       </div>
 
-      {/* Trust Strip (Reference 04) */}
+      {/* Trust Strip */}
       <div className="grid grid-cols-3 gap-2 py-4 border-t border-border-subtle text-center text-[11px] font-sans text-text-secondary">
         <div className="flex flex-col items-center space-y-1">
           <Truck className="w-4 h-4 text-text-primary" />
-          <span>Ücretsiz Kargo<br/><span className="text-[10px] text-text-muted">5.000 TL üzeri</span></span>
+          <span>Özenli Paketleme<br/><span className="text-[10px] text-text-muted">Darbeye Dayanıklı</span></span>
         </div>
         <div className="flex flex-col items-center space-y-1">
           <ShieldCheck className="w-4 h-4 text-text-primary" />
-          <span>Güvenli Ödeme<br/><span className="text-[10px] text-text-muted">256-bit SSL</span></span>
+          <span>El İşçiliği Garanti<br/><span className="text-[10px] text-text-muted">1250°C Stoneware</span></span>
         </div>
         <div className="flex flex-col items-center space-y-1">
           <RefreshCw className="w-4 h-4 text-text-primary" />
-          <span>Kolay İade<br/><span className="text-[10px] text-text-muted">14 gün içinde</span></span>
+          <span>İade & Değişim<br/><span className="text-[10px] text-text-muted">14 Gün İçinde</span></span>
         </div>
       </div>
 
-      {/* Wholesale Tier Module (Reference 04) */}
-      <ProductWholesaleTiers
-        tiers={product.wholesale.tiers}
-        productName={product.name}
-        retailPrice={activePrice}
-        productSlug={product.slug}
-      />
+      {/* Wholesale Tier Module */}
+      {product.wholesale.isWholesaleEnabled && product.wholesale.tiers.length > 0 && (
+        <ProductWholesaleTiers
+          tiers={product.wholesale.tiers}
+          productName={product.name}
+          retailPrice={activePrice}
+          productSlug={product.slug}
+        />
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
   Package,
@@ -30,9 +31,23 @@ import { ShippingReturnsPolicyPage } from '@/site/pages/policies/ShippingReturns
 import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPage';
 import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
-import { AdminLayout } from '@/admin/layouts/AdminLayout';
-import { AdminDashboardPage } from '@/admin/pages/AdminDashboardPage';
-import { AdminModuleScaffoldPage } from '@/admin/pages/AdminModuleScaffoldPage';
+
+// Admin Code Splitting (Lazy-loaded to keep public initial bundle clean)
+const AdminLayout = React.lazy(() =>
+  import('@/admin/layouts/AdminLayout').then((m) => ({ default: m.AdminLayout }))
+);
+const AdminDashboardPage = React.lazy(() =>
+  import('@/admin/pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage }))
+);
+const AdminModuleScaffoldPage = React.lazy(() =>
+  import('@/admin/pages/AdminModuleScaffoldPage').then((m) => ({ default: m.AdminModuleScaffoldPage }))
+);
+
+const adminFallback = (
+  <div className="min-h-screen bg-canvas-default flex items-center justify-center p-8 text-xs font-sans text-text-secondary">
+    <span>Yönetici paneli yükleniyor...</span>
+  </div>
+);
 
 export const router = createBrowserRouter([
   // Public Storefront Routes
@@ -46,19 +61,19 @@ export const router = createBrowserRouter([
       },
       {
         path: 'products',
-        element: <CatalogPage />,
+        element: <CatalogPage mode="all" />,
       },
       {
         path: 'new',
-        element: <CatalogPage />,
+        element: <CatalogPage mode="new" />,
       },
       {
         path: 'bestsellers',
-        element: <CatalogPage />,
+        element: <CatalogPage mode="bestseller" />,
       },
       {
         path: 'categories',
-        element: <CatalogPage />,
+        element: <CatalogPage mode="all" />,
       },
       {
         path: 'categories/:slug',
@@ -139,162 +154,187 @@ export const router = createBrowserRouter([
     ],
   },
 
-
-  // Back-Office Admin Panel Routes
+  // Back-Office Admin Panel Routes (Code-Split)
   {
     path: '/admin',
-    element: <AdminLayout />,
+    element: (
+      <Suspense fallback={adminFallback}>
+        <AdminLayout />
+      </Suspense>
+    ),
     children: [
       {
         index: true,
-        element: <AdminDashboardPage />,
+        element: (
+          <Suspense fallback={adminFallback}>
+            <AdminDashboardPage />
+          </Suspense>
+        ),
       },
       {
         path: 'products',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Ürün Yönetimi (CRUD)"
-            moduleCode="MOD-PROD-01"
-            description="Tasarım vazo modelleri, varyant matrisleri, fiziksel boyutlar ve yayınlama durumları."
-            icon={Package}
-            plannedFeatures={[
-              'Vazo model ekleme / düzenleme / arşivleme',
-              'SKU bazlı varyant matrisi ve boyut tanımları (Yükseklik, Çap, Ağırlık)',
-              'Çoklu görsel galerisi ve sıralama',
-              'Perakende ve toptan kanal görünürlük anahtarları',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Ürün Yönetimi (CRUD)"
+              moduleCode="MOD-PROD-01"
+              description="Tasarım vazo modelleri, varyant matrisleri, fiziksel boyutlar ve yayınlama durumları."
+              icon={Package}
+              plannedFeatures={[
+                'Vazo model ekleme / düzenleme / arşivleme',
+                'SKU bazlı varyant matrisi ve boyut tanımları (Yükseklik, Çap, Ağırlık)',
+                'Çoklu görsel galerisi ve sıralama',
+                'Perakende ve toptan kanal görünürlük anahtarları',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'categories',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Kategori Yönetimi"
-            moduleCode="MOD-CAT-02"
-            description="Masa üstü, zemin, heykelsi objeler ve set kategorilerinin hiyerarşik yönetimi."
-            icon={Layers}
-            plannedFeatures={[
-              'Hiyerarşik kategori ağacı oluşturma',
-              'Kategori görseli ve açıklama yönetimi',
-              'Sıralama ve öne çıkarma kontrolleri',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Kategori Yönetimi"
+              moduleCode="MOD-CAT-02"
+              description="Masa üstü, zemin, heykelsi objeler ve set kategorilerinin hiyerarşik yönetimi."
+              icon={Layers}
+              plannedFeatures={[
+                'Hiyerarşik kategori ağacı oluşturma',
+                'Kategori görseli ve açıklama yönetimi',
+                'Sıralama ve öne çıkarma kontrolleri',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'collections',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Koleksiyon Kürasyonu"
-            moduleCode="MOD-COL-03"
-            description="Nordik Sessizlik, Amforik Kıvrımlar ve editoryal sezon koleksiyonları."
-            icon={Sparkles}
-            plannedFeatures={[
-              'Sezonluk koleksiyon hikayesi ve görseli oluşturma',
-              'Koleksiyona ürün bağlama ve vitrin sıralaması',
-              'Ana sayfa görünürlük toggle kontrolü',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Koleksiyon Kürasyonu"
+              moduleCode="MOD-COL-03"
+              description="Nordik Sessizlik, Amforik Kıvrımlar ve editoryal sezon koleksiyonları."
+              icon={Sparkles}
+              plannedFeatures={[
+                'Sezonluk koleksiyon hikayesi ve görseli oluşturma',
+                'Koleksiyona ürün bağlama ve vitrin sıralaması',
+                'Ana sayfa görünürlük toggle kontrolü',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'inventory',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Stok & Envanter Takibi"
-            moduleCode="MOD-INV-04"
-            description="Stoneware seramik stok miktarları, atölye fırınlama takibi ve düşük stok uyarıları."
-            icon={Boxes}
-            plannedFeatures={[
-              'Varyant bazında gerçek zamanlı stok sayımı',
-              'Kritik stok eşiği belirleme ve e-posta uyarıları',
-              'Toptan siparişler için ayrılmış stok rezervasyonu',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Stok & Envanter Takibi"
+              moduleCode="MOD-INV-04"
+              description="Stoneware seramik stok miktarları, atölye fırınlama takibi ve düşük stok uyarıları."
+              icon={Boxes}
+              plannedFeatures={[
+                'Varyant bazında gerçek zamanlı stok sayımı',
+                'Kritik stok eşiği belirleme ve e-posta uyarıları',
+                'Toptan siparişler için ayrılmış stok rezervasyonu',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'pricing',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Perakende & Fiyatlandırma"
-            moduleCode="MOD-PRC-05"
-            description="Standart perakende fiyatları, indirim oranları ve liste fiyat güncellemeleri."
-            icon={Percent}
-            plannedFeatures={[
-              'Tekil ve toplu fiyat güncelleme',
-              'Karşılaştırma fiyatı (eski fiyat) tanımlama',
-              'Para birimi ve KDV oranları yapılandırması',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Perakende & Fiyatlandırma"
+              moduleCode="MOD-PRC-05"
+              description="Standart perakende fiyatları, indirim oranları ve liste fiyat güncellemeleri."
+              icon={Percent}
+              plannedFeatures={[
+                'Tekil ve toplu fiyat güncelleme',
+                'Karşılaştırma fiyatı (eski fiyat) tanımlama',
+                'Para birimi ve KDV oranları yapılandırması',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'wholesale',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Toptan & B2B Portalı"
-            moduleCode="MOD-B2B-06"
-            description="Kademeli hacim iskontoları, MOQ kuralları ve mimar/bayi başvuru onayı."
-            icon={Building2}
-            plannedFeatures={[
-              'Gelen Trade & Mimari başvuru kuyruğunu onaylama/reddetme',
-              'Model ve kategori bazında Minimum Sipariş Adedi (MOQ) belirleme',
-              'Miktar kademe indirim tablosu (10-49 adet, 50+ adet)',
-              'Özel mimari projeler için teklif (quote) talepleri yönetimi',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Toptan & B2B Portalı"
+              moduleCode="MOD-B2B-06"
+              description="Kademeli hacim iskontoları, MOQ kuralları ve mimar/bayi başvuru onayı."
+              icon={Building2}
+              plannedFeatures={[
+                'Gelen Trade & Mimari başvuru kuyruğunu onaylama/reddetme',
+                'Model ve kategori bazında Minimum Sipariş Adedi (MOQ) belirleme',
+                'Miktar kademe indirim tablosu (10-49 adet, 50+ adet)',
+                'Özel mimari projeler için teklif (quote) talepleri yönetimi',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'orders',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Sipariş & Sevkiyat Yönetimi"
-            moduleCode="MOD-ORD-07"
-            description="Perakende ve toptan siparişler, sandıklı sevkiyat ve kargo takip entegrasyonu."
-            icon={ShoppingCart}
-            plannedFeatures={[
-              'Perakende ve toptan sipariş filtreleme sekmeleri',
-              'Sipariş durumu güncelleme (Ödeme Bekliyor, Hazırlanıyor, Kargoda)',
-              'Kargo takip numarası girişi ve otomatik bildirim',
-              'İrsaliye ve e-fatura yazdırma',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Sipariş & Sevkiyat Yönetimi"
+              moduleCode="MOD-ORD-07"
+              description="Perakende ve toptan siparişler, sandıklı sevkiyat ve kargo takip entegrasyonu."
+              icon={ShoppingCart}
+              plannedFeatures={[
+                'Perakende ve toptan sipariş filtreleme sekmeleri',
+                'Sipariş durumu güncelleme (Ödeme Bekliyor, Hazırlanıyor, Kargoda)',
+                'Kargo takip numarası girişi ve otomatik bildirim',
+                'İrsaliye ve e-fatura yazdırma',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'content',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="İçerik & CMS Yönetimi"
-            moduleCode="MOD-CMS-08"
-            description="Duyuru çubuğu, ana sayfa hero metinleri, mega-menü kartları ve editoryal bloklar."
-            icon={FileText}
-            plannedFeatures={[
-              'Duyuru bandı metni ve linki düzenleme',
-              'Ana sayfa hero başlık, görsel ve CTA butonları',
-              'Mega menü öne çıkan promosyon kartları yönetimi',
-              'Editoryal zanaat hikayesi bloklarının sıralanması',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="İçerik & CMS Yönetimi"
+              moduleCode="MOD-CMS-08"
+              description="Duyuru çubuğu, ana sayfa hero metinleri, mega-menü kartları ve editoryal bloklar."
+              icon={FileText}
+              plannedFeatures={[
+                'Duyuru bandı metni ve linki düzenleme',
+                'Ana sayfa hero başlık, görsel ve CTA butonları',
+                'Mega menü öne çıkan promosyon kartları yönetimi',
+                'Editoryal zanaat hikayesi bloklarının sıralanması',
+              ]}
+            />
+          </Suspense>
         ),
       },
       {
         path: 'settings',
         element: (
-          <AdminModuleScaffoldPage
-            moduleName="Sistem & Stüdyo Ayarları"
-            moduleCode="MOD-SET-09"
-            description="Stüdyo iletişim bilgileri, adres, çalışma saatleri ve genel e-ticaret parametreleri."
-            icon={Settings}
-            plannedFeatures={[
-              'Stüdyo iletişim ve fatura bilgileri',
-              'Varsayılan kargo ve teslimat parametreleri',
-              'Sosyal medya hesap bağlantıları',
-            ]}
-          />
+          <Suspense fallback={adminFallback}>
+            <AdminModuleScaffoldPage
+              moduleName="Sistem & Stüdyo Ayarları"
+              moduleCode="MOD-SET-09"
+              description="Stüdyo iletişim bilgileri, adres, çalışma saatleri ve genel e-ticaret parametreleri."
+              icon={Settings}
+              plannedFeatures={[
+                'Stüdyo iletişim ve fatura bilgileri',
+                'Varsayılan kargo ve teslimat parametreleri',
+                'Sosyal medya hesap bağlantıları',
+              ]}
+            />
+          </Suspense>
         ),
       },
     ],

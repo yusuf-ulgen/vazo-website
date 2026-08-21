@@ -10,7 +10,7 @@ export function FaqPage() {
     description: 'Vazo Studio seramik siparişleri, kargo, toptan alım ve ürün bakımı hakkında sıkça sorulan sorular.',
   });
 
-  const [openSection, setOpenSection] = useState<string | null>('siparis-0');
+  const [openSection, setOpenSection] = useState<string | null>('0-0');
 
   const faqGroups = [
     {
@@ -18,15 +18,15 @@ export function FaqPage() {
       items: [
         {
           q: 'Siparişler ne kadar sürede kargoya teslim edilir?',
-          a: 'Stokta bulunan tüm ürünlerimiz 1-3 iş günü içerisinde özenle paketlenerek Yurtiçi Kargo güvencesiyle kargoya verilir.',
+          a: 'Stokta bulunan ürünlerimiz özenle paketlenerek anlaşmalı kargo firmaları aracılığıyla en kısa sürede sevkiyata hazırlanır.',
         },
         {
-          q: 'Seramik ürünler kargoda kırılırsa ne yapmalıyım?',
-          a: 'Tüm gönderilerimiz kırılmaya karşı %100 sigortalıdır. Kargo paketinizde hasar olması durumunda hasar tespit tutanağı tutturmanız veya fotoğraflayarak bize iletmeniz halinde aynı gün ücretsiz yeni ürün çıkışı yapılır.',
+          q: 'Seramik ürünler kargoda hasar görürse ne yapmalıyım?',
+          a: 'Tüm gönderilerimiz kırılmaya karşı koruyucu ambalajlarla sevk edilir. Kargo teslimi anında hasar fark edilmesi durumunda kargo görevlisine tutanak tutturulması veya hasarlı ambalajın fotoğraflanarak bize iletilmesi halinde gerekli destek sağlanır.',
         },
         {
           q: 'Kargo ücreti ne kadar?',
-          a: '5.000 TL ve üzeri tüm perakende alışverişlerinizde kargo ücretsizdir. Bu tutarın altındaki siparişlerde standart kargo ücreti 120 TL\'dir.',
+          a: 'Belirlenen sepet tutarının üzerindeki perakende siparişlerde kargo ücretsizdir. Güncel kargo tutarı ve eşikleri sepet ve ödeme adımında görüntülenir.',
         },
       ],
     },
@@ -35,7 +35,7 @@ export function FaqPage() {
       items: [
         {
           q: 'Vazoların içine canlı çiçek ve su konulabilir mi?',
-          a: 'Evet. Tüm vazolarımız 1250°C fırınlanmış stoneware kilinden üretilir ve iç kısımları su geçirimsiz sırla kaplıdır. Canlı çiçeklerle güvenle su doldurarak kullanabilirsiniz.',
+          a: 'Evet. Tüm vazolarımız 1250°C fırınlanmış stoneware kilinden üretilir ve iç kısımları su geçirimsiz sırla kaplıdır. Canlı çiçeklerle su doldurarak güvenle kullanabilirsiniz.',
         },
         {
           q: 'Seramik vazolar nasıl temizlenmelidir?',
@@ -48,11 +48,11 @@ export function FaqPage() {
       items: [
         {
           q: 'Toptan alımlarda minimum sipariş adedi (MOQ) nedir?',
-          a: 'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Toplamda 20 adet ve üzeri siparişlerde kademeli B2B iskonto oranları uygulanır.',
+          a: 'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Belirli adetlerin üzerindeki siparişlerde kademeli B2B iskonto oranları uygulanır.',
         },
         {
           q: 'Mimari projeler için özel renk veya sır geliştiriyor musunuz?',
-          a: 'Evet. Belirli adetlerin üzerindeki otel, restoran ve konut projelerinde mimari ekibinizin RAL / Pantone renk kodlarına uygun özel mineral sırlar geliştirebiliyoruz.',
+          a: 'Evet. Belirli adetlerin üzerindeki otel, restoran ve konut projelerinde mimari ekibinizin renk kartelasına uygun özel mineral sırlar geliştirilebilmektedir.',
         },
       ],
     },
@@ -107,7 +107,7 @@ export function FaqPage() {
                       </button>
 
                       {isOpen && (
-                        <div className="pt-2 text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal animate-in fade-in duration-200">
+                        <div className="pt-2 text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal transition-opacity duration-200">
                           <p>{item.a}</p>
                         </div>
                       )}

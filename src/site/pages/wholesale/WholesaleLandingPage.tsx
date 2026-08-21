@@ -207,7 +207,7 @@ export function WholesaleLandingPage() {
             Projeniz İçin Numune & Teklif Alın
           </h2>
           <p className="text-xs sm:text-sm text-neutral-300 max-w-lg mx-auto leading-relaxed font-sans">
-            Mimari ekibiniz için malzeme ve sır numune kutumuzu talep edebilir, projenize özel hacimli fiyat teklifinizi 24 saat içinde alabilirsiniz.
+            Mimari ekibiniz için malzeme ve sır numune kutumuzu talep edebilir, projenize özel hacimli fiyat teklifinizi hızla alabilirsiniz.
           </p>
           <div className="pt-2">
             <Link

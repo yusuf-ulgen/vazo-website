@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { perakendeMegaMenuData } from '@/shared/mocks/navigation';
+import { contentRepository } from '@/entities/content/api/content-repository';
+import { MegaMenuData } from '@/shared/mocks/navigation';
 
 export interface PerakendeMegaMenuProps {
   isOpen: boolean;
@@ -8,18 +10,26 @@ export interface PerakendeMegaMenuProps {
 }
 
 export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
-  if (!isOpen) return null;
+  const [menuData, setMenuData] = useState<MegaMenuData | null>(null);
+
+  useEffect(() => {
+    contentRepository.getMegaMenu('retail_mega').then(setMenuData);
+  }, []);
+
+  if (!isOpen || !menuData) return null;
 
   return (
     <div
       onMouseEnter={() => {}}
       onMouseLeave={onClose}
-      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 animate-in fade-in slide-in-from-top-1 duration-200"
+      role="region"
+      aria-label="Perakende Menüsü"
+      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 transition-opacity duration-200"
     >
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-12 gap-8">
         {/* Link Groups (8 columns) */}
         <div className="col-span-8 grid grid-cols-3 gap-8">
-          {perakendeMegaMenuData.groups.map((group) => (
+          {menuData.groups.map((group) => (
             <div key={group.title} className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-editorial text-text-secondary border-b border-border-subtle pb-2">
                 {group.title}
@@ -52,30 +62,32 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
         {/* Editorial Promo Card (4 columns) */}
         <div className="col-span-4 bg-surface-secondary border border-border-subtle p-6 flex flex-col justify-between">
           <div className="space-y-3">
-            <div className="aspect-[4/3] w-full overflow-hidden bg-surface-muted mb-4">
-              <img
-                src={perakendeMegaMenuData.promo.imageUrl}
-                alt={perakendeMegaMenuData.promo.title}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
+            {menuData.promo.imageUrl && (
+              <div className="aspect-[4/3] w-full overflow-hidden bg-surface-muted mb-4">
+                <img
+                  src={menuData.promo.imageUrl}
+                  alt={menuData.promo.title}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                />
+              </div>
+            )}
             <p className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
               Öne Çıkan Koleksiyon
             </p>
             <h4 className="font-display text-xl text-text-primary">
-              {perakendeMegaMenuData.promo.title}
+              {menuData.promo.title}
             </h4>
             <p className="text-xs text-text-secondary leading-relaxed">
-              {perakendeMegaMenuData.promo.subtitle}
+              {menuData.promo.subtitle}
             </p>
           </div>
 
           <Link
-            to={perakendeMegaMenuData.promo.ctaHref}
+            to={menuData.promo.ctaHref}
             onClick={onClose}
             className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-primary hover:opacity-75 transition-opacity pt-4 border-t border-border-subtle"
           >
-            <span>{perakendeMegaMenuData.promo.ctaText}</span>
+            <span>{menuData.promo.ctaText}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

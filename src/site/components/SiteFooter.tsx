@@ -1,17 +1,32 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, CheckCircle2, Instagram, Facebook, Mail } from 'lucide-react';
+import { ArrowRight, Shield, CheckCircle2, Instagram, Facebook, Mail, RefreshCcw } from 'lucide-react';
 import { siteConfig } from '@/shared/config/site-config';
+import { contentRepository } from '@/entities/content/api/content-repository';
 
 export function SiteFooter() {
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubscribe = (e: FormEvent) => {
+  const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) return;
-    setIsSubscribed(true);
-    setEmail('');
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await contentRepository.subscribeNewsletter({ email, source: 'footer' });
+      setIsSubscribed(true);
+      setEmail('');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setErrorMessage(error.message || 'Bülten kaydı oluşturulamadı.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -181,12 +196,20 @@ export function SiteFooter() {
                     />
                     <button
                       type="submit"
+                      disabled={isSubmitting}
                       aria-label="Abone Ol"
-                      className="px-3 bg-action-primary text-action-primary-text hover:bg-neutral-800 transition-colors"
+                      className="px-3 bg-action-primary text-action-primary-text hover:bg-neutral-800 transition-colors disabled:opacity-60"
                     >
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      {isSubmitting ? (
+                        <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   </div>
+                  {errorMessage && (
+                    <p className="text-[10px] text-feedback-danger">{errorMessage}</p>
+                  )}
                 </form>
               )}
             </div>

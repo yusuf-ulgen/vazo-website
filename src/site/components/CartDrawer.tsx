@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
@@ -21,18 +22,45 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     removeItem,
   } = useCart();
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Alışveriş Sepeti Çekmecesi"
+      className="fixed inset-0 z-50 overflow-hidden"
+    >
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm transition-opacity duration-200"
       />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 max-w-md w-full bg-surface-primary shadow-elevated flex flex-col justify-between z-50 animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 max-w-md w-full bg-surface-primary shadow-elevated flex flex-col justify-between z-50 transition-transform duration-300">
         {/* Header */}
         <div className="p-5 border-b border-border-default flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -44,6 +72,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             aria-label="Sepeti Kapat"
             className="p-1 text-text-muted hover:text-text-primary transition-colors"
@@ -77,7 +106,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         </div>
 
         {/* Items list */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 text-left">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 py-12">
               <div className="w-16 h-16 bg-surface-muted flex items-center justify-center text-text-muted">
@@ -139,6 +168,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     />
 
                     <button
+                      type="button"
                       onClick={() => removeItem(item.id)}
                       className="p-1 text-text-muted hover:text-feedback-danger transition-colors"
                       aria-label="Ürünü Sil"
@@ -154,7 +184,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="p-5 border-t border-border-default bg-surface-secondary space-y-4">
+          <div className="p-5 border-t border-border-default bg-surface-secondary space-y-4 text-left">
             <div className="space-y-1.5 text-xs">
               <div className="flex justify-between text-text-secondary">
                 <span>Ara Toplam</span>
@@ -176,20 +206,18 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
             {/* Checkout Button */}
             <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  alert('Ödeme altyapısı ve sağlayıcı entegrasyonu sonraki aşamada tamamlanacaktır. (Sipariş özeti ve sepetiniz hazırdır.)');
-                }}
+              <Link
+                to="/cart"
+                onClick={onClose}
                 className="w-full bg-action-primary text-action-primary-text py-3.5 px-6 text-xs uppercase font-semibold tracking-wide hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
               >
-                <span>Siparişi Tamamla</span>
+                <span>Sepete Git & Öde</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                <span>256-Bit SSL Güvenli Alışveriş & Sigortalı Sevkiyat</span>
+                <span>Güvenli Alışveriş ve Sigortalı Sevkiyat</span>
               </div>
             </div>
           </div>

@@ -1,16 +1,31 @@
 import { useState, type FormEvent } from 'react';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, AlertCircle, RefreshCcw } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
+import { contentRepository } from '@/entities/content/api/content-repository';
 
 export function NewsletterSection() {
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) return;
-    setIsSubscribed(true);
-    setEmail('');
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await contentRepository.subscribeNewsletter({ email, source: 'homepage' });
+      setIsSubscribed(true);
+      setEmail('');
+    } catch (err: unknown) {
+      const error = err as Error;
+      setErrorMessage(error.message || 'Bülten kaydı oluşturulamadı.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -42,16 +57,31 @@ export function NewsletterSection() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="E-posta adresiniz..."
-              className="w-full sm:flex-1 px-4 py-3.5 bg-surface-primary text-text-primary text-xs border border-border-default focus:outline-none focus:border-text-primary"
+              aria-label="E-posta adresi"
+              className="w-full sm:flex-1 px-4 py-3.5 bg-surface-primary text-text-primary text-xs border border-border-default focus:outline-none focus:border-text-primary font-sans"
             />
             <button
               type="submit"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-6 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shrink-0"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-6 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shrink-0 disabled:opacity-60"
             >
-              <span>Kaydol</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              {isSubmitting ? (
+                <RefreshCcw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <span>Kaydol</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
             </button>
           </form>
+        )}
+
+        {errorMessage && (
+          <p className="text-xs text-feedback-danger flex items-center justify-center gap-1.5 pt-1">
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>{errorMessage}</span>
+          </p>
         )}
       </Container>
     </section>

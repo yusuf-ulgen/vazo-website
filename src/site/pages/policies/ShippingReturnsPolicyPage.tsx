@@ -5,8 +5,8 @@ import { useSEO } from '@/shared/lib/seo';
 
 export function ShippingReturnsPolicyPage() {
   useSEO({
-    title: 'Teslimat, Kargo & İade Koşulları',
-    description: 'Vazo Studio kargo teslimat süreleri, kırılma sigortası ve 14 gün koşulsuz iade koşulları.',
+    title: 'Teslimat, Kargo & İade Bilgilendirmesi',
+    description: 'Vazo Studio kargo teslimat süreçleri, ambalaj güvenliği ve 14 gün yasal iade bilgilendirmesi.',
   });
 
   return (
@@ -21,7 +21,7 @@ export function ShippingReturnsPolicyPage() {
           </nav>
 
           <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light text-text-primary">
-            Kargo, Teslimat & İade Koşulları
+            Kargo, Teslimat & İade Bilgilendirmesi
           </h1>
         </div>
 
@@ -44,17 +44,17 @@ export function ShippingReturnsPolicyPage() {
               Siparişleriniz, darbelere ve basınca karşı özel olarak tasarlanmış polietilen köpük takviyeli çift kat oluklu mukavva kutularda paketlenir.
             </p>
             <p>
-              Stoklu perakende siparişleri 1-3 iş günü içerisinde Yurtiçi Kargo'ya teslim edilir. Kargo takip kodunuz e-posta ve SMS ile iletilmektedir. 5.000 TL üzeri perakende alışverişlerde kargo ücretsizdir.
+              Stoklu perakende siparişleri anlaşmalı kargo firmalarına teslim edilir. Kargo takip kodunuz e-posta ile iletilmektedir. Belirlenen sepet tutarı üzerindeki perakende alışverişlerde kargo ücretsizdir.
             </p>
           </section>
 
           <section className="space-y-3 pt-6 border-t border-border-subtle">
             <div className="flex items-center gap-2 text-text-primary font-display text-xl">
               <ShieldCheck className="w-5 h-5 text-feedback-success" />
-              <h2>2. Kırılmaya Karşı %100 Sigorta Güvencesi</h2>
+              <h2>2. Hasarsız Teslimat ve Ambalaj Güvencesi</h2>
             </div>
             <p>
-              El yapımı seramik ürünlerimizin taşınma sürecindeki güvenliği stüdyomuzun garantisi altındadır. Kargo teslimi sırasında tespit edilen hasarlarda, fotoğraflı bildiriminizle birlikte aynı gün ücretsiz yedek parça veya yeni ürün sevkiyatı başlatılır.
+              El yapımı seramik ürünlerimizin taşınma sürecindeki güvenliği için yüksek standartta koruyucu ambalajlama yapılmaktadır. Kargo teslimi sırasında tespit edilen hasarlarda, fotoğraflı bildiriminizle birlikte gerekli telafi ve destek süreci başlatılır.
             </p>
           </section>
 
@@ -64,10 +64,10 @@ export function ShippingReturnsPolicyPage() {
               <h2>3. İade & Değişim Prosedürü</h2>
             </div>
             <p>
-              Tüketici Hakları Kanunu gereğince, ürün teslim tarihinden itibaren 14 gün içerisinde herhangi bir gerekçe göstermeksizin cayma hakkınızı kullanabilirsiniz.
+              Tüketici Hakları Kanunu gereğince, ürün teslim tarihinden itibaren 14 gün içerisinde cayma hakkınızı kullanabilirsiniz.
             </p>
             <p>
-              İade edilecek ürünün orijinal ambalajında, hasarsız ve eksiksiz olması gerekmektedir. İade talebi oluşturmak için <Link to="/contact" className="text-text-primary underline">iletişim formumuzdan</Link> bize ulaşabilirsiniz.
+              İade edilecek ürünün orijinal ambalajında, hasarsız ve eksiksiz olması gerekmektedir. İade talebi oluşturmak için <Link to="/contact" className="text-text-primary underline">iletişim sayfamızdan</Link> bize ulaşabilirsiniz.
             </p>
           </section>
         </div>

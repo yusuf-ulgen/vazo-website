@@ -219,7 +219,7 @@ export function CartPage() {
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                  <span>256-Bit SSL Şifreleme ile Güvenli Alışveriş</span>
+                  <span>Güvenli Alışveriş & Koruyucu Sevkiyat</span>
                 </div>
               </div>
             </div>

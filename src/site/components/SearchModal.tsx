@@ -14,33 +14,63 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchSequenceRef = useRef<number>(0);
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
       setTimeout(() => inputRef.current?.focus(), 50);
     } else {
+      document.body.style.overflow = '';
       setQuery('');
       setResults([]);
+      setIsSearching(false);
+      setSearchError(null);
     }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   useEffect(() => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       setResults([]);
       setIsSearching(false);
+      setSearchError(null);
       return;
     }
 
     setIsSearching(true);
+    setSearchError(null);
+    const currentSeq = ++searchSequenceRef.current;
+
     const timeout = setTimeout(() => {
-      productRepository.getProducts({ searchQuery: query.trim() }).then((data) => {
-        setResults(data);
-        setIsSearching(false);
-      });
+      productRepository
+        .getProducts({ searchQuery: trimmed, retailOnly: true })
+        .then((data) => {
+          if (searchSequenceRef.current === currentSeq) {
+            setResults(data);
+          }
+        })
+        .catch((err) => {
+          if (searchSequenceRef.current === currentSeq) {
+            setSearchError(err.message || 'Arama yapılırken bir sorun oluştu.');
+          }
+        })
+        .finally(() => {
+          if (searchSequenceRef.current === currentSeq) {
+            setIsSearching(false);
+          }
+        });
     }, 200);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [query]);
 
   // Handle ESC key
@@ -57,16 +87,21 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ürün Arama Modalı"
+      className="fixed inset-0 z-50 overflow-y-auto"
+    >
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm transition-opacity"
       />
 
       {/* Modal */}
       <div className="relative min-h-screen flex items-start justify-center p-4 sm:p-6 lg:p-8 pt-16 sm:pt-24">
-        <div className="relative w-full max-w-2xl bg-surface-primary shadow-elevated border border-border-default overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="relative w-full max-w-2xl bg-surface-primary shadow-elevated border border-border-default overflow-hidden">
           {/* Search Input Bar */}
           <div className="p-4 sm:p-6 border-b border-border-default flex items-center gap-3">
             <Search className="w-5 h-5 text-text-secondary shrink-0" />
@@ -75,11 +110,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Vazo modeli, materyal (stoneware, terakota) veya koleksiyon ara..."
-              className="w-full text-base sm:text-lg bg-transparent text-text-primary placeholder:text-text-muted focus:outline-none"
+              placeholder="Vazo modeli veya materyal ara..."
+              aria-label="Ürün arama kutusu"
+              className="w-full text-base sm:text-lg bg-transparent text-text-primary placeholder:text-text-muted focus:outline-none font-sans"
             />
             {query && (
               <button
+                type="button"
                 onClick={() => setQuery('')}
                 className="p-1 text-text-muted hover:text-text-primary"
                 aria-label="Aramayı Temizle"
@@ -88,24 +125,29 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </button>
             )}
             <button
+              type="button"
               onClick={onClose}
-              className="text-xs uppercase font-semibold tracking-wider text-text-secondary hover:text-text-primary px-2 py-1 border border-border-subtle"
+              className="text-xs uppercase font-semibold tracking-wider text-text-secondary hover:text-text-primary px-2.5 py-1 border border-border-subtle"
             >
-              ESC
+              Kapat
             </button>
           </div>
 
           {/* Results Area */}
-          <div className="max-h-[60vh] overflow-y-auto p-4 sm:p-6">
+          <div className="max-h-[60vh] overflow-y-auto p-4 sm:p-6 text-left">
             {isSearching ? (
               <div className="py-8 text-center text-xs text-text-secondary">
                 <span>Aranıyor...</span>
+              </div>
+            ) : searchError ? (
+              <div className="py-8 text-center text-xs text-feedback-danger">
+                <span>{searchError}</span>
               </div>
             ) : query.trim() && results.length === 0 ? (
               <div className="py-12 text-center space-y-2">
                 <p className="font-display text-lg text-text-primary">Sonuç Bulunamadı</p>
                 <p className="text-xs text-text-secondary">
-                  "{query}" ile eşleşen bir ürün veya koleksiyon bulunamadı.
+                  "{query}" ile eşleşen bir model bulunamadı.
                 </p>
               </div>
             ) : results.length > 0 ? (
@@ -154,6 +196,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     (term) => (
                       <button
                         key={term}
+                        type="button"
                         onClick={() => setQuery(term)}
                         className="px-3 py-1.5 bg-surface-secondary hover:bg-surface-tertiary text-text-primary border border-border-subtle transition-colors"
                       >
@@ -164,7 +207,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 </div>
 
                 <div className="pt-4 border-t border-border-subtle flex items-center justify-between text-xs text-text-secondary">
-                  <span>Tüm ürünleri görüntülemek için:</span>
+                  <span>Tüm modelleri keşfetmek için:</span>
                   <Link
                     to="/products"
                     onClick={onClose}

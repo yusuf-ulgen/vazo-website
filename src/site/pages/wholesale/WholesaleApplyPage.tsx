@@ -1,10 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Building2, CheckCircle2, ShieldCheck, ArrowRight, AlertCircle } from 'lucide-react';
+import { Building2, CheckCircle2, ShieldCheck, ArrowRight, AlertCircle, RefreshCcw } from 'lucide-react';
 import { contentRepository, TradeApplicationPayload } from '@/entities/content/api/content-repository';
 import { Container } from '@/shared/ui/Container';
+import { useSEO } from '@/shared/lib/seo';
 
 export function WholesaleApplyPage() {
+  useSEO({
+    title: 'Toptan Satış & B2B Başvuru',
+    description: 'Vazo Studio mimari projeler, otel/restoran ve kurumsal toptan alım başvuru formu.',
+  });
+
   const [searchParams] = useSearchParams();
   const preselectedProduct = searchParams.get('product');
 
@@ -18,7 +24,7 @@ export function WholesaleApplyPage() {
     phone: '',
     website: '',
     estimatedMonthlyVolume: '6 - 20 Adet',
-    notes: preselectedProduct ? `İlgilenilen Model: ${preselectedProduct}` : '',
+    customerMessage: preselectedProduct ? `İlgilenilen Model: ${preselectedProduct}` : '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -70,7 +76,7 @@ export function WholesaleApplyPage() {
 
         {/* Success Confirmation Card */}
         {isSuccess ? (
-          <div className="p-8 sm:p-12 bg-surface-secondary border border-border-default space-y-6 text-center animate-in fade-in duration-300">
+          <div className="p-8 sm:p-12 bg-surface-secondary border border-border-default space-y-6 text-center transition-opacity duration-300">
             <div className="w-14 h-14 bg-feedback-success/10 text-feedback-success rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
@@ -80,7 +86,7 @@ export function WholesaleApplyPage() {
                 Başvurunuz Başarıyla Alındı
               </h2>
               <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
-                Talebiniz B2B satış ekibimize iletilmiştir. Kurumsal müşteri temsilcimiz en geç <strong>24 saat içinde</strong> kayıtlı e-posta veya telefonunuz üzerinden sizinle irtibata geçecektir.
+                Talebiniz B2B satış ekibimize iletilmiştir. Kurumsal müşteri temsilcimiz en kısa sürede kayıtlı e-posta veya telefonunuz üzerinden sizinle irtibata geçecektir.
               </p>
             </div>
 
@@ -256,8 +262,8 @@ export function WholesaleApplyPage() {
                 <label className="font-medium text-text-primary">Proje Detayları & Talep Notları</label>
                 <textarea
                   rows={4}
-                  value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={formData.customerMessage || ''}
+                  onChange={(e) => setFormData({ ...formData, customerMessage: e.target.value })}
                   placeholder="İlgilendiğiniz modeller, özel sır/renk talepleri, şantiye teslim tarihi veya numune talebiniz hakkında bilgi veriniz..."
                   className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
                 />
@@ -276,8 +282,17 @@ export function WholesaleApplyPage() {
                 disabled={isSubmitting}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 disabled:opacity-50 transition-colors shadow-xs"
               >
-                <span>{isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Tamamla'}</span>
-                <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <RefreshCcw className="w-4 h-4 animate-spin" />
+                    <span>Gönderiliyor...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Başvuruyu Tamamla</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </form>
