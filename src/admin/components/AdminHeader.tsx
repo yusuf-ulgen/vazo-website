@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, ExternalLink, Bell, User } from 'lucide-react';
+import { Menu, ExternalLink, Bell, User, LogOut } from 'lucide-react';
 import { Badge } from '@/shared/ui/Badge';
+import { useAuth } from '@/shared/stores/auth-store';
 
 export interface AdminHeaderProps {
   onOpenMobileSidebar: () => void;
@@ -8,6 +9,7 @@ export interface AdminHeaderProps {
 
 export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const getBreadcrumbTitle = (pathname: string) => {
     switch (pathname) {
@@ -24,7 +26,7 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
       case '/admin/pricing':
         return 'Fiyatlandırma';
       case '/admin/wholesale':
-        return 'Toptan & B2B Portalı';
+        return 'Toptan Portalı';
       case '/admin/orders':
         return 'Sipariş Yönetimi';
       case '/admin/content':
@@ -85,19 +87,28 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-feedback-danger rounded-full" />
         </button>
 
-        {/* Admin Avatar Placeholder */}
+        {/* Admin Avatar & Quick Actions */}
         <div className="flex items-center gap-2 pl-2 border-l border-border-subtle">
           <div className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold">
             <User className="w-4 h-4" />
           </div>
           <div className="hidden sm:block text-left">
-            <span className="block text-xs font-medium text-text-primary leading-tight">
-              Yönetici
+            <span className="block text-xs font-medium text-text-primary leading-tight truncate max-w-[140px]">
+              {user?.name || 'Yönetici'}
             </span>
-            <span className="block text-[10px] text-text-secondary">
-              Super Admin
+            <span className="block text-[10px] text-text-secondary truncate max-w-[140px]">
+              {user?.email || 'Admin'}
             </span>
           </div>
+
+          <button
+            onClick={logout}
+            title="Admin Oturumunu Kapat"
+            aria-label="Çıkış Yap"
+            className="p-1.5 text-text-secondary hover:text-feedback-danger transition-colors ml-1"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

@@ -69,7 +69,7 @@ export const perakendeMegaMenuData: MegaMenuData = {
 export const toptanMegaMenuData: MegaMenuData = {
   groups: [
     {
-      title: 'Toptan & B2B Çözümleri',
+      title: 'Toptan Çözümleri',
       links: [
         { label: 'Toptan Satış Programı', href: '/wholesale' },
         { label: 'Kademeli Fiyatlandırma & İndirimler', href: '/wholesale/pricing' },
@@ -94,7 +94,7 @@ export const toptanMegaMenuData: MegaMenuData = {
         { label: 'Bayilik & Trade Başvuru Formu', href: '/wholesale/apply' },
         { label: 'Üretim & Teslimat Takvimi', href: '/wholesale/lead-times' },
         { label: 'Paletli & Güvenli Lojistik', href: '/wholesale/shipping' },
-        { label: 'B2B Müşteri Temsilcisi', href: '/wholesale/contact' },
+        { label: 'Toptan Müşteri Temsilcisi', href: '/wholesale/contact' },
       ],
     },
   ],

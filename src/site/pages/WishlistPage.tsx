@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Trash2, ArrowRight, ShoppingBag, Sparkles } from 'lucide-react';
-import { useWishlist } from '@/shared/stores/wishlist-store';
+import { useWishlist, wishlistStore } from '@/shared/stores/wishlist-store';
 import { useCart } from '@/shared/stores/cart-store';
 import { productRepository } from '@/entities/product/api/product-repository';
 import { Product } from '@/entities/product/types';
@@ -18,8 +18,21 @@ export function WishlistPage() {
   useEffect(() => {
     setLoading(true);
     productRepository.getProducts().then((allProducts) => {
-      const matched = allProducts.filter((p) => wishlistIds.includes(p.id));
-      setWishlistProducts(matched);
+      const validProductMap = new Map(allProducts.map((p) => [p.id, p]));
+      const validSlugMap = new Map(allProducts.map((p) => [p.slug, p]));
+
+      const matchedMap = new Map<string, Product>();
+      wishlistIds.forEach((idOrSlug) => {
+        const prod = validProductMap.get(idOrSlug) || validSlugMap.get(idOrSlug);
+        if (prod) {
+          matchedMap.set(prod.id, prod);
+        } else {
+          // Stale / orphan ID from localStorage clean-up
+          wishlistStore.remove(idOrSlug);
+        }
+      });
+
+      setWishlistProducts(Array.from(matchedMap.values()));
       setLoading(false);
     });
   }, [wishlistIds]);

@@ -68,7 +68,7 @@ export function AdminDashboardPage() {
           subtext="MOQ altı seviye"
         />
         <StatsCard
-          title="B2B Trade Başvuruları"
+          title="Toptan Başvuruları"
           value="5 Bekleyen"
           change="Yeni"
           changeType="positive"

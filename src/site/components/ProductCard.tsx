@@ -101,7 +101,7 @@ export function ProductCard({
 
           {showWholesaleBadge && lowestWholesalePrice && (
             <span className="text-[10px] text-feedback-success font-medium tracking-wide">
-              B2B: {formatCurrency(lowestWholesalePrice)}
+              Toptan: {formatCurrency(lowestWholesalePrice)}
             </span>
           )}
         </div>

@@ -1,54 +1,48 @@
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
 
 export function ProductAccordions() {
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const sections = [
+  const accordions = [
     {
       title: 'Teknik Detaylar & Bakım',
       content:
-        'Yüksek derecede (1250°C) fırınlanmış stoneware seramik gövde. Dış yüzey doğal mineral mat sır ile kaplıdır. Su geçirimsiz iç sırlama sayesinde taze çiçeklerle ve su ile kullanıma uygundur. Temizlik için ılık su ve yumuşak bez kullanılması, aşındırıcı kimyasallardan kaçınılması önerilir.',
+        'Yüksek derecede (1250°C) fırınlanmış stoneware seramik gövde. Dış yüzey doğal mineral mat sır ile kaplıdır. Su geçirimsiz iç sırlama sayesinde taze çiçeklerle ve su ile kullanıma uygundur. Temizlik için ılık su ve yumuşak bez kullanılması önerilir.',
     },
     {
       title: 'Kargo, Paketleme & Sevkiyat',
       content:
-        'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir. Sevkiyatlar anlaşmalı kargo firmaları aracılığıyla sigortalı olarak gönderilir. Kargo takip bilgileri sipariş sonrası iletilmektedir.',
+        'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir. Anlaşmalı kargo firmaları aracılığıyla 1-3 iş günü içinde sigortalı olarak sevk edilir.',
     },
     {
-      title: 'İade & Değişim Koşulları',
+      title: 'Sıkça Sorulan Sorular',
       content:
-        'Teslimat tarihinden itibaren 14 gün içinde, orijinal ambalajında ve hasarsız olması koşuluyla iade ve değişim hakkınız bulunmaktadır. Teslimat anında hasar tespit edilmesi halinde stüdyomuzla iletişime geçilmesi yeterlidir.',
+        'Vazolarımız %100 su sızdırmazdır. Kurumsal ve toptan alımlarda özel renk ve sır varyasyonları üretilebilmektedir. Detaylı sorularınız için bize her zaman ulaşabilirsiniz.',
     },
   ];
 
   return (
-    <section className="w-full bg-canvas-default py-12 md:py-16 border-b border-border-subtle">
-      <Container size="md">
-        <div className="divide-y divide-border-default border-y border-border-default">
-          {sections.map((sec, idx) => {
+    <section className="w-full bg-canvas-default py-8 border-b border-border-subtle">
+      <Container size="lg">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+          {accordions.map((item, idx) => {
             const isOpen = openIndex === idx;
             return (
-              <div key={sec.title} className="py-4">
+              <div key={item.title} className="border border-border-default bg-surface-secondary/30 p-4 space-y-2">
                 <button
                   type="button"
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="w-full flex items-center justify-between text-left font-display text-lg sm:text-xl text-text-primary py-2 hover:opacity-75 transition-opacity"
-                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between text-left font-sans text-xs font-semibold uppercase tracking-wider text-text-primary hover:text-text-secondary transition-colors"
                 >
-                  <span>{sec.title}</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-text-secondary transition-transform duration-200 ${
-                      isOpen ? 'rotate-180' : ''
-                    }`}
-                  />
+                  <span>{item.title}</span>
+                  {isOpen ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                 </button>
-
                 {isOpen && (
-                  <div className="pt-2 pb-4 text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal transition-opacity duration-200">
-                    <p>{sec.content}</p>
-                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed font-sans pt-2 border-t border-border-subtle animate-fade-in">
+                    {item.content}
+                  </p>
                 )}
               </div>
             );

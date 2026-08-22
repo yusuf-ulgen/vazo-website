@@ -40,7 +40,7 @@ describe('ProductDetailPage Integration Tests (/products/:slug)', () => {
     expect(await screen.findByRole('heading', { name: 'Amforik Taş Vazo' })).toBeInTheDocument();
     expect(screen.getByText('Stokta Mevcut (20 adet)')).toBeInTheDocument();
     expect(await screen.findByText('İlgili Model')).toBeInTheDocument();
-    expect(screen.getByText('İlginizi Çekebilecek Diğer Modeller')).toBeInTheDocument();
+    expect(screen.getByText('BENZER ÜRÜNLER')).toBeInTheDocument();
   });
 
   it('renders not found state when product slug does not exist', async () => {

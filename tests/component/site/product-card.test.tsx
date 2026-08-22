@@ -49,7 +49,6 @@ describe('ProductCard Component', () => {
     });
 
     renderWithRouter(<ProductCard product={product} showWholesaleBadge />);
-
-    expect(screen.getByText(/B2B:/)).toBeInTheDocument();
+    expect(screen.getByText(/Toptan:/)).toBeInTheDocument();
   });
 });

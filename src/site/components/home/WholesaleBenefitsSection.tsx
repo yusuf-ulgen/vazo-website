@@ -22,7 +22,7 @@ export function WholesaleBenefitsSection() {
     {
       icon: Tag,
       title: 'Özel Toptan Fiyatlar',
-      description: 'Hacimli siparişlerinizde %50\'ye varan B2B kademeli fiyat avantajı.',
+      description: 'Hacimli siparişlerinizde %50\'ye varan toptan kademeli fiyat avantajı.',
     },
     {
       icon: Boxes,
@@ -36,7 +36,7 @@ export function WholesaleBenefitsSection() {
     },
     {
       icon: Headphones,
-      title: 'Profesyonel B2B Destek',
+      title: 'Profesyonel Toptan Destek',
       description: 'İç mimarlar ve kurumsal projeler için özel müşteri temsilcisi.',
     },
   ];
@@ -44,10 +44,10 @@ export function WholesaleBenefitsSection() {
   return (
     <section className="w-full bg-canvas-warm py-16 md:py-24 border-b border-border-subtle">
       <Container size="lg">
-        {/* Section Header (Reference 02/03) */}
+        {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2 mb-12 md:mb-16">
           <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-            Toptan Avantajlar & B2B
+            Toptan Avantajlar
           </span>
           <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-normal text-text-primary">
             Ticari Ortaklarımıza Özel Avantajlar

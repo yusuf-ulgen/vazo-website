@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, RefreshCcw } from 'lucide-react';
+import { Sparkles, RefreshCcw } from 'lucide-react';
 import { productRepository } from '@/entities/product/api/product-repository';
 import { Product, ProductVariant } from '@/entities/product/types';
 import { Container } from '@/shared/ui/Container';
@@ -42,12 +42,10 @@ export function ProductDetailPage() {
         const defaultRetailVariant = prod.variants.find((v) => v.isAvailableForRetail) || prod.variants[0];
         setSelectedVariant(defaultRetailVariant);
 
-        // Load related products
-        const allProds = await productRepository.getProducts({
-          categoryId: prod.categoryId,
-        });
+        // Load related products (up to 5 for reference-04)
+        const allProds = await productRepository.getProducts();
         if (!isMounted) return;
-        setRelatedProducts(allProds.filter((p) => p.id !== prod.id).slice(0, 4));
+        setRelatedProducts(allProds.filter((p) => p.id !== prod.id).slice(0, 5));
         setLoading(false);
       })
       .catch((err) => {
@@ -115,17 +113,17 @@ export function ProductDetailPage() {
   return (
     <div className="w-full bg-canvas-default min-h-screen">
       {/* Main PDP Grid (Reference 04) */}
-      <Container size="lg" className="py-8 sm:py-12 lg:py-16">
+      <Container size="lg" className="py-6 sm:py-8 lg:py-10">
         {/* Breadcrumb Navigation */}
-        <nav className="text-xs text-text-muted flex items-center gap-1.5 font-sans mb-8 text-left">
+        <nav className="text-xs text-text-muted flex items-center gap-1.5 font-sans mb-6 text-left">
           <Link to="/" className="hover:text-text-primary transition-colors">Ana Sayfa</Link>
-          <span>/</span>
+          <span>&gt;</span>
           <Link to="/products" className="hover:text-text-primary transition-colors">Vazolar</Link>
-          <span>/</span>
+          <span>&gt;</span>
           <span className="text-text-primary font-medium truncate">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Image Gallery (7 cols) */}
           <div className="lg:col-span-7">
             <ProductGallery
@@ -154,39 +152,26 @@ export function ProductDetailPage() {
       {/* Usage Inspiration 4-Photo Gallery (Reference 04) */}
       <ProductInspirationGrid productName={product.name} />
 
-      {/* Technical Accordions & FAQ (Reference 04) */}
+      {/* Technical Accordions (Reference 04) */}
       <ProductAccordions />
 
-      {/* Related Products Rail */}
+      {/* Related Products 5-Column Grid (Reference 04) */}
       {relatedProducts.length > 0 && (
-        <section className="w-full bg-canvas-default py-16 md:py-24">
+        <section className="w-full bg-canvas-default py-12 md:py-16">
           <Container size="lg">
-            <div className="flex items-end justify-between gap-4 mb-8 border-b border-border-subtle pb-4">
-              <div>
-                <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-                  Benzer Formlar
-                </span>
-                <h2 className="font-display text-2xl sm:text-3xl font-normal text-text-primary mt-1">
-                  İlginizi Çekebilecek Diğer Modeller
-                </h2>
-              </div>
-
-              <Link
-                to="/products"
-                className="inline-flex items-center gap-1 text-xs uppercase font-semibold tracking-wide text-text-primary hover:text-text-secondary transition-colors"
-              >
-                <span>Tümünü Gör</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+            <div className="text-left mb-6">
+              <h2 className="font-sans text-xs uppercase font-semibold tracking-wider text-text-primary">
+                BENZER ÜRÜNLER
+              </h2>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
               {relatedProducts.map((rel) => (
                 <ProductCard
                   key={rel.id}
                   product={rel}
-                  aspectRatio="portrait"
-                  showWholesaleBadge
+                  aspectRatio="square"
+                  showWholesaleBadge={false}
                 />
               ))}
             </div>

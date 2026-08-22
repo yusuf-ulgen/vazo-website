@@ -148,7 +148,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               >
                 <span className="flex items-center gap-2">
                   <Building2 className="w-4 h-4" />
-                  <span>Toptan & B2B Portalı</span>
+                  <span>Toptan Portalı</span>
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 transition-transform duration-200 ${

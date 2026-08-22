@@ -13,9 +13,9 @@ describe('Wholesale Pages Integration Tests', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders WholesaleLandingPage with B2B value proposition and model cards', () => {
+  it('renders WholesaleLandingPage with value proposition and model cards', () => {
     renderWithRouter(<WholesaleLandingPage />, { routerInitialEntries: ['/wholesale'] });
-    expect(screen.getByText('Kurumsal & B2B Çözümleri')).toBeInTheDocument();
+    expect(screen.getByText('Kurumsal & Toptan Çözümleri')).toBeInTheDocument();
     expect(screen.getByText('Ticari İş Ortaklarımız')).toBeInTheDocument();
   });
 
@@ -23,7 +23,7 @@ describe('Wholesale Pages Integration Tests', () => {
     renderWithRouter(<WholesaleProductsPage />, { routerInitialEntries: ['/wholesale/products'] });
     expect(await screen.findByText('Toptan Satışa Uygun Modeller')).toBeInTheDocument();
 
-    const catBtn = screen.getByRole('button', { name: 'Masa Üstü Vazolar' });
+    const catBtn = await screen.findByRole('button', { name: 'Masa Üstü Vazolar' });
     fireEvent.click(catBtn);
 
     const sortSelect = screen.getByLabelText('Sıralama');

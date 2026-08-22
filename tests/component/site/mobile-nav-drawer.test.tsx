@@ -36,7 +36,7 @@ describe('MobileNavDrawer Component', () => {
     expect(screen.getByText('Masa Üstü Vazolar')).toBeInTheDocument();
 
     // Wholesale Accordion
-    const wholesaleAccordionBtn = screen.getByText('Toptan & B2B Portalı');
+    const wholesaleAccordionBtn = screen.getByText('Toptan Portalı');
     fireEvent.click(wholesaleAccordionBtn);
     expect(screen.getByText('Toptan Satış Programı')).toBeInTheDocument();
 

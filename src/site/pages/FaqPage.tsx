@@ -44,11 +44,11 @@ export function FaqPage() {
       ],
     },
     {
-      group: 'Toptan & Kurumsal Satış (B2B)',
+      group: 'Toptan & Kurumsal Satış',
       items: [
         {
           q: 'Toptan alımlarda minimum sipariş adedi (MOQ) nedir?',
-          a: 'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Belirli adetlerin üzerindeki siparişlerde kademeli B2B iskonto oranları uygulanır.',
+          a: 'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Belirli adetlerin üzerindeki siparişlerde kademeli toptan iskonto oranları uygulanır.',
         },
         {
           q: 'Mimari projeler için özel renk veya sır geliştiriyor musunuz?',

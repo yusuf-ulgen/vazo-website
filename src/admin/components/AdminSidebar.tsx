@@ -36,7 +36,7 @@ export function AdminSidebar({
     { label: 'Koleksiyonlar', path: '/admin/collections', icon: Sparkles },
     { label: 'Stok & Envanter', path: '/admin/inventory', icon: Boxes },
     { label: 'Fiyatlandırma', path: '/admin/pricing', icon: Percent },
-    { label: 'Toptan & B2B', path: '/admin/wholesale', icon: Building2 },
+    { label: 'Toptan', path: '/admin/wholesale', icon: Building2 },
     { label: 'Siparişler', path: '/admin/orders', icon: ShoppingCart },
     { label: 'İçerik & CMS', path: '/admin/content', icon: FileText },
     { label: 'Site Ayarları', path: '/admin/settings', icon: Settings },

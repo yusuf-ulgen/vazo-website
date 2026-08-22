@@ -39,9 +39,9 @@ export function WholesaleProductsPage() {
           <nav className="text-xs text-text-muted flex items-center gap-1.5 font-sans">
             <Link to="/" className="hover:text-text-primary transition-colors">Ana Sayfa</Link>
             <span>/</span>
-            <Link to="/wholesale" className="hover:text-text-primary transition-colors">Toptan & B2B</Link>
+            <Link to="/wholesale" className="hover:text-text-primary transition-colors">Toptan</Link>
             <span>/</span>
-            <span className="text-text-primary font-medium">B2B Ürün Kataloğu</span>
+            <span className="text-text-primary font-medium">Toptan Ürün Kataloğu</span>
           </nav>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -54,7 +54,7 @@ export function WholesaleProductsPage() {
                 Toptan Satışa Uygun Modeller
               </h1>
               <p className="text-xs sm:text-sm text-text-secondary max-w-xl font-sans">
-                Tüm modellerimiz için geçerli kademeli B2B toptan fiyatlandırma, MOQ 6 adet ve özel sır opsiyonları.
+                Tüm modellerimiz için geçerli kademeli toptan fiyatlandırma, MOQ 6 adet ve özel sır opsiyonları.
               </p>
             </div>
 

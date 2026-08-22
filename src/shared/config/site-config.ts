@@ -38,7 +38,7 @@ export const siteConfig: SiteConfig = {
   },
   contact: {
     email: 'info@vazostudio.com',
-    wholesaleEmail: 'b2b@vazostudio.com',
+    wholesaleEmail: 'toptan@vazostudio.com',
     phone: '+90 (212) 555 0192',
     address: 'Karaköy Tasarım Bölgesi, Kemankeş Cad. No: 42, Beyoğlu / İstanbul',
   },

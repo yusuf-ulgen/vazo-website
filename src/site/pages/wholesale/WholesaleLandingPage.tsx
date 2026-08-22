@@ -59,21 +59,21 @@ export function WholesaleLandingPage() {
     },
     {
       icon: ShieldCheck,
-      title: 'Özel B2B Müşteri Temsilcisi',
+      title: 'Özel Toptan Müşteri Temsilcisi',
       description: 'Numune sürecinden şantiye teslimine kadar mimari ekibinize atanmış birebir destek.',
     },
   ];
 
   return (
     <div className="w-full bg-canvas-default min-h-screen">
-      {/* B2B Editorial Hero */}
+      {/* Toptan Editorial Hero */}
       <section className="relative w-full bg-canvas-warm border-b border-border-subtle overflow-hidden">
         <Container size="lg" className="py-16 md:py-24">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-left">
               <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-                Kurumsal & B2B Çözümleri
+                Kurumsal & Toptan Çözümleri
               </span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-light text-text-primary leading-[1.08] tracking-tight">
                 Mimari Mekanlara Heykelsi Dokunuş.{' '}
@@ -99,7 +99,7 @@ export function WholesaleLandingPage() {
                   to="/wholesale/products"
                   className="inline-flex items-center justify-center gap-2 border border-border-strong text-text-primary bg-surface-primary/80 hover:bg-surface-primary px-8 py-4 text-xs uppercase font-semibold tracking-wider transition-colors"
                 >
-                  <span>B2B Kataloğu İncele</span>
+                  <span>Toptan Kataloğu İncele</span>
                 </Link>
               </div>
             </div>

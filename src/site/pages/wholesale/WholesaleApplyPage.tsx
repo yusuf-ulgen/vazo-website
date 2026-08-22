@@ -7,9 +7,9 @@ import { useSEO } from '@/shared/lib/seo';
 
 export function WholesaleApplyPage() {
   useSEO({
-    title: 'Toptan Satış & B2B Başvuru Formu | Vazo Studio',
+    title: 'Toptan Satış Başvuru Formu | Vazo Studio',
     description:
-      'İç mimarlar, tasarım ofisleri, oteller ve perakende mağazalar için kurumsal B2B iş ortaklığı ve toptan teklif başvuru formu.',
+      'İç mimarlar, tasarım ofisleri, oteller ve perakende mağazalar için kurumsal iş ortaklığı ve toptan teklif başvuru formu.',
   });
 
   const [formData, setFormData] = useState<TradeApplicationPayload>({
@@ -51,7 +51,7 @@ export function WholesaleApplyPage() {
         {/* Page Header */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
           <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-            B2B & Kurumsal Ortaklık
+            Toptan & Kurumsal Ortaklık
           </span>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-light text-text-primary leading-[1.12]">
             Toptan Satış & Teklif Talebi
@@ -83,7 +83,7 @@ export function WholesaleApplyPage() {
                 to="/wholesale/products"
                 className="inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-6 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
               >
-                <span>B2B Kataloğuna Dön</span>
+                <span>Toptan Kataloğuna Dön</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link

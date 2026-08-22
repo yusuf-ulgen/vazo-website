@@ -267,7 +267,7 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={adminFallback}>
             <AdminModuleScaffoldPage
-              moduleName="Toptan & B2B Portalı"
+              moduleName="Toptan Portalı"
               moduleCode="MOD-B2B-06"
               description="Kademeli hacim iskontoları, MOQ kuralları ve mimar/bayi başvuru onayı."
               icon={Building2}

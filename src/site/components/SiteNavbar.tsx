@@ -7,26 +7,29 @@ import {
   Heart,
   ShoppingBag,
   ChevronDown,
-  Shield,
 } from 'lucide-react';
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useCart } from '@/shared/stores/cart-store';
+import { useAuth } from '@/shared/stores/auth-store';
 import { PerakendeMegaMenu } from './PerakendeMegaMenu';
 import { ToptanMegaMenu } from './ToptanMegaMenu';
 import { MobileNavDrawer } from './MobileNavDrawer';
 import { CartDrawer } from './CartDrawer';
 import { SearchModal } from './SearchModal';
+import { AuthModal } from './AuthModal';
 
 export function SiteNavbar() {
   const [activeMenu, setActiveMenu] = useState<'perakende' | 'toptan' | null>(null);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { count: wishlistCount } = useWishlist();
   const { totalItems: cartCount } = useCart();
+  const { user, isAdmin } = useAuth();
 
   const handleMouseEnter = (menu: 'perakende' | 'toptan') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -157,17 +160,6 @@ export function SiteNavbar() {
 
             {/* Action Icons */}
             <div className="flex items-center space-x-2 sm:space-x-4 text-text-primary">
-              {/* Direct Admin Link */}
-              <Link
-                to="/admin"
-                title="Yönetici Paneli (Admin)"
-                aria-label="Admin Paneli"
-                className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider bg-surface-muted text-text-secondary px-2.5 py-1 hover:bg-neutral-200 transition-colors"
-              >
-                <Shield className="w-3 h-3" />
-                <span>Admin</span>
-              </Link>
-
               {/* Search Trigger */}
               <button
                 onClick={() => setSearchModalOpen(true)}
@@ -178,14 +170,22 @@ export function SiteNavbar() {
                 <Search className="w-5 h-5" />
               </button>
 
-              {/* Account Trigger */}
-              <Link
-                to="/contact"
-                aria-label="Kullanıcı Hesabı"
-                className="p-2 text-text-primary hover:text-text-secondary transition-colors hidden sm:inline-block"
+              {/* Account / Login Trigger */}
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                aria-label={user ? (isAdmin ? 'Yönetici Hesabı' : 'Kullanıcı Hesabı') : 'Giriş Yap'}
+                title={user ? `${user.email} (${isAdmin ? 'Admin' : 'Müşteri'})` : 'Giriş Yap / Hesap'}
+                className="p-2 text-text-primary hover:text-text-secondary transition-colors relative hidden sm:inline-flex items-center"
               >
-                <User className="w-5 h-5" />
-              </Link>
+                {isAdmin ? (
+                  <div className="relative">
+                    <User className="w-5 h-5 text-text-primary" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neutral-900 border-2 border-surface-primary rounded-full" />
+                  </div>
+                ) : (
+                  <User className="w-5 h-5" />
+                )}
+              </button>
 
               {/* Wishlist Trigger with Badge */}
               <Link
@@ -242,6 +242,10 @@ export function SiteNavbar() {
       <SearchModal
         isOpen={searchModalOpen}
         onClose={() => setSearchModalOpen(false)}
+      />
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
       />
     </>
   );

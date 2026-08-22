@@ -24,7 +24,7 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
       onMouseLeave={onClose}
       role="region"
       aria-label="Perakende Menüsü"
-      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 transition-opacity duration-200"
+      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 animate-fade-scale transition-all duration-300 origin-top"
     >
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-12 gap-8">
         {/* Link Groups (8 columns) */}

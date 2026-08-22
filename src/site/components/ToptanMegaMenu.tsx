@@ -24,7 +24,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
       onMouseLeave={onClose}
       role="region"
       aria-label="Toptan Menüsü"
-      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 transition-opacity duration-200"
+      className="absolute top-full left-0 w-full bg-surface-primary border-b border-border-default shadow-dropdown z-40 animate-fade-scale transition-all duration-300 origin-top"
     >
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-12 gap-8">
         {/* Link Groups (8 columns) */}
@@ -53,7 +53,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
           ))}
         </div>
 
-        {/* B2B Application Promo Card (4 columns) */}
+        {/* Toptan Application Promo Card (4 columns) */}
         <div className="col-span-4 bg-surface-muted border border-border-subtle p-6 flex flex-col justify-between">
           <div className="space-y-3">
             <div className="w-10 h-10 bg-surface-inverse text-text-inverse flex items-center justify-center mb-2">
@@ -61,7 +61,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
             </div>
             <div className="flex items-center gap-1.5 text-xs uppercase font-semibold tracking-editorial text-text-secondary">
               <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-              <span>Kurumsal & B2B Portalı</span>
+              <span>Kurumsal & Toptan Portalı</span>
             </div>
             <h4 className="font-display text-xl text-text-primary">
               {menuData.promo.title}

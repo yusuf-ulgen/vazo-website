@@ -15,7 +15,7 @@ describe('Mega Menus (Perakende & Toptan)', () => {
   it('renders ToptanMegaMenu with B2B portal options', async () => {
     renderWithRouter(<ToptanMegaMenu isOpen={true} onClose={vi.fn()} />);
 
-    expect(await screen.findByText('Toptan & B2B Çözümleri')).toBeInTheDocument();
+    expect(await screen.findByText('Toptan Çözümleri')).toBeInTheDocument();
     expect(screen.getByText('Sektörel Projeler')).toBeInTheDocument();
   });
 

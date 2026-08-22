@@ -8,7 +8,7 @@ export function WholesaleHowItWorksPage() {
       step: '01',
       title: 'Başvuru & İhtiyaç Belirleme',
       description:
-        'Online başvuru formumuz üzerinden veya doğrudan B2B temsilcimizle iletişime geçerek projenizin kapsamını, ilgilendiğiniz model ve yaklaşık adetleri paylaşırsınız.',
+        'Online başvuru formumuz üzerinden veya doğrudan toptan temsilcimizle iletişime geçerek projenizin kapsamını, ilgilendiğiniz model ve yaklaşık adetleri paylaşırsınız.',
       subPoints: ['Mimari proje çizimleri ve yerleşim planı desteği', 'Toptan katalog ve miktar kademeleri incelemesi'],
     },
     {
@@ -22,7 +22,7 @@ export function WholesaleHowItWorksPage() {
       step: '03',
       title: 'Resmi Teklif & Termin Takvimi',
       description:
-        'Onaylanan adet ve varyantlar doğrultusunda KDV hariç net B2B teklifiniz ve atölye üretim termin takvimi (genellikle 10-25 iş günü) hazırlanır.',
+        'Onaylanan adet ve varyantlar doğrultusunda KDV hariç net toptan teklifiniz ve atölye üretim termin takvimi (genellikle 10-25 iş günü) hazırlanır.',
       subPoints: ['Şirketinize özel cari hesap / e-fatura açılışı', 'Esnek ödeme ve avans koşulları'],
     },
     {
@@ -49,7 +49,7 @@ export function WholesaleHowItWorksPage() {
           <nav className="text-xs text-text-muted flex items-center gap-1.5 font-sans">
             <Link to="/" className="hover:text-text-primary transition-colors">Ana Sayfa</Link>
             <span>/</span>
-            <Link to="/wholesale" className="hover:text-text-primary transition-colors">Toptan & B2B</Link>
+            <Link to="/wholesale" className="hover:text-text-primary transition-colors">Toptan</Link>
             <span>/</span>
             <span className="text-text-primary font-medium">Süreç Nasıl İşler?</span>
           </nav>

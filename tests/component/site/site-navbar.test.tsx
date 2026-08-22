@@ -56,7 +56,7 @@ describe('SiteNavbar Component', () => {
 
     const toptanBtn = screen.getByRole('button', { name: 'Toptan' });
     fireEvent.mouseEnter(toptanBtn.parentElement!);
-    expect(await screen.findByText('Toptan & B2B Çözümleri')).toBeInTheDocument();
+    expect(await screen.findByText('Toptan Çözümleri')).toBeInTheDocument();
   });
 
   it('displays cart and wishlist item badge counts', () => {

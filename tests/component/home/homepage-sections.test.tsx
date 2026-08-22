@@ -21,7 +21,7 @@ describe('Homepage Sections', () => {
     renderWithRouter(<HeroSection />);
     expect(await screen.findByRole('link', { name: /Alışverişe Başla/ })).toBeInTheDocument();
 
-    const wholesaleTab = screen.getByRole('button', { name: 'Toptan & B2B' });
+    const wholesaleTab = screen.getByRole('button', { name: 'Toptan' });
     fireEvent.click(wholesaleTab);
 
     expect(screen.getByRole('link', { name: /Toptan Kataloğu İncele/ })).toBeInTheDocument();

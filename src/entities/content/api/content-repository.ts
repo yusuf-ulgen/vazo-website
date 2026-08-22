@@ -330,7 +330,7 @@ export const contentRepository = {
       await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
-        message: 'Toptan / Trade başvurunuz başarıyla alındı. B2B temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
+        message: 'Toptan başvurunuz başarıyla alındı. Müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
       };
     }
 

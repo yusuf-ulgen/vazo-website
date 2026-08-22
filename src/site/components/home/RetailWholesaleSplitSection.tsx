@@ -58,7 +58,7 @@ export function RetailWholesaleSplitSection() {
               Profesyonel & Kurumsal
             </span>
             <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light leading-tight">
-              Toptan & B2B
+              Toptan
             </h3>
             <p className="text-xs sm:text-sm text-neutral-200 leading-relaxed font-sans font-normal">
               İç mimarlar ve otel/restoran projeleri için özel hacim iskontoları, geniş ürün seçeneği ve numune desteği.
