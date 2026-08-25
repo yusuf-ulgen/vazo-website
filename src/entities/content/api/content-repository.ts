@@ -2,6 +2,9 @@ import {
   AnnouncementBarConfig,
   HeroBannerConfig,
   EditorialSectionConfig,
+  HeroSlide,
+  SplitHeroConfig,
+  WholesaleBenefit,
 } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import { siteConfig } from '@/shared/config/site-config';
@@ -11,13 +14,7 @@ import {
   toptanMegaMenuData,
 } from '@/shared/mocks/navigation';
 
-export interface WholesaleBenefit {
-  id: string;
-  title: string;
-  description: string;
-  iconName: string;
-  order: number;
-}
+export type { WholesaleBenefit };
 
 export interface TradeApplicationPayload {
   companyName: string;
@@ -66,6 +63,39 @@ const mockHero: HeroBannerConfig = {
   primaryCtaUrl: '/products',
   secondaryCtaText: 'Toptan Satış',
   secondaryCtaUrl: '/wholesale',
+};
+
+const mockSplitHero: SplitHeroConfig = {
+  retail: {
+    id: 'h0000000-0000-0000-0000-000000000001',
+    eyebrow: 'BİREYSEL ALIŞVERİŞ',
+    title: 'Perakende',
+    subtitle: null,
+    description: 'Evinize estetik dokunuşlar katacak vazo koleksiyonlarımızı keşfedin.',
+    imageUrl: '/images/hero-retail.jpg',
+    primaryCtaText: 'Alışverişe Başla',
+    primaryCtaUrl: '/products',
+    secondaryCtaText: null,
+    secondaryCtaUrl: null,
+    slot: 'retail',
+    sortOrder: 1,
+    active: true,
+  },
+  wholesale: {
+    id: 'h0000000-0000-0000-0000-000000000002',
+    eyebrow: 'PROFESYONEL ALIŞVERİŞ',
+    title: 'Toptan',
+    subtitle: null,
+    description: 'Projeleriniz için özel fiyatlar, geniş ürün seçeneği ve profesyonel destek alın.',
+    imageUrl: '/images/hero-wholesale.jpg',
+    primaryCtaText: 'Toptan Alışverişe Geç',
+    primaryCtaUrl: '/wholesale',
+    secondaryCtaText: null,
+    secondaryCtaUrl: null,
+    slot: 'wholesale',
+    sortOrder: 2,
+    active: true,
+  },
 };
 
 const mockEditorialSections: EditorialSectionConfig[] = [
@@ -205,6 +235,72 @@ export const contentRepository = {
       primaryCtaUrl: data.primary_cta_url,
       secondaryCtaText: data.secondary_cta_text || '',
       secondaryCtaUrl: data.secondary_cta_url || '',
+    };
+  },
+
+  async getSplitHero(): Promise<SplitHeroConfig> {
+    if (isStorefrontMockEnabled) {
+      return mockSplitHero;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    }
+
+    const { data, error } = await supabase
+      .from('hero_slides')
+      .select('*')
+      .eq('active', true)
+      .in('slot', ['retail', 'wholesale'])
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('[contentRepository.getSplitHero] Live Supabase error:', error.message);
+      throw new Error(`Failed to fetch split hero from Supabase: ${error.message}`);
+    }
+
+    interface HeroSlideDbRow {
+      id: string;
+      eyebrow: string | null;
+      title: string;
+      subtitle: string | null;
+      description: string;
+      image_url: string;
+      primary_cta_text: string;
+      primary_cta_url: string;
+      secondary_cta_text: string | null;
+      secondary_cta_url: string | null;
+      slot: 'retail' | 'wholesale' | 'general';
+      sort_order: number;
+      active: boolean;
+    }
+
+    const rows = (data || []) as unknown as HeroSlideDbRow[];
+    const retailRow = rows.find((s) => s.slot === 'retail');
+    const wholesaleRow = rows.find((s) => s.slot === 'wholesale');
+
+    const mapRowToSlide = (row: HeroSlideDbRow | undefined): HeroSlide | null => {
+      if (!row) return null;
+      return {
+        id: row.id,
+        eyebrow: row.eyebrow,
+        title: row.title,
+        subtitle: row.subtitle,
+        description: row.description,
+        imageUrl: row.image_url,
+        primaryCtaText: row.primary_cta_text,
+        primaryCtaUrl: row.primary_cta_url,
+        secondaryCtaText: row.secondary_cta_text,
+        secondaryCtaUrl: row.secondary_cta_url,
+        slot: row.slot || 'retail',
+        sortOrder: row.sort_order,
+        active: row.active,
+      };
+    };
+
+    return {
+      retail: mapRowToSlide(retailRow),
+      wholesale: mapRowToSlide(wholesaleRow),
     };
   },
 

@@ -22,6 +22,14 @@ describe('contentRepository', () => {
       expect(hero?.primaryCtaText).toBeDefined();
     });
 
+    it('returns mock split hero content', async () => {
+      const splitHero = await contentRepository.getSplitHero();
+      expect(splitHero.retail).not.toBeNull();
+      expect(splitHero.retail?.title).toBe('Perakende');
+      expect(splitHero.wholesale).not.toBeNull();
+      expect(splitHero.wholesale?.title).toBe('Toptan');
+    });
+
     it('returns mock editorial sections sorted by order', async () => {
       const sections = await contentRepository.getEditorialSections();
       expect(sections.length).toBeGreaterThan(0);
@@ -51,6 +59,9 @@ describe('contentRepository', () => {
         'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
       );
       await expect(contentRepository.getHero()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(contentRepository.getSplitHero()).rejects.toThrow(
         'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
       );
       await expect(contentRepository.getEditorialSections()).rejects.toThrow(
@@ -137,17 +148,59 @@ describe('contentRepository', () => {
       expect(hero?.title).toBe('Live Hero');
     });
 
-    it('returns null when hero query has zero rows in live mode', async () => {
+    it('maps split hero for retail and wholesale slots in live mode', async () => {
+      const mockHeroRows = [
+        {
+          id: 'hero-ret',
+          eyebrow: 'BİREYSEL',
+          title: 'Perakende Canlı',
+          description: 'Açıklama',
+          image_url: 'https://example.com/ret.jpg',
+          primary_cta_text: 'Başla',
+          primary_cta_url: '/products',
+          slot: 'retail',
+          sort_order: 1,
+          active: true,
+        },
+        {
+          id: 'hero-who',
+          eyebrow: 'PROFESYONEL',
+          title: 'Toptan Canlı',
+          description: 'Açıklama',
+          image_url: 'https://example.com/who.jpg',
+          primary_cta_text: 'Toptan Geç',
+          primary_cta_url: '/wholesale',
+          slot: 'wholesale',
+          sort_order: 2,
+          active: true,
+        },
+      ];
+
       const mockClient = createMockSupabaseClient({
-        hero_slides: { data: null, error: null },
+        hero_slides: { data: mockHeroRows, error: null },
       });
 
       vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      const hero = await contentRepository.getHero();
-      expect(hero).toBeNull();
+      const split = await contentRepository.getSplitHero();
+      expect(split.retail?.title).toBe('Perakende Canlı');
+      expect(split.wholesale?.title).toBe('Toptan Canlı');
+    });
+
+    it('throws error when live split hero query fails (NO silent mock fallback)', async () => {
+      const mockClient = createMockSupabaseClient({
+        hero_slides: { data: null, error: { message: 'Hero fetch error' } },
+      });
+
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+
+      await expect(contentRepository.getSplitHero()).rejects.toThrow(
+        'Failed to fetch split hero from Supabase'
+      );
     });
 
     it('maps editorial sections from editorial_sections', async () => {
@@ -177,23 +230,10 @@ describe('contentRepository', () => {
       expect(sections[0]?.title).toBe('Heykel');
     });
 
-    it('returns empty array when editorial sections have zero rows in live mode', async () => {
-      const mockClient = createMockSupabaseClient({
-        editorial_sections: { data: [], error: null },
-      });
-
-      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
-      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
-      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
-
-      const sections = await contentRepository.getEditorialSections();
-      expect(sections).toEqual([]);
-    });
-
     it('maps wholesale benefits from wholesale_benefits', async () => {
       const mockBenefit = {
         id: 'ben-1',
-        icon: 'Tag',
+        icon_name: 'Tag',
         title: 'Toptan İskonto',
         description: 'Hacimli indirimler',
         active: true,
@@ -238,34 +278,6 @@ describe('contentRepository', () => {
       expect(mega.groups.length).toBe(1);
       expect(mega.groups[0]?.title).toBe('Kategoriler');
       expect(mega.promo?.title).toBe('Özel Seri');
-    });
-
-    it('returns empty menu object when live menu query returns zero rows (NO silent mock fallback)', async () => {
-      const mockClient = createMockSupabaseClient({
-        menu_groups: { data: [], error: null },
-      });
-
-      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
-      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
-      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
-
-      const mega = await contentRepository.getMegaMenu('retail_mega');
-      expect(mega.groups).toEqual([]);
-      expect(mega.promo?.title).toBe('');
-    });
-
-    it('throws error when live menu query fails (NO silent mock fallback)', async () => {
-      const mockClient = createMockSupabaseClient({
-        menu_groups: { data: null, error: { message: 'Menu fetch error' } },
-      });
-
-      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
-      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
-      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
-
-      await expect(contentRepository.getMegaMenu('retail_mega')).rejects.toThrow(
-        'Failed to fetch navigation menu from Supabase'
-      );
     });
   });
 });

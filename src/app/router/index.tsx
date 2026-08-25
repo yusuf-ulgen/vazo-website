@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
   Inbox,
-  FileText,
   Settings,
 } from 'lucide-react';
 import { SiteLayout } from '@/site/layouts/SiteLayout';
@@ -61,6 +60,9 @@ const AdminPricingPage = React.lazy(() =>
 );
 const AdminWholesalePage = React.lazy(() =>
   import('@/admin/wholesale/pages/AdminWholesalePage').then((m) => ({ default: m.AdminWholesalePage }))
+);
+const AdminContentPage = React.lazy(() =>
+  import('@/admin/content/pages/AdminContentPage').then((m) => ({ default: m.AdminContentPage }))
 );
 
 const adminFallback = (
@@ -283,18 +285,7 @@ export const router = createBrowserRouter([
         path: 'content',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="İçerik & CMS Yönetimi"
-              moduleCode="MOD-CMS-08"
-              description="Duyuru çubuğu, ana sayfa hero metinleri, mega-menü kartları ve editoryal bloklar."
-              icon={FileText}
-              plannedFeatures={[
-                'Duyuru bandı metni ve linki düzenleme',
-                'Ana sayfa hero başlık, görsel ve CTA butonları',
-                'Mega menü öne çıkan promosyon kartları yönetimi',
-                'Editoryal zanaat hikayesi bloklarının sıralanması',
-              ]}
-            />
+            <AdminContentPage />
           </Suspense>
         ),
       },

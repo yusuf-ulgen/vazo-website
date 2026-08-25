@@ -317,4 +317,8 @@ export const productRepository = {
 
     return data ? mapRowToProduct(data as unknown as SupabaseProductRow) : null;
   },
+
+  async getBestsellers(limit = 6): Promise<Product[]> {
+    return this.getProducts({ isBestseller: true, limit });
+  },
 };
