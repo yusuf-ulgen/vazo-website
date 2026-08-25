@@ -7,6 +7,7 @@ import {
 } from '../types';
 import { generateSlug, validateSlug } from '@/admin/categories/api/admin-category-repository';
 import { FormField, AdminInput, AdminTextarea } from '@/admin/ui/FormField';
+import { AssetUploadButton } from '@/admin/media/components/AssetUploadButton';
 
 export interface CollectionFormModalProps {
   isOpen: boolean;
@@ -231,13 +232,22 @@ export function CollectionFormModal({
           </div>
 
           <FormField label="Hero Banner Görsel URL" htmlFor="collection-hero" hint="Koleksiyon detay sayfası kapak görseli">
-            <AdminInput
-              id="collection-hero"
-              value={heroImageUrl}
-              onChange={(e) => setHeroImageUrl(e.target.value)}
-              placeholder="https://..."
-              disabled={isLoading}
-            />
+            <div className="flex gap-2">
+              <AdminInput
+                id="collection-hero"
+                value={heroImageUrl}
+                onChange={(e) => setHeroImageUrl(e.target.value)}
+                placeholder="https://..."
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <AssetUploadButton
+                prefix="collections"
+                entityId={collection?.id}
+                onUploaded={setHeroImageUrl}
+                disabled={isLoading}
+              />
+            </div>
           </FormField>
 
           <FormField label="Kısa Açıklama" htmlFor="collection-desc">

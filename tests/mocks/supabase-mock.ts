@@ -70,6 +70,13 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
         },
       }),
     },
+    storage: {
+      from: vi.fn().mockReturnValue({
+        upload: vi.fn().mockResolvedValue({ data: { path: '' }, error: null }),
+        getPublicUrl: vi.fn().mockReturnValue({ data: { publicUrl: '' } }),
+        remove: vi.fn().mockResolvedValue({ data: [], error: null }),
+      }),
+    },
   };
 }
 

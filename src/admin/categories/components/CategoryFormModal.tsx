@@ -7,6 +7,7 @@ import {
 } from '../types';
 import { generateSlug, validateSlug } from '../api/admin-category-repository';
 import { FormField, AdminInput, AdminSelect, AdminTextarea } from '@/admin/ui/FormField';
+import { AssetUploadButton } from '@/admin/media/components/AssetUploadButton';
 
 export interface CategoryFormModalProps {
   isOpen: boolean;
@@ -239,13 +240,22 @@ export function CategoryFormModal({
           </div>
 
           <FormField label="Kategori Görsel URL" htmlFor="category-image" hint="Katalog vitrin görsel bağlantısı">
-            <AdminInput
-              id="category-image"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://..."
-              disabled={isLoading}
-            />
+            <div className="flex gap-2">
+              <AdminInput
+                id="category-image"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://..."
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <AssetUploadButton
+                prefix="categories"
+                entityId={category?.id}
+                onUploaded={setImageUrl}
+                disabled={isLoading}
+              />
+            </div>
           </FormField>
 
           <FormField label="Açıklama" htmlFor="category-desc">
