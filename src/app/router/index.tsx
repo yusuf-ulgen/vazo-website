@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
-  Package,
   Boxes,
   Percent,
   Building2,
@@ -47,6 +46,9 @@ const AdminDashboardPage = React.lazy(() =>
 );
 const AdminModuleScaffoldPage = React.lazy(() =>
   import('@/admin/pages/AdminModuleScaffoldPage').then((m) => ({ default: m.AdminModuleScaffoldPage }))
+);
+const AdminProductsPage = React.lazy(() =>
+  import('@/admin/products/pages/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage }))
 );
 const AdminCategoriesPage = React.lazy(() =>
   import('@/admin/categories/pages/AdminCategoriesPage').then((m) => ({ default: m.AdminCategoriesPage }))
@@ -208,18 +210,7 @@ export const router = createBrowserRouter([
         path: 'products',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Ürün Yönetimi (CRUD)"
-              moduleCode="MOD-PROD-01"
-              description="Tasarım vazo modelleri, varyant matrisleri, fiziksel boyutlar ve yayınlama durumları."
-              icon={Package}
-              plannedFeatures={[
-                'Vazo model ekleme / düzenleme / arşivleme',
-                'SKU bazlı varyant matrisi ve boyut tanımları (Yükseklik, Çap, Ağırlık)',
-                'Çoklu görsel galerisi ve sıralama',
-                'Perakende ve toptan kanal görünürlük anahtarları',
-              ]}
-            />
+            <AdminProductsPage />
           </Suspense>
         ),
       },
