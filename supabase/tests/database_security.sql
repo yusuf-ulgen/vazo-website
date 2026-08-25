@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(30);
+SELECT plan(38);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -19,6 +19,7 @@ SELECT has_table('public', 'site_settings', 'Table public.site_settings should e
 SELECT has_table('public', 'trade_applications', 'Table public.trade_applications should exist');
 SELECT has_table('public', 'contact_messages', 'Table public.contact_messages should exist');
 SELECT has_table('public', 'newsletter_subscriptions', 'Table public.newsletter_subscriptions should exist');
+SELECT has_table('public', 'admin_users', 'Table public.admin_users should exist');
 
 -- ------------------------------------------------------------------------------
 -- 2. Row Level Security (RLS) Enabled Checks
@@ -31,6 +32,7 @@ SELECT row_level_security_is_active('public', 'site_settings', 'RLS should be ac
 SELECT row_level_security_is_active('public', 'trade_applications', 'RLS should be active on trade_applications');
 SELECT row_level_security_is_active('public', 'contact_messages', 'RLS should be active on contact_messages');
 SELECT row_level_security_is_active('public', 'newsletter_subscriptions', 'RLS should be active on newsletter_subscriptions');
+SELECT row_level_security_is_active('public', 'admin_users', 'RLS should be active on admin_users');
 
 -- ------------------------------------------------------------------------------
 -- 3. Anonymous Role (Storefront Public Visitor) Isolation Tests
@@ -113,6 +115,20 @@ SELECT is(
     'Anonymous user cannot read newsletter subscribers (privacy protection)'
 );
 
+-- 3.11 Anon CANNOT view or insert into admin_users (Role escalation protection)
+SELECT is(
+    (SELECT count(*) FROM public.admin_users),
+    0::bigint,
+    'Anonymous user receives 0 rows when attempting to select admin_users'
+);
+
+SELECT throws_ok(
+    $$ INSERT INTO public.admin_users (user_id, role, active) VALUES ('a0000000-0000-0000-0000-000000000001', 'admin', true) $$,
+    '42501',
+    NULL,
+    'Direct anonymous INSERT into admin_users must fail (Role escalation denied)'
+);
+
 -- ------------------------------------------------------------------------------
 -- 4. Hidden-Parent Child RLS Regression Check
 -- ------------------------------------------------------------------------------
@@ -150,6 +166,40 @@ SELECT is(
     (SELECT count(*) FROM public.product_media WHERE alt_text = 'Taslak Görsel'),
     0::bigint,
     'Child media of draft product is completely invisible to anonymous visitors'
+);
+
+-- ------------------------------------------------------------------------------
+-- 5. Authenticated Non-Admin vs Active Admin RBAC Isolation Checks
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- 5.1 Helper function public.is_admin returns boolean
+SELECT ok(
+    public.is_admin('00000000-0000-0000-0000-000000000000') = false,
+    'public.is_admin returns false for unknown user'
+);
+
+-- 5.2 Authenticated non-admin cannot insert or self-escalate into admin_users
+SET LOCAL ROLE authenticated;
+
+SELECT throws_ok(
+    $$ INSERT INTO public.admin_users (user_id, role, active) VALUES ('b0000000-0000-0000-0000-000000000002', 'admin', true) $$,
+    '42501',
+    NULL,
+    'Authenticated non-admin user cannot insert into admin_users'
+);
+
+SELECT throws_ok(
+    $$ INSERT INTO public.products (slug, name, material, finish, retail_price) VALUES ('customer-hack', 'Customer Hack', 'Clay', 'Matte', 2000) $$,
+    '42501',
+    NULL,
+    'Authenticated non-admin user cannot insert products'
+);
+
+SELECT is(
+    (SELECT count(*) FROM public.admin_users),
+    0::bigint,
+    'Authenticated non-admin receives 0 rows from admin_users'
 );
 
 RESET ROLE;

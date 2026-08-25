@@ -35,14 +35,21 @@ export function createSupabaseQueryMock<T = unknown>(response: MockSupabaseRespo
     queryBuilder[method] = vi.fn().mockImplementation(() => queryBuilder);
   });
 
-  queryBuilder.single = vi.fn().mockResolvedValue(response);
-  queryBuilder.maybeSingle = vi.fn().mockResolvedValue(response);
+  const singleData = Array.isArray(response.data) ? (response.data[0] ?? null) : response.data;
+  const singleResponse = {
+    ...response,
+    data: singleData,
+  };
+
+  queryBuilder.single = vi.fn().mockResolvedValue(singleResponse);
+  queryBuilder.maybeSingle = vi.fn().mockResolvedValue(singleResponse);
   queryBuilder.then = vi.fn().mockImplementation((onFulfilled: (res: MockSupabaseResponse<T>) => unknown) => {
     return Promise.resolve(response).then(onFulfilled);
   });
 
   return queryBuilder;
 }
+
 
 export function createMockSupabaseClient(tableResponses: Record<string, MockSupabaseResponse>) {
   return {
@@ -53,5 +60,16 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
     functions: {
       invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
     },
+    auth: {
+      signInWithPassword: vi.fn().mockResolvedValue({ data: { user: null, session: null }, error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      onAuthStateChange: vi.fn().mockReturnValue({
+        data: {
+          subscription: { unsubscribe: vi.fn() },
+        },
+      }),
+    },
   };
 }
+

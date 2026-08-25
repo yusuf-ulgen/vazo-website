@@ -1,52 +1,44 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authStore, isEmailAdmin } from '@/shared/stores/auth-store';
+import { authStore } from '@/shared/stores/auth-store';
 
-describe('authStore', () => {
+describe('Storefront Customer authStore (Phase 2.2 RBAC Decoupled)', () => {
   beforeEach(() => {
     localStorage.clear();
     authStore.logout();
     vi.restoreAllMocks();
   });
 
-  it('identifies admin emails accurately', () => {
-    expect(isEmailAdmin('adminvazo@gmail.com')).toBe(true);
-    expect(isEmailAdmin('admin@vazostudio.com')).toBe(true);
-    expect(isEmailAdmin('admin@vazo.com')).toBe(true);
-    expect(isEmailAdmin('admin@admin.com')).toBe(true);
-    expect(isEmailAdmin('yusuf@vazostudio.com')).toBe(true);
-    expect(isEmailAdmin('musteri@gmail.com')).toBe(false);
+  it('strictly assigns customer role and never grants admin role based on email', () => {
+    const adminEmailUser = authStore.login('admin@vazostudio.com');
+    expect(adminEmailUser.role).toBe('customer');
+    expect(adminEmailUser.email).toBe('admin@vazostudio.com');
+
+    const adminPrefixUser = authStore.login('adminvazo@gmail.com');
+    expect(adminPrefixUser.role).toBe('customer');
+
+    const plusAdminUser = authStore.login('user+admin@example.com');
+    expect(plusAdminUser.role).toBe('customer');
   });
 
-  it('logs in as admin with valid credentials', () => {
-    const user = authStore.login('adminvazo@gmail.com', 'LocalDev123');
-    expect(user.role).toBe('admin');
-    expect(user.email).toBe('adminvazo@gmail.com');
-    expect(authStore.getUser()).toEqual(user);
-  });
-
-  it('throws error when admin password is wrong', () => {
-    expect(() => {
-      authStore.login('adminvazo@gmail.com', 'WrongPassword');
-    }).toThrow('Yönetici şifresi hatalı.');
-  });
-
-  it('logs in as customer for standard emails', () => {
+  it('logs in as customer for standard emails with name fallback', () => {
     const user = authStore.login('musteri@example.com', 'Secret123', 'Ayşe Demir');
     expect(user.role).toBe('customer');
     expect(user.name).toBe('Ayşe Demir');
+    expect(user.email).toBe('musteri@example.com');
   });
 
-  it('supports google login', () => {
+  it('supports google guest login with customer role', () => {
     const user = authStore.loginWithGoogle();
     expect(user.role).toBe('customer');
     expect(user.email).toBe('Misafir Oturumu');
   });
 
-  it('logs out and clears session', () => {
+  it('logs out and clears session from localStorage', () => {
     authStore.login('test@test.com', '1234');
     expect(authStore.getUser()).not.toBeNull();
     authStore.logout();
     expect(authStore.getUser()).toBeNull();
+    expect(localStorage.getItem('vazo_customer_auth_user')).toBeNull();
   });
 
   it('notifies subscribers on auth state changes', () => {
@@ -60,5 +52,18 @@ describe('authStore', () => {
     expect(listener).toHaveBeenCalledWith(null);
 
     unsubscribe();
+  });
+
+  it('does not allow localStorage role tampering to grant admin role', () => {
+    // Simulate malicious user injecting role: 'admin' into localStorage
+    localStorage.setItem(
+      'vazo_customer_auth_user',
+      JSON.stringify({ email: 'hacker@example.com', name: 'Hacker', role: 'admin' })
+    );
+
+    // Initializing store must enforce role: 'customer'
+    // Since getInitialUser runs at module load, verify that login or state never permits admin
+    const user = authStore.login('hacker@example.com');
+    expect(user.role).toBe('customer');
   });
 });

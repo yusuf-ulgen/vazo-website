@@ -33,6 +33,14 @@ import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 
 // Admin Code Splitting (Lazy-loaded to keep public initial bundle clean)
+import { AdminAuthProvider } from '@/admin/auth/AdminAuthProvider';
+
+const AdminLoginPage = React.lazy(() =>
+  import('@/admin/pages/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage }))
+);
+const AdminGuard = React.lazy(() =>
+  import('@/admin/auth/AdminGuard').then((m) => ({ default: m.AdminGuard }))
+);
 const AdminLayout = React.lazy(() =>
   import('@/admin/layouts/AdminLayout').then((m) => ({ default: m.AdminLayout }))
 );
@@ -154,23 +162,44 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Back-Office Admin Panel Routes (Code-Split)
+  // Dedicated Admin Login Route
+  {
+    path: '/admin/login',
+    element: (
+      <AdminAuthProvider>
+        <Suspense fallback={adminFallback}>
+          <AdminLoginPage />
+        </Suspense>
+      </AdminAuthProvider>
+    ),
+  },
+
+  // Back-Office Protected Admin Panel Routes
   {
     path: '/admin',
     element: (
-      <Suspense fallback={adminFallback}>
-        <AdminLayout />
-      </Suspense>
+      <AdminAuthProvider>
+        <Suspense fallback={adminFallback}>
+          <AdminGuard />
+        </Suspense>
+      </AdminAuthProvider>
     ),
     children: [
       {
-        index: true,
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminDashboardPage />
+            <AdminLayout />
           </Suspense>
         ),
-      },
+        children: [
+          {
+            index: true,
+            element: (
+              <Suspense fallback={adminFallback}>
+                <AdminDashboardPage />
+              </Suspense>
+            ),
+          },
       {
         path: 'products',
         element: (
@@ -339,4 +368,7 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  ],
+},
 ]);
+

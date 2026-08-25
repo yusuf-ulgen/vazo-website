@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { X, User, Shield, LogOut, ArrowRight, CheckCircle2, Heart, ShoppingBag, Building2, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { X, User, LogOut, ArrowRight, CheckCircle2, Heart, ShoppingBag, Building2, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/shared/stores/auth-store';
 
 export interface AuthModalProps {
@@ -9,12 +9,11 @@ export interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { user, isAuthenticated, isAdmin, login, loginWithGoogle, logout } = useAuth();
+  const { user, isAuthenticated, login, loginWithGoogle, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,19 +53,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     }
 
     try {
-      const loggedInUser = login(email, password);
-      if (loggedInUser.role === 'admin') {
-        setSuccessMsg('Yönetici girişi başarılı! Yönlendiriliyorsunuz...');
-        setTimeout(() => {
-          onClose();
-          navigate('/admin');
-        }, 800);
-      } else {
-        setSuccessMsg('Giriş başarılı!');
-        setTimeout(() => {
-          onClose();
-        }, 600);
-      }
+      login(email, password);
+      setSuccessMsg('Giriş başarılı!');
+      setTimeout(() => {
+        onClose();
+      }, 600);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Giriş yapılamadı.';
       setErrorMsg(msg);
@@ -117,15 +108,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <div className="space-y-6">
             <div className="flex items-center gap-3.5 border-b border-border-subtle pb-4">
               <div className="w-12 h-12 rounded-full bg-surface-secondary border border-border-default flex items-center justify-center text-text-primary shrink-0">
-                {isAdmin ? <Shield className="w-6 h-6 text-feedback-success" /> : <User className="w-6 h-6 text-text-secondary" />}
+                <User className="w-6 h-6 text-text-secondary" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-display text-lg text-text-primary font-medium truncate">
-                    {isAdmin ? 'Sistem Yöneticisi' : user.email === 'Misafir Oturumu' ? 'Misafir Ziyaretçi' : (user.name || user.email)}
+                    {user.email === 'Misafir Oturumu' ? 'Misafir Ziyaretçi' : (user.name || user.email)}
                   </span>
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-surface-secondary border border-border-subtle text-text-secondary rounded shrink-0">
-                    {isAdmin ? 'Admin' : user.email === 'Misafir Oturumu' ? 'Ziyaretçi Oturumu' : 'Üye'}
+                    {user.email === 'Misafir Oturumu' ? 'Ziyaretçi Oturumu' : 'Üye'}
                   </span>
                 </div>
                 <p className="text-xs text-text-secondary truncate mt-0.5">
@@ -138,20 +129,6 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             {/* Quick Actions List */}
             <div className="space-y-2 text-xs">
-              {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={onClose}
-                  className="w-full flex items-center justify-between p-3.5 bg-neutral-900 text-white hover:bg-neutral-800 transition-colors uppercase font-semibold tracking-wider text-xs"
-                >
-                  <span className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-white" />
-                    <span>Yönetici Paneline Git</span>
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              )}
-
               <Link
                 to="/wishlist"
                 onClick={onClose}

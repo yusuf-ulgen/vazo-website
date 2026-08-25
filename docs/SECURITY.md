@@ -25,15 +25,24 @@ This document establishes the security standards and operational policies for th
 
 ---
 
-## 2. Authentication & Admin Panel Security
+## 2. Authentication & Admin Panel Security (Phase 2.2 Architecture)
 
-### 2.1 Client-Side Route Guards Are NOT Security Boundaries
-- React Router guards (`/admin/*`) provide user experience navigation flow only.
-- In single-page applications, client-side code can be inspected or bypassed in browser dev tools.
-- **Mandatory Backend Enforcement**: All admin API endpoints and mutations must be independently authenticated and authorized via server-side session cookies or JWT tokens with strict RBAC (Role-Based Access Control).
+### 2.1 Supabase Auth & Database-Enforced RBAC
+- Admin authentication is handled exclusively through official **Supabase Auth** (`supabase.auth.signInWithPassword` and `supabase.auth.signOut`).
+- Storefront customer authentication is completely isolated from admin authority: storefront `auth-store` cannot grant admin privileges, and no client-side heuristics (email domains, prefixes, or `localStorage` manipulation) are trusted.
+- **Database RBAC (`public.admin_users`)**:
+  - The `public.admin_users` table maintains user IDs, roles (`admin`, `super_admin`), and active flags.
+  - Hardened database helper `public.is_admin()` uses `SECURITY DEFINER` with fixed `search_path = public, auth, pg_temp` to prevent search path hijacking.
+  - Zero browser INSERT/UPDATE/DELETE policies exist on `public.admin_users`. Role escalation from browser clients is mathematically impossible under Postgres RLS.
+  - Admin user provisioning must be performed via Supabase Dashboard, secure SQL migrations, or backend service-role operations.
 
-### 2.2 Credential Protection
-- Admin login passwords and tokens must never be logged to browser console or persisted in unencrypted `localStorage` without explicit token expiration and refresh handling.
+### 2.2 Client-Side Route Guards & Defense-in-Depth
+- React Router guards (`AdminGuard`) provide UX routing, redirecting unauthenticated or unprivileged users to `/admin/login`.
+- However, all admin management tables (`products`, `categories`, `collections`, `wholesale_price_tiers`, `site_settings`, `trade_applications`, etc.) strictly enforce `is_admin()` in RLS policies. Even if a malicious actor bypasses client JavaScript, Postgres RLS blocks all unauthorized mutations with `42501 (insufficient_privilege)`.
+
+### 2.3 Zero Hardcoded Credentials
+- No admin passwords, demo credentials, or credential lists (`ADMIN_CREDENTIALS`) may ever exist in source code.
+
 
 ---
 

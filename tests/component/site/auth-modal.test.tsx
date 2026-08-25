@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthModal } from '@/site/components/AuthModal';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { authStore } from '@/shared/stores/auth-store';
 
-describe('AuthModal Component', () => {
+describe('AuthModal Component (Customer Storefront UX)', () => {
   beforeEach(() => {
     localStorage.clear();
     authStore.logout();
@@ -28,6 +28,7 @@ describe('AuthModal Component', () => {
     fireEvent.click(googleBtn);
 
     expect(authStore.getUser()).not.toBeNull();
+    expect(authStore.getUser()?.role).toBe('customer');
   });
 
   it('validates short password input on form submission', () => {
@@ -44,34 +45,37 @@ describe('AuthModal Component', () => {
     expect(screen.getByText('Şifreniz en az 4 karakter olmalıdır.')).toBeInTheDocument();
   });
 
-  it('shows error on wrong admin password and logs in on correct password', () => {
-    renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
+  it('submits valid customer login and updates user state', async () => {
+    const handleClose = vi.fn();
+    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
 
     const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
     const passwordInput = screen.getByPlaceholderText('••••••••');
     const form = emailInput.closest('form')!;
 
-    // Wrong password
-    fireEvent.change(emailInput, { target: { value: 'adminvazo@gmail.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'WrongPass' } });
+    fireEvent.change(emailInput, { target: { value: 'musteri@gmail.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'CustomerPass123' } });
     fireEvent.submit(form);
 
-    expect(screen.getByText('Yönetici şifresi hatalı.')).toBeInTheDocument();
+    expect(screen.getByText('musteri@gmail.com')).toBeInTheDocument();
+    expect(authStore.getUser()?.email).toBe('musteri@gmail.com');
+    expect(authStore.getUser()?.role).toBe('customer');
 
-    // Correct password
-    fireEvent.change(passwordInput, { target: { value: 'LocalDev123' } });
-    fireEvent.submit(form);
-
-    expect(authStore.getUser()?.role).toBe('admin');
+    await waitFor(() => {
+      expect(handleClose).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 
-  it('renders logged in user profile with admin controls and logout', () => {
-    authStore.login('adminvazo@gmail.com', 'LocalDev123');
+  it('renders logged in user profile with customer links and logout', () => {
+    authStore.login('musteri@gmail.com', 'Pass123', 'Merve');
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
-    expect(screen.getByText('Admin')).toBeInTheDocument();
-    expect(screen.getByText('Yönetici Paneline Git')).toBeInTheDocument();
+    expect(screen.getByText('Merve')).toBeInTheDocument();
+    expect(screen.getByText('Üye')).toBeInTheDocument();
+    expect(screen.getByText('Favorilerim')).toBeInTheDocument();
+    expect(screen.getByText('Alışveriş Sepetim')).toBeInTheDocument();
+    expect(screen.getByText('Toptan Satış Başvurusu')).toBeInTheDocument();
 
     const logoutBtn = screen.getByRole('button', { name: /Oturumu Kapat/i });
     fireEvent.click(logoutBtn);

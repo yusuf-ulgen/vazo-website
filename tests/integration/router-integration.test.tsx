@@ -40,5 +40,9 @@ describe('Router & App Integration Tests', () => {
     expect(paths).toContain('contact');
     expect(paths).toContain('faq');
     expect(paths).toContain('*');
+
+    const routePaths = router.routes.map((r) => r.path);
+    expect(routePaths).toContain('/admin');
+    expect(routePaths).toContain('/admin/login');
   });
 });

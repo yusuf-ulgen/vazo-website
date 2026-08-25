@@ -3,26 +3,10 @@ import { useState, useEffect } from 'react';
 export interface AuthUser {
   email: string;
   name?: string;
-  role: 'admin' | 'customer';
+  role: 'customer';
 }
 
-const AUTH_STORAGE_KEY = 'vazo_auth_user';
-
-// Pre-configured admin accounts and passwords
-export const ADMIN_CREDENTIALS: Record<string, string> = {
-  'adminvazo@gmail.com': 'LocalDev123',
-  'admin@vazostudio.com': 'LocalDev123',
-  'admin@vazo.com': 'LocalDev123',
-  'yusuf@vazostudio.com': 'LocalDev123',
-  'admin@admin.com': 'LocalDev123',
-};
-
-export function isEmailAdmin(email: string): boolean {
-  const normalized = email.trim().toLowerCase();
-  if (normalized in ADMIN_CREDENTIALS) return true;
-  if (normalized.startsWith('admin@') || normalized.includes('+admin@')) return true;
-  return false;
-}
+const AUTH_STORAGE_KEY = 'vazo_customer_auth_user';
 
 type AuthListener = (user: AuthUser | null) => void;
 const listeners = new Set<AuthListener>();
@@ -37,7 +21,7 @@ function getInitialUser(): AuthUser | null {
       return {
         email: parsed.email,
         name: parsed.name || parsed.email.split('@')[0],
-        role: isEmailAdmin(parsed.email) ? 'admin' : (parsed.role || 'customer'),
+        role: 'customer',
       };
     }
   } catch {
@@ -57,23 +41,12 @@ export const authStore = {
     return currentUserState;
   },
 
-  login(email: string, password?: string, name?: string): AuthUser {
+  login(email: string, _password?: string, name?: string): AuthUser {
     const normalizedEmail = email.trim().toLowerCase();
-    const isAdminAccount = isEmailAdmin(normalizedEmail);
-
-    // If an admin email is attempted with password check
-    if (isAdminAccount && password !== undefined && password.length > 0) {
-      const expectedPassword = ADMIN_CREDENTIALS[normalizedEmail] || 'LocalDev123';
-      if (password !== expectedPassword) {
-        throw new Error('Yönetici şifresi hatalı.');
-      }
-    }
-
-    const role = isAdminAccount ? 'admin' : 'customer';
     const user: AuthUser = {
       email: normalizedEmail,
       name: name || normalizedEmail.split('@')[0],
-      role,
+      role: 'customer',
     };
     currentUserState = user;
     if (typeof window !== 'undefined') {
@@ -123,9 +96,10 @@ export function useAuth() {
   return {
     user,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: false,
     login: authStore.login,
     loginWithGoogle: authStore.loginWithGoogle,
     logout: authStore.logout,
   };
 }
+
