@@ -2,8 +2,6 @@ import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
   Package,
-  Layers,
-  Sparkles,
   Boxes,
   Percent,
   Building2,
@@ -49,6 +47,12 @@ const AdminDashboardPage = React.lazy(() =>
 );
 const AdminModuleScaffoldPage = React.lazy(() =>
   import('@/admin/pages/AdminModuleScaffoldPage').then((m) => ({ default: m.AdminModuleScaffoldPage }))
+);
+const AdminCategoriesPage = React.lazy(() =>
+  import('@/admin/categories/pages/AdminCategoriesPage').then((m) => ({ default: m.AdminCategoriesPage }))
+);
+const AdminCollectionsPage = React.lazy(() =>
+  import('@/admin/collections/pages/AdminCollectionsPage').then((m) => ({ default: m.AdminCollectionsPage }))
 );
 
 const adminFallback = (
@@ -223,17 +227,7 @@ export const router = createBrowserRouter([
         path: 'categories',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Kategori Yönetimi"
-              moduleCode="MOD-CAT-02"
-              description="Masa üstü, zemin, heykelsi objeler ve set kategorilerinin hiyerarşik yönetimi."
-              icon={Layers}
-              plannedFeatures={[
-                'Hiyerarşik kategori ağacı oluşturma',
-                'Kategori görseli ve açıklama yönetimi',
-                'Sıralama ve öne çıkarma kontrolleri',
-              ]}
-            />
+            <AdminCategoriesPage />
           </Suspense>
         ),
       },
@@ -241,17 +235,7 @@ export const router = createBrowserRouter([
         path: 'collections',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Koleksiyon Kürasyonu"
-              moduleCode="MOD-COL-03"
-              description="Nordik Sessizlik, Amforik Kıvrımlar ve editoryal sezon koleksiyonları."
-              icon={Sparkles}
-              plannedFeatures={[
-                'Sezonluk koleksiyon hikayesi ve görseli oluşturma',
-                'Koleksiyona ürün bağlama ve vitrin sıralaması',
-                'Ana sayfa görünürlük toggle kontrolü',
-              ]}
-            />
+            <AdminCollectionsPage />
           </Suspense>
         ),
       },
