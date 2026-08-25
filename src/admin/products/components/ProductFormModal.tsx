@@ -7,6 +7,7 @@ import { ProductFormGeneralTab } from './ProductFormGeneralTab';
 import { ProductFormPricingTab } from './ProductFormPricingTab';
 import { ProductFormRelationsTab } from './ProductFormRelationsTab';
 import { ProductFormSeoTab } from './ProductFormSeoTab';
+import { ProductFormVariantsTab } from './ProductFormVariantsTab';
 import type { AdminProduct } from '../types';
 import type { AdminCategory } from '@/admin/categories/types';
 import type { AdminCollection } from '@/admin/collections/types';
@@ -57,7 +58,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'relations' | 'seo'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'relations' | 'variants' | 'seo'>('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -330,6 +331,19 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             >
               Kategoriler & Koleksiyonlar
             </button>
+            {isEditing && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('variants')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                  activeTab === 'variants'
+                    ? 'bg-surface-secondary text-text-primary font-semibold'
+                    : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Varyantlar (SKU)
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setActiveTab('seo')}
@@ -400,6 +414,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               selectedCollectionIds={selectedCollectionIds}
               onToggleCollectionSelection={toggleCollectionSelection}
             />
+          )}
+
+          {activeTab === 'variants' && isEditing && (
+            <ProductFormVariantsTab productId={initialData?.id} />
           )}
 
           {activeTab === 'seo' && (

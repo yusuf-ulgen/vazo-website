@@ -1,9 +1,6 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
-  Boxes,
-  Percent,
-  Building2,
   Inbox,
   FileText,
   Settings,
@@ -55,6 +52,15 @@ const AdminCategoriesPage = React.lazy(() =>
 );
 const AdminCollectionsPage = React.lazy(() =>
   import('@/admin/collections/pages/AdminCollectionsPage').then((m) => ({ default: m.AdminCollectionsPage }))
+);
+const AdminInventoryPage = React.lazy(() =>
+  import('@/admin/inventory/pages/AdminInventoryPage').then((m) => ({ default: m.AdminInventoryPage }))
+);
+const AdminPricingPage = React.lazy(() =>
+  import('@/admin/pricing/pages/AdminPricingPage').then((m) => ({ default: m.AdminPricingPage }))
+);
+const AdminWholesalePage = React.lazy(() =>
+  import('@/admin/wholesale/pages/AdminWholesalePage').then((m) => ({ default: m.AdminWholesalePage }))
 );
 
 const adminFallback = (
@@ -234,17 +240,7 @@ export const router = createBrowserRouter([
         path: 'inventory',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Stok & Envanter Takibi"
-              moduleCode="MOD-INV-04"
-              description="Stoneware seramik stok miktarları, atölye fırınlama takibi ve düşük stok uyarıları."
-              icon={Boxes}
-              plannedFeatures={[
-                'Varyant bazında gerçek zamanlı stok sayımı',
-                'Kritik stok eşiği belirleme ve e-posta uyarıları',
-                'Toptan siparişler için ayrılmış stok rezervasyonu',
-              ]}
-            />
+            <AdminInventoryPage />
           </Suspense>
         ),
       },
@@ -252,17 +248,7 @@ export const router = createBrowserRouter([
         path: 'pricing',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Perakende & Fiyatlandırma"
-              moduleCode="MOD-PRC-05"
-              description="Standart perakende fiyatları, indirim oranları ve liste fiyat güncellemeleri."
-              icon={Percent}
-              plannedFeatures={[
-                'Tekil ve toplu fiyat güncelleme',
-                'Karşılaştırma fiyatı (eski fiyat) tanımlama',
-                'Para birimi ve KDV oranları yapılandırması',
-              ]}
-            />
+            <AdminPricingPage />
           </Suspense>
         ),
       },
@@ -270,18 +256,7 @@ export const router = createBrowserRouter([
         path: 'wholesale',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Toptan Portalı"
-              moduleCode="MOD-B2B-06"
-              description="Kademeli hacim iskontoları, MOQ kuralları ve mimar/bayi başvuru onayı."
-              icon={Building2}
-              plannedFeatures={[
-                'Gelen Trade & Mimari başvuru kuyruğunu onaylama/reddetme',
-                'Model ve kategori bazında Minimum Sipariş Adedi (MOQ) belirleme',
-                'Miktar kademe indirim tablosu (10-49 adet, 50+ adet)',
-                'Özel mimari projeler için teklif (quote) talepleri yönetimi',
-              ]}
-            />
+            <AdminWholesalePage />
           </Suspense>
         ),
       },
