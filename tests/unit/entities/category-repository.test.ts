@@ -40,11 +40,25 @@ describe('categoryRepository', () => {
       sort_order: 1,
     };
 
+    it('throws error when live mode is requested without Supabase configuration (NO silent mock fallback)', async () => {
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+      await expect(categoryRepository.getCategories()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(categoryRepository.getCategoryBySlug('masa-ustu-vazolar')).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+    });
+
     it('maps categories from database query', async () => {
       const mockClient = createMockSupabaseClient({
         categories: { data: [mockRawCategory], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -59,6 +73,7 @@ describe('categoryRepository', () => {
         categories: { data: mockRawCategory, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -72,6 +87,7 @@ describe('categoryRepository', () => {
         categories: { data: null, error: { message: 'Database connection failed' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -83,6 +99,7 @@ describe('categoryRepository', () => {
         categories: { data: null, error: { message: 'Generic error', code: '500' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -96,6 +113,7 @@ describe('categoryRepository', () => {
         categories: { data: null, error: { message: 'Row not found', code: 'PGRST116' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 

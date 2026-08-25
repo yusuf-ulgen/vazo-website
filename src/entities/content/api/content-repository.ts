@@ -3,7 +3,7 @@ import {
   HeroBannerConfig,
   EditorialSectionConfig,
 } from '../types';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import { siteConfig } from '@/shared/config/site-config';
 import {
   MegaMenuData,
@@ -139,12 +139,12 @@ const emptyMegaMenu: MegaMenuData = {
 
 export const contentRepository = {
   async getAnnouncement(): Promise<AnnouncementBarConfig | null> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return mockAnnouncement;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase
@@ -173,12 +173,12 @@ export const contentRepository = {
   },
 
   async getHero(): Promise<HeroBannerConfig | null> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return mockHero;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase
@@ -209,12 +209,12 @@ export const contentRepository = {
   },
 
   async getEditorialSections(): Promise<EditorialSectionConfig[]> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return mockEditorialSections;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase
@@ -241,12 +241,12 @@ export const contentRepository = {
   },
 
   async getWholesaleBenefits(): Promise<WholesaleBenefit[]> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return mockWholesaleBenefits;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase
@@ -270,12 +270,12 @@ export const contentRepository = {
   },
 
   async getMegaMenu(menuType: 'retail_mega' | 'wholesale_mega'): Promise<MegaMenuData> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return menuType === 'retail_mega' ? perakendeMegaMenuData : toptanMegaMenuData;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase
@@ -326,7 +326,7 @@ export const contentRepository = {
   },
 
   async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
@@ -334,8 +334,8 @@ export const contentRepository = {
       };
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     try {
@@ -363,7 +363,7 @@ export const contentRepository = {
   },
 
   async submitContactMessage(payload: ContactMessagePayload): Promise<{ success: boolean; message: string }> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
@@ -371,8 +371,8 @@ export const contentRepository = {
       };
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     try {
@@ -400,7 +400,7 @@ export const contentRepository = {
   },
 
   async subscribeNewsletter(payload: NewsletterSubscriptionPayload): Promise<{ success: boolean; message: string }> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       await new Promise((resolve) => setTimeout(resolve, 300));
       return {
         success: true,
@@ -408,8 +408,8 @@ export const contentRepository = {
       };
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     try {

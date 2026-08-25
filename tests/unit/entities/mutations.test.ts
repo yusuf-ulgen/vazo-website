@@ -44,6 +44,39 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
   });
 
   describe('Live Mode Mutations (Edge Functions Boundary)', () => {
+    it('throws when live mode is requested without Supabase configuration (NO silent mock fallback)', async () => {
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+      await expect(
+        contentRepository.submitTradeApplication({
+          companyName: 'X',
+          taxNumber: '1',
+          taxOffice: 'Y',
+          businessType: 'Z',
+          contactPerson: 'A',
+          email: 'a@b.com',
+          phone: '1',
+        })
+      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+
+      await expect(
+        contentRepository.submitContactMessage({
+          name: 'A',
+          email: 'a@b.com',
+          subject: 'S',
+          message: 'M',
+        })
+      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+
+      await expect(
+        contentRepository.subscribeNewsletter({
+          email: 'a@b.com',
+        })
+      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    });
+
     it('invokes submit-trade-application Edge Function in live mode', async () => {
       const mockClient = createMockSupabaseClient({});
       mockClient.functions.invoke = vi.fn().mockResolvedValue({
@@ -51,6 +84,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         error: null,
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -77,6 +111,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         error: null,
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -100,6 +135,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         error: { message: 'Sunucuya bağlanılamadı.' },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -134,6 +170,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         error: null,
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -155,6 +192,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
         error: { message: 'Edge Function invocation error' },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -174,38 +212,6 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
           email: 'hata@example.com',
         })
       ).rejects.toThrow('Geçersiz e-posta formatı.');
-    });
-
-    it('throws when supabase client is null in live mode', async () => {
-      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
-      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null as never);
-
-      await expect(
-        contentRepository.submitTradeApplication({
-          companyName: 'X',
-          taxNumber: '1',
-          taxOffice: 'Y',
-          businessType: 'Z',
-          contactPerson: 'A',
-          email: 'a@b.com',
-          phone: '1',
-        })
-      ).rejects.toThrow('Supabase client is not available in live mode.');
-
-      await expect(
-        contentRepository.submitContactMessage({
-          name: 'A',
-          email: 'a@b.com',
-          subject: 'S',
-          message: 'M',
-        })
-      ).rejects.toThrow('Supabase client is not available in live mode.');
-
-      await expect(
-        contentRepository.subscribeNewsletter({
-          email: 'a@b.com',
-        })
-      ).rejects.toThrow('Supabase client is not available in live mode.');
     });
   });
 });

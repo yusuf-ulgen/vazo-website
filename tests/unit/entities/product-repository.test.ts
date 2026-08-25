@@ -166,11 +166,25 @@ describe('productRepository', () => {
       ],
     };
 
+    it('throws error when live mode is requested without Supabase configuration (NO silent mock fallback)', async () => {
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+      await expect(productRepository.getProducts()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(productRepository.getProductBySlug('amforik-tas-vazo-tebehir')).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+    });
+
     it('fetches and maps products correctly from Supabase client with various filters', async () => {
       const mockClient = createMockSupabaseClient({
         products: { data: [mockRawProduct], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -201,6 +215,7 @@ describe('productRepository', () => {
         products: { data: [mockRawProduct], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -216,6 +231,7 @@ describe('productRepository', () => {
         products: { data: null, error: { message: 'Database connection failed' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -227,6 +243,7 @@ describe('productRepository', () => {
         products: { data: mockRawProduct, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -240,6 +257,7 @@ describe('productRepository', () => {
         products: { data: null, error: { message: 'Row not found', code: 'PGRST116' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -252,6 +270,7 @@ describe('productRepository', () => {
         products: { data: null, error: { message: 'Database error', code: '500' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 

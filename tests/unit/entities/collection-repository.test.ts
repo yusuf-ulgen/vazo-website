@@ -41,11 +41,25 @@ describe('collectionRepository', () => {
       sort_order: 1,
     };
 
+    it('throws error when live mode is requested without Supabase configuration (NO silent mock fallback)', async () => {
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+      await expect(collectionRepository.getCollections()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(collectionRepository.getCollectionBySlug('nordik-sessizlik')).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+    });
+
     it('maps collections from database query', async () => {
       const mockClient = createMockSupabaseClient({
         collections: { data: [mockRawCollection], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -60,6 +74,7 @@ describe('collectionRepository', () => {
         collections: { data: mockRawCollection, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -73,6 +88,7 @@ describe('collectionRepository', () => {
         collections: { data: null, error: { message: 'Database connection failed' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -84,6 +100,7 @@ describe('collectionRepository', () => {
         collections: { data: null, error: { message: 'Generic error', code: '500' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -97,6 +114,7 @@ describe('collectionRepository', () => {
         collections: { data: null, error: { message: 'Row not found', code: 'PGRST116' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 

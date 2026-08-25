@@ -1,5 +1,5 @@
 import { Product, ProductVariant, WholesalePricingTier } from '../types';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import { mockProducts } from '@/shared/mocks/products';
 
 export interface ProductFilterOptions {
@@ -151,7 +151,7 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
 
 export const productRepository = {
   async getProducts(options?: ProductFilterOptions): Promise<Product[]> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       let filtered = [...mockProducts];
 
       if (options?.retailOnly) {
@@ -204,8 +204,8 @@ export const productRepository = {
       return filtered;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const categorySelect = options?.categoryId
@@ -284,13 +284,13 @@ export const productRepository = {
   },
 
   async getProductBySlug(slug: string): Promise<Product | null> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       const found = mockProducts.find((p) => p.slug === slug);
       return found || null;
     }
 
-    if (!supabase) {
-      throw new Error('Supabase client is not available in live mode.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
     const { data, error } = await supabase

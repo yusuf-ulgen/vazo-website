@@ -42,6 +42,28 @@ describe('contentRepository', () => {
   });
 
   describe('Live Supabase Mode Content Queries', () => {
+    it('throws error when live mode is requested without Supabase configuration (NO silent mock fallback)', async () => {
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+      vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+      await expect(contentRepository.getAnnouncement()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(contentRepository.getHero()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(contentRepository.getEditorialSections()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(contentRepository.getWholesaleBenefits()).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+      await expect(contentRepository.getMegaMenu('retail_mega')).rejects.toThrow(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
+    });
+
     it('maps announcement from live database', async () => {
       const mockAnnouncementRow = {
         id: 'ann-1',
@@ -56,6 +78,7 @@ describe('contentRepository', () => {
         announcement_bars: { data: mockAnnouncementRow, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -68,6 +91,7 @@ describe('contentRepository', () => {
         announcement_bars: { data: null, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -80,6 +104,7 @@ describe('contentRepository', () => {
         announcement_bars: { data: null, error: { message: 'Database query failed' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -104,6 +129,7 @@ describe('contentRepository', () => {
         hero_slides: { data: mockHeroRow, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -116,6 +142,7 @@ describe('contentRepository', () => {
         hero_slides: { data: null, error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -141,6 +168,7 @@ describe('contentRepository', () => {
         editorial_sections: { data: [mockSection], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -154,6 +182,7 @@ describe('contentRepository', () => {
         editorial_sections: { data: [], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -175,6 +204,7 @@ describe('contentRepository', () => {
         wholesale_benefits: { data: [mockBenefit], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -200,6 +230,7 @@ describe('contentRepository', () => {
         menu_groups: { data: [mockGroup], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -214,6 +245,7 @@ describe('contentRepository', () => {
         menu_groups: { data: [], error: null },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
@@ -227,6 +259,7 @@ describe('contentRepository', () => {
         menu_groups: { data: null, error: { message: 'Menu fetch error' } },
       });
 
+      vi.spyOn(supabaseModule, 'isStorefrontMockEnabled', 'get').mockReturnValue(false);
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 

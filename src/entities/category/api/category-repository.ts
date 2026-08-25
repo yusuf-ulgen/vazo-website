@@ -1,5 +1,5 @@
 import { Category } from '../types';
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 
 export const mockCategories: Category[] = [
   {
@@ -51,11 +51,13 @@ export const mockCategories: Category[] = [
 
 export const categoryRepository = {
   async getCategories(): Promise<Category[]> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return [...mockCategories].sort((a, b) => a.order - b.order);
     }
 
-    if (!supabase) throw new Error('Supabase client is not available.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    }
 
     const { data, error } = await supabase
       .from('categories')
@@ -80,11 +82,13 @@ export const categoryRepository = {
   },
 
   async getCategoryBySlug(slug: string): Promise<Category | null> {
-    if (!isSupabaseConfigured || import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+    if (isStorefrontMockEnabled) {
       return mockCategories.find((c) => c.slug === slug) || null;
     }
 
-    if (!supabase) throw new Error('Supabase client is not available.');
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    }
 
     const { data, error } = await supabase
       .from('categories')
