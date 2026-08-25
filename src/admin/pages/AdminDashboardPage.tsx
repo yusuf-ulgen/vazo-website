@@ -1,207 +1,176 @@
 import { Link } from 'react-router-dom';
 import {
-  DollarSign,
-  ShoppingCart,
-  Boxes,
+  Package,
+  Layers,
+  Sparkles,
   Building2,
-  AlertTriangle,
-  ArrowUpRight,
-  PackagePlus,
-  FileSpreadsheet,
-  Users,
+  FileText,
+  Inbox,
+  Settings,
+  ArrowRight,
+  ShieldCheck,
+  Database,
+  Lock,
+  Boxes,
+  Percent,
 } from 'lucide-react';
-import { StatsCard } from '../components/StatsCard';
-import { Badge } from '@/shared/ui/Badge';
+import { AdminPageHeader } from '../ui/AdminPageHeader';
+import { AdminCard } from '../ui/AdminCard';
+import { StatusBadge } from '../ui/StatusBadge';
+import { useAdminAuth } from '../auth/AdminAuthContext';
 
 export function AdminDashboardPage() {
+  const { adminUser } = useAdminAuth();
+
+  const coreModules = [
+    {
+      title: 'Ürün Yönetimi',
+      description: 'Tasarım seramik vazolar, SKU bazlı varyantlar ve medya galerisi.',
+      path: '/admin/products',
+      icon: Package,
+      phase: 'Faz 2.4 - 2.5',
+    },
+    {
+      title: 'Kategoriler',
+      description: 'Masa üstü, zemin ve heykelsi seramik kategori hiyerarşisi.',
+      path: '/admin/categories',
+      icon: Layers,
+      phase: 'Faz 2.6',
+    },
+    {
+      title: 'Koleksiyonlar',
+      description: 'Sezonluk kürasyonlar ve koleksiyon hikaye yönetimi.',
+      path: '/admin/collections',
+      icon: Sparkles,
+      phase: 'Faz 2.7',
+    },
+    {
+      title: 'Stok & Envanter',
+      description: 'Atölye stok seviyeleri ve kritik stok eşikleri.',
+      path: '/admin/inventory',
+      icon: Boxes,
+      phase: 'Faz 2.8',
+    },
+    {
+      title: 'Fiyatlandırma',
+      description: 'Perakende fiyat listeleri ve KDV yapılandırması.',
+      path: '/admin/pricing',
+      icon: Percent,
+      phase: 'Faz 2.8',
+    },
+    {
+      title: 'Toptan Portalı',
+      description: 'B2B hacim iskontoları ve mimari başvuru onay süreçleri.',
+      path: '/admin/wholesale',
+      icon: Building2,
+      phase: 'Faz 2.9',
+    },
+    {
+      title: 'İçerik & CMS',
+      description: 'Duyuru çubuğu, ana sayfa vitrini ve editoryal bloklar.',
+      path: '/admin/content',
+      icon: FileText,
+      phase: 'Faz 2.10',
+    },
+    {
+      title: 'Gelen Başvurular',
+      description: 'Trade başvuruları, iletişim mesajları ve bülten kayıtları.',
+      path: '/admin/submissions',
+      icon: Inbox,
+      phase: 'Faz 2.11',
+    },
+    {
+      title: 'Site Ayarları',
+      description: 'Stüdyo bilgileri, iletişim kanalları ve genel parametreler.',
+      path: '/admin/settings',
+      icon: Settings,
+      phase: 'Faz 2.12',
+    },
+  ];
+
   return (
-    <div className="space-y-8">
-      {/* Top Banner: Governance Notice */}
-      <div className="bg-surface-primary border border-border-default p-5 shadow-subtle flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-feedback-success animate-pulse" />
-            <h2 className="text-sm font-semibold text-text-primary">
-              Admin Paneli — Faz 0 Temel İskelet
-            </h2>
-          </div>
-          <p className="text-xs text-text-secondary">
-            Tüm modül rotaları ve tasarım tokenları yapılandırılmıştır. CRUD eylemleri backend entegrasyonu tamamlandıkça aktifleşecektir.
-          </p>
-        </div>
+    <div className="space-y-6 animate-fade-in text-left">
+      <AdminPageHeader
+        title="Yönetim Paneli"
+        description={`Hoş geldiniz, ${adminUser?.email || 'Yönetici'}. Vazo E-Ticaret yönetim ve içerik sistemine bağlısınız.`}
+        badge={<StatusBadge status="active" label="Sistem Canlı" />}
+      />
 
-        <div className="flex items-center gap-2">
-          <Link
-            to="/admin/products"
-            className="inline-flex items-center gap-1.5 bg-action-primary text-action-primary-text text-xs font-medium px-4 py-2 hover:bg-neutral-800 transition-colors"
-          >
-            <PackagePlus className="w-3.5 h-3.5" />
-            <span>Ürünleri Yönet</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatsCard
-          title="Toplam Satış (Aylık)"
-          value="₺148.650"
-          change="+18.4%"
-          changeType="positive"
-          icon={DollarSign}
-          subtext="Geçen aya göre"
-        />
-        <StatsCard
-          title="Aktif Siparişler"
-          value="34"
-          change="8 Toptan"
-          changeType="neutral"
-          icon={ShoppingCart}
-          subtext="26 Perakende"
-        />
-        <StatsCard
-          title="Kritik Stok Uyarısı"
-          value="3 Model"
-          change="Dikkat"
-          changeType="negative"
-          icon={Boxes}
-          subtext="MOQ altı seviye"
-        />
-        <StatsCard
-          title="Toptan Başvuruları"
-          value="5 Bekleyen"
-          change="Yeni"
-          changeType="positive"
-          icon={Building2}
-          subtext="İç mimar onayı"
-        />
-      </div>
-
-      {/* Two Column Layout: Recent Orders & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Recent Orders Overview (8 columns) */}
-        <div className="lg:col-span-8 bg-surface-primary border border-border-default p-6 shadow-subtle space-y-4">
-          <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-            <div>
-              <h3 className="text-sm font-semibold text-text-primary">
-                Son Siparişler (Perakende & Toptan)
+      {/* System Status Banner */}
+      <AdminCard variant="secondary" className="border-border-default">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-feedback-success" />
+              <h3 className="text-xs font-semibold text-text-primary uppercase tracking-wider">
+                Güvenlik & Veritabanı Durumu
               </h3>
-              <p className="text-xs text-text-secondary">
-                Son 24 saat içinde gelen sipariş akışı
-              </p>
-            </div>
-            <Link
-              to="/admin/orders"
-              className="text-xs font-medium text-text-primary hover:underline inline-flex items-center gap-1"
-            >
-              <span>Tümünü Gör</span>
-              <ArrowUpRight className="w-3 h-3" />
-            </Link>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-border-subtle text-text-secondary">
-                  <th className="py-2.5 font-semibold">Sipariş No</th>
-                  <th className="py-2.5 font-semibold">Kanal</th>
-                  <th className="py-2.5 font-semibold">Müşteri</th>
-                  <th className="py-2.5 font-semibold">Tutar</th>
-                  <th className="py-2.5 font-semibold">Durum</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle text-text-primary">
-                <tr>
-                  <td className="py-3 font-mono font-medium">#ORD-2026-891</td>
-                  <td className="py-3">
-                    <Badge variant="wholesale">Toptan</Badge>
-                  </td>
-                  <td className="py-3">Studio Mono Mimarlık (12 Vazo)</td>
-                  <td className="py-3 font-medium">₺16.800</td>
-                  <td className="py-3">
-                    <Badge variant="warning">Hazırlanıyor</Badge>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 font-mono font-medium">#ORD-2026-890</td>
-                  <td className="py-3">
-                    <Badge variant="default">Perakende</Badge>
-                  </td>
-                  <td className="py-3">Ayşe Yılmaz (1 Vazo)</td>
-                  <td className="py-3 font-medium">₺2.450</td>
-                  <td className="py-3">
-                    <Badge variant="success">Kargoya Verildi</Badge>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 font-mono font-medium">#ORD-2026-889</td>
-                  <td className="py-3">
-                    <Badge variant="wholesale">Toptan</Badge>
-                  </td>
-                  <td className="py-3">Artisan Otel Bodrum (20 Vazo)</td>
-                  <td className="py-3 font-medium">₺24.000</td>
-                  <td className="py-3">
-                    <Badge variant="muted">Ödeme Bekliyor</Badge>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right Column: Quick Actions & Backend Pending Notice (4 columns) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Quick Actions Panel */}
-          <div className="bg-surface-primary border border-border-default p-6 shadow-subtle space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Hızlı İşlemler</h3>
-            <div className="space-y-2">
-              <Link
-                to="/admin/products"
-                className="w-full flex items-center justify-between p-3 text-xs bg-surface-secondary hover:bg-neutral-200 border border-border-subtle rounded transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <PackagePlus className="w-4 h-4 text-text-secondary" />
-                  <span>Yeni Ürün Ekle</span>
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-text-muted" />
-              </Link>
-
-              <Link
-                to="/admin/wholesale"
-                className="w-full flex items-center justify-between p-3 text-xs bg-surface-secondary hover:bg-neutral-200 border border-border-subtle rounded transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-text-secondary" />
-                  <span>Trade Başvurularını İncele</span>
-                </span>
-                <Badge variant="warning">5</Badge>
-              </Link>
-
-              {/* Explicitly Disabled Control Example */}
-              <button
-                disabled
-                title="Bu özellik henüz backend entegrasyonu aşamasındadır"
-                className="w-full flex items-center justify-between p-3 text-xs bg-surface-muted text-text-muted border border-dashed border-border-default cursor-not-allowed"
-              >
-                <span className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4" />
-                  <span>Excel Envanter Dışa Aktar</span>
-                </span>
-                <span className="text-[10px] uppercase font-semibold">Devre Dışı</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Architecture Status Card */}
-          <div className="bg-surface-secondary border border-border-default p-5 space-y-3">
-            <div className="flex items-center gap-2 text-text-primary text-xs font-semibold">
-              <AlertTriangle className="w-4 h-4 text-brand-terracotta" />
-              <span>Mimari Sözleşme</span>
             </div>
             <p className="text-xs text-text-secondary leading-relaxed">
-              Admin panelindeki her etkileşimli kontrol ya işlevseldir ya da backend entegrasyonu bekleniyor olarak açıkça devre dışıdır.
+              Supabase Auth doğrulaması ve Row Level Security (RLS) politikaları devrededir. Tüm yönetim işlemleri veritabanı düzeyinde yetkilendirilir.
             </p>
           </div>
+
+          <div className="flex items-center gap-2 shrink-0 text-xs">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-primary border border-border-default rounded text-text-primary text-[11px]">
+              <Database className="w-3.5 h-3.5 text-text-secondary" />
+              <span>PostgreSQL RLS</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-surface-primary border border-border-default rounded text-text-primary text-[11px]">
+              <Lock className="w-3.5 h-3.5 text-text-secondary" />
+              <span>RBAC {adminUser?.role === 'super_admin' ? 'Süper Admin' : 'Admin'}</span>
+            </span>
+          </div>
+        </div>
+      </AdminCard>
+
+      {/* Module Navigation Grid */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+            Yönetim Modülleri
+          </h2>
+          <span className="text-[11px] text-text-muted">
+            {coreModules.length} Aktif Modül
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {coreModules.map((module) => {
+            const Icon = module.icon;
+            return (
+              <Link
+                key={module.path}
+                to={module.path}
+                className="group bg-surface-primary hover:bg-surface-secondary border border-border-default hover:border-text-primary/30 p-5 transition-all shadow-subtle flex flex-col justify-between"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded bg-surface-secondary group-hover:bg-surface-primary border border-border-subtle flex items-center justify-center text-text-primary transition-colors">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-medium text-text-muted group-hover:text-text-secondary transition-colors">
+                      {module.phase}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-text-primary group-hover:text-text-primary">
+                      {module.title}
+                    </h3>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
+                      {module.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-border-subtle flex items-center justify-between text-xs font-medium text-text-secondary group-hover:text-text-primary transition-colors">
+                  <span>Modülü Aç</span>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>

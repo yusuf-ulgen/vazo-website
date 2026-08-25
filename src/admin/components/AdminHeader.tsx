@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, ExternalLink, Bell, User, LogOut, Shield } from 'lucide-react';
-import { Badge } from '@/shared/ui/Badge';
 import { useAdminAuth } from '../auth/AdminAuthContext';
 
 export interface AdminHeaderProps {
@@ -27,10 +26,10 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
         return 'Fiyatlandırma';
       case '/admin/wholesale':
         return 'Toptan Portalı';
-      case '/admin/orders':
-        return 'Sipariş Yönetimi';
       case '/admin/content':
         return 'İçerik & CMS';
+      case '/admin/submissions':
+        return 'Gelen Başvurular';
       case '/admin/settings':
         return 'Sistem Ayarları';
       default:
@@ -46,7 +45,7 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
         {/* Mobile sidebar toggle */}
         <button
           onClick={onOpenMobileSidebar}
-          className="lg:hidden p-2 text-text-secondary hover:text-text-primary"
+          className="lg:hidden p-2 text-text-secondary hover:text-text-primary rounded"
           aria-label="Admin Menüsünü Aç"
         >
           <Menu className="w-5 h-5" />
@@ -54,16 +53,16 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
 
         {/* Breadcrumb / Title */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-text-secondary font-medium hidden sm:inline">
+          <Link
+            to="/admin"
+            className="text-xs text-text-secondary hover:text-text-primary font-medium hidden sm:inline transition-colors"
+          >
             Admin
-          </span>
+          </Link>
           <span className="text-xs text-text-muted hidden sm:inline">/</span>
           <h1 className="text-sm font-semibold text-text-primary">
             {getBreadcrumbTitle(location.pathname)}
           </h1>
-          <Badge variant="muted" className="hidden md:inline-flex text-[10px]">
-            Phase 2 Authenticated
-          </Badge>
         </div>
       </div>
 
@@ -83,10 +82,9 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
         {/* Notification Bell */}
         <button
           aria-label="Bildirimler"
-          className="p-2 text-text-secondary hover:text-text-primary relative"
+          className="p-2 text-text-secondary hover:text-text-primary rounded transition-colors"
         >
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-feedback-danger rounded-full" />
         </button>
 
         {/* Admin Avatar & Real Identity */}

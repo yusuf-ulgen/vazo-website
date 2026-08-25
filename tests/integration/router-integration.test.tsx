@@ -44,5 +44,18 @@ describe('Router & App Integration Tests', () => {
     const routePaths = router.routes.map((r) => r.path);
     expect(routePaths).toContain('/admin');
     expect(routePaths).toContain('/admin/login');
+
+    const adminRoute = router.routes.find((r) => r.path === '/admin');
+    const adminLayoutRoute = adminRoute?.children?.[0];
+    const adminChildPaths = (adminLayoutRoute?.children || []).map((c) => c.path);
+    expect(adminChildPaths).toContain('products');
+    expect(adminChildPaths).toContain('categories');
+    expect(adminChildPaths).toContain('collections');
+    expect(adminChildPaths).toContain('inventory');
+    expect(adminChildPaths).toContain('pricing');
+    expect(adminChildPaths).toContain('wholesale');
+    expect(adminChildPaths).toContain('content');
+    expect(adminChildPaths).toContain('submissions');
+    expect(adminChildPaths).toContain('settings');
   });
 });

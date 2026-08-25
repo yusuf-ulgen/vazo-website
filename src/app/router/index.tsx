@@ -7,7 +7,7 @@ import {
   Boxes,
   Percent,
   Building2,
-  ShoppingCart,
+  Inbox,
   FileText,
   Settings,
 } from 'lucide-react';
@@ -311,19 +311,19 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'orders',
+        path: 'submissions',
         element: (
           <Suspense fallback={adminFallback}>
             <AdminModuleScaffoldPage
-              moduleName="Sipariş & Sevkiyat Yönetimi"
-              moduleCode="MOD-ORD-07"
-              description="Perakende ve toptan siparişler, sandıklı sevkiyat ve kargo takip entegrasyonu."
-              icon={ShoppingCart}
+              moduleName="Gelen Başvurular & İletişim"
+              moduleCode="MOD-SUB-07"
+              description="Trade mimarlık başvuruları, iletişim mesajları ve bülten abonelik kayıtları."
+              icon={Inbox}
               plannedFeatures={[
-                'Perakende ve toptan sipariş filtreleme sekmeleri',
-                'Sipariş durumu güncelleme (Ödeme Bekliyor, Hazırlanıyor, Kargoda)',
-                'Kargo takip numarası girişi ve otomatik bildirim',
-                'İrsaliye ve e-fatura yazdırma',
+                'B2B Kurumsal Trade başvuru kuyruğunu inceleme ve onaylama',
+                'İletişim mesajlarını yanıtlama, okundu işaretleme ve arşivleme',
+                'Bülten aboneleri listesi ve kaynak analizi',
+                'Detaylı başvuru modalı ve yönetici notları ekleme',
               ]}
             />
           </Suspense>

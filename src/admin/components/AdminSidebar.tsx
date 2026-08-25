@@ -7,12 +7,12 @@ import {
   Boxes,
   Percent,
   Building2,
-  ShoppingCart,
   FileText,
+  Inbox,
   Settings,
-  ShieldAlert,
   ChevronLeft,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -36,9 +36,9 @@ export function AdminSidebar({
     { label: 'Koleksiyonlar', path: '/admin/collections', icon: Sparkles },
     { label: 'Stok & Envanter', path: '/admin/inventory', icon: Boxes },
     { label: 'Fiyatlandırma', path: '/admin/pricing', icon: Percent },
-    { label: 'Toptan', path: '/admin/wholesale', icon: Building2 },
-    { label: 'Siparişler', path: '/admin/orders', icon: ShoppingCart },
+    { label: 'Toptan Portalı', path: '/admin/wholesale', icon: Building2 },
     { label: 'İçerik & CMS', path: '/admin/content', icon: FileText },
+    { label: 'Gelen Başvurular', path: '/admin/submissions', icon: Inbox },
     { label: 'Site Ayarları', path: '/admin/settings', icon: Settings },
   ];
 
@@ -48,7 +48,8 @@ export function AdminSidebar({
       {mobileOpen && (
         <div
           onClick={onCloseMobile}
-          className="fixed inset-0 bg-neutral-950/60 z-40 lg:hidden"
+          aria-hidden="true"
+          className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs z-40 lg:hidden"
         />
       )}
 
@@ -113,17 +114,16 @@ export function AdminSidebar({
           </nav>
         </div>
 
-        {/* Bottom Safety Notice */}
-        <div className="p-4 border-t border-neutral-800 text-[11px] text-neutral-400 space-y-2">
-          {!isCollapsed && (
-            <div className="flex items-start gap-2 bg-neutral-900 p-2.5 rounded border border-neutral-800">
-              <ShieldAlert className="w-4 h-4 text-brand-sand shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-neutral-300">Phase 0 Governance</p>
-                <p className="text-[10px] text-neutral-400 leading-tight">
-                  Tüm butonlar ya aktiftir ya da backend entegrasyonuna kadar açıkça devre dışıdır.
-                </p>
-              </div>
+        {/* System Security Status Footer */}
+        <div className="p-4 border-t border-neutral-800 text-[11px] text-neutral-400">
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2 text-[10px] text-neutral-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
+              <span className="truncate">Supabase RBAC Aktif</span>
+            </div>
+          ) : (
+            <div className="flex justify-center" title="Supabase RBAC Aktif">
+              <ShieldCheck className="w-4 h-4 text-feedback-success" />
             </div>
           )}
         </div>
