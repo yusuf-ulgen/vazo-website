@@ -172,6 +172,10 @@ RESET ROLE;
 -- Setup test admin user
 DO $$
 BEGIN
+    INSERT INTO auth.users (id, aud, role, email)
+    VALUES ('a0000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'admin-test@vazo.design')
+    ON CONFLICT (id) DO NOTHING;
+
     INSERT INTO public.admin_users (user_id, role, active)
     VALUES ('a0000000-0000-0000-0000-000000000001', 'admin', true)
     ON CONFLICT (user_id) DO NOTHING;
