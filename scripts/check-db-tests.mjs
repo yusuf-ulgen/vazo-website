@@ -92,7 +92,7 @@ if (!planMatch) {
 }
 
 const plannedCount = parseInt(planMatch[1], 10);
-const selectAssertions = (content.match(/SELECT\s+(has_table|row_level_security_is_active|ok|is|throws_ok|lives_ok)/g) || []).length;
+const selectAssertions = (content.match(/SELECT\s+\b(has_table|row_level_security_is_active|ok|is|throws_ok|lives_ok)\b\s*\(/g) || []).length;
 
 if (plannedCount !== selectAssertions) {
   console.error(`❌ Error: pgTAP plan(${plannedCount}) does not match assertion count (${selectAssertions}).`);
