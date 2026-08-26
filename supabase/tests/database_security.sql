@@ -133,8 +133,8 @@ DO $$
 DECLARE
     v_draft_id UUID := 'd0000000-0000-0000-0000-000000000001';
 BEGIN
-    INSERT INTO public.products (id, slug, name, short_description, description, status, retail_price)
-    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'Taslak kısa açıklama', 'Taslak açıklama', 'draft', 990.00)
+    INSERT INTO public.products (id, slug, name, short_description, description, material, finish, status, retail_price)
+    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'Taslak kısa açıklama', 'Taslak açıklama', 'Seramik', 'Mat', 'draft', 990.00)
     ON CONFLICT (id) DO UPDATE SET status = 'draft';
 
     INSERT INTO public.product_variants (product_id, sku, variant_name, color_name, retail_price, stock_quantity)
@@ -239,8 +239,8 @@ DECLARE
     v_prod_id UUID := 'a2000000-0000-0000-0000-000000000001';
 BEGIN
     -- Ensure parent product row exists
-    INSERT INTO public.products (id, slug, name, short_description, description, status, retail_price)
-    VALUES (v_prod_id, 'pgtap-test-product', 'pgTAP Test Product', 'Test short desc', 'Test desc', 'published', 100.00)
+    INSERT INTO public.products (id, slug, name, short_description, description, material, finish, status, retail_price)
+    VALUES (v_prod_id, 'pgtap-test-product', 'pgTAP Test Product', 'Test short desc', 'Test desc', 'Seramik', 'Mat', 'published', 100.00)
     ON CONFLICT (id) DO NOTHING;
 
     -- Ensure first primary media exists
