@@ -274,6 +274,11 @@ BEGIN
     ON CONFLICT (id) DO UPDATE SET is_primary = false;
 END $$;
 
+-- Simulate admin session for set_primary_product_media
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'a0000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
+
 SELECT lives_ok(
     $$ SELECT public.set_primary_product_media('a2000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000002') $$,
     'set_primary_product_media RPC successfully switches primary image between two media rows'
@@ -290,6 +295,8 @@ SELECT is(
     false,
     'Previous primary media row is now non-primary'
 );
+
+RESET ROLE;
 
 -- ------------------------------------------------------------------------------
 -- 7. Audit Trail Immutability Checks (Tested Against Real Existing Row)
