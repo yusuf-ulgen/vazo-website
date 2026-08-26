@@ -55,7 +55,7 @@ if (!fs.existsSync(sqlTestPath)) {
 const content = fs.readFileSync(sqlTestPath, 'utf-8');
 
 const requiredChecks = [
-  'row_level_security_is_active',
+  'relrowsecurity',
   'SET LOCAL ROLE anon',
   'products',
   'trade_applications',
