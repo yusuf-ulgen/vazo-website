@@ -7,39 +7,8 @@
 -- 1. HARDENED RBAC HELPER FUNCTIONS & ANONYMOUS ENUMERATION PROTECTION
 -- ------------------------------------------------------------------------------
 
--- Parameterless browser-safe is_admin() bound strictly to auth.uid()
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, auth, pg_temp
-AS $$
-    SELECT EXISTS (
-        SELECT 1
-        FROM public.admin_users
-        WHERE user_id = auth.uid()
-          AND active = true
-    );
-$$;
-
--- Parameterless browser-safe get_admin_role() bound strictly to auth.uid()
-CREATE OR REPLACE FUNCTION public.get_admin_role()
-RETURNS TEXT
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public, auth, pg_temp
-AS $$
-    SELECT role
-    FROM public.admin_users
-    WHERE user_id = auth.uid()
-      AND active = true
-    LIMIT 1;
-$$;
-
 -- Parameterized internal helper with privilege validation (prevents enumeration by non-admins)
-CREATE OR REPLACE FUNCTION public.is_admin(check_user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_admin(check_user_id UUID DEFAULT auth.uid())
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 STABLE
@@ -48,7 +17,9 @@ SET search_path = public, auth, pg_temp
 AS $$
 BEGIN
     -- If checking oneself or if caller is an authorized admin / service_role
-    IF check_user_id IS NULL OR check_user_id = auth.uid() OR public.is_admin() OR auth.role() = 'service_role' THEN
+    IF check_user_id IS NULL OR check_user_id = auth.uid() OR auth.role() = 'service_role' OR EXISTS (
+        SELECT 1 FROM public.admin_users WHERE user_id = auth.uid() AND active = true
+    ) THEN
         RETURN EXISTS (
             SELECT 1
             FROM public.admin_users
@@ -62,7 +33,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_admin_role(check_user_id UUID)
+CREATE OR REPLACE FUNCTION public.get_admin_role(check_user_id UUID DEFAULT auth.uid())
 RETURNS TEXT
 LANGUAGE plpgsql
 STABLE
@@ -70,7 +41,9 @@ SECURITY DEFINER
 SET search_path = public, auth, pg_temp
 AS $$
 BEGIN
-    IF check_user_id IS NULL OR check_user_id = auth.uid() OR public.is_admin() OR auth.role() = 'service_role' THEN
+    IF check_user_id IS NULL OR check_user_id = auth.uid() OR auth.role() = 'service_role' OR EXISTS (
+        SELECT 1 FROM public.admin_users WHERE user_id = auth.uid() AND active = true
+    ) THEN
         RETURN (
             SELECT role
             FROM public.admin_users
@@ -87,14 +60,12 @@ $$;
 -- Grant permissions explicitly
 REVOKE ALL ON FUNCTION public.is_admin(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_admin(UUID) FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO anon, authenticated, service_role;
 
 REVOKE ALL ON FUNCTION public.get_admin_role(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_admin_role(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_admin_role(UUID) TO authenticated, service_role;
 
-GRANT EXECUTE ON FUNCTION public.is_admin() TO anon, authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.get_admin_role() TO authenticated, service_role;
 
 
 -- ------------------------------------------------------------------------------
