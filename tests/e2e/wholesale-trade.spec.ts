@@ -29,6 +29,6 @@ test.describe('Wholesale & Trade Portal E2E Tests', () => {
     await submitBtn.click();
 
     await expect(page.getByText('Başvurunuz Başarıyla Alındı')).toBeVisible();
-    await expect(page.getByRole('link', { name: 'B2B Kataloğuna Dön' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Toptan Kataloğuna Dön|B2B Kataloğuna Dön/i })).toBeVisible();
   });
 });

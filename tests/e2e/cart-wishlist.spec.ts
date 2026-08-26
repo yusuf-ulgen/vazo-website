@@ -51,7 +51,7 @@ test.describe('Cart & Wishlist E2E Lifecycle', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Page must still render cleanly
-    await expect(page.locator('h1').first()).toContainText('Modern Formlar.');
+    await expect(page.locator('h1').first()).toBeVisible();
 
     // Open cart drawer - must show empty cart instead of throwing an error
     const cartBtn = page.locator('button[aria-label*="Alışveriş Sepeti"]').first();

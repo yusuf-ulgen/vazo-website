@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(38);
+SELECT plan(44);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -20,6 +20,7 @@ SELECT has_table('public', 'trade_applications', 'Table public.trade_application
 SELECT has_table('public', 'contact_messages', 'Table public.contact_messages should exist');
 SELECT has_table('public', 'newsletter_subscriptions', 'Table public.newsletter_subscriptions should exist');
 SELECT has_table('public', 'admin_users', 'Table public.admin_users should exist');
+SELECT has_table('public', 'admin_audit_logs', 'Table public.admin_audit_logs should exist');
 
 -- ------------------------------------------------------------------------------
 -- 2. Row Level Security (RLS) Enabled Checks
@@ -33,6 +34,7 @@ SELECT row_level_security_is_active('public', 'trade_applications', 'RLS should 
 SELECT row_level_security_is_active('public', 'contact_messages', 'RLS should be active on contact_messages');
 SELECT row_level_security_is_active('public', 'newsletter_subscriptions', 'RLS should be active on newsletter_subscriptions');
 SELECT row_level_security_is_active('public', 'admin_users', 'RLS should be active on admin_users');
+SELECT row_level_security_is_active('public', 'admin_audit_logs', 'RLS should be active on admin_audit_logs');
 
 -- ------------------------------------------------------------------------------
 -- 3. Anonymous Role (Storefront Public Visitor) Isolation Tests
@@ -129,6 +131,20 @@ SELECT throws_ok(
     'Direct anonymous INSERT into admin_users must fail (Role escalation denied)'
 );
 
+-- 3.12 Anon CANNOT read or insert into admin_audit_logs
+SELECT is(
+    (SELECT count(*) FROM public.admin_audit_logs),
+    0::bigint,
+    'Anonymous user receives 0 rows from admin_audit_logs'
+);
+
+SELECT throws_ok(
+    $$ INSERT INTO public.admin_audit_logs (action, entity_type, entity_id) VALUES ('CREATE', 'product', '1') $$,
+    '42501',
+    NULL,
+    'Direct anonymous INSERT into admin_audit_logs must fail'
+);
+
 -- ------------------------------------------------------------------------------
 -- 4. Hidden-Parent Child RLS Regression Check
 -- ------------------------------------------------------------------------------
@@ -200,6 +216,25 @@ SELECT is(
     (SELECT count(*) FROM public.admin_users),
     0::bigint,
     'Authenticated non-admin receives 0 rows from admin_users'
+);
+
+-- ------------------------------------------------------------------------------
+-- 6. Audit Trail Immutability Checks (Enforced by Database Trigger)
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+SELECT throws_ok(
+    $$ UPDATE public.admin_audit_logs SET action = 'UPDATE' WHERE id = '00000000-0000-0000-0000-000000000000' $$,
+    '27000',
+    NULL,
+    'Audit logs are immutable: UPDATE must fail with 27000'
+);
+
+SELECT throws_ok(
+    $$ DELETE FROM public.admin_audit_logs WHERE id = '00000000-0000-0000-0000-000000000000' $$,
+    '27000',
+    NULL,
+    'Audit logs are immutable: DELETE must fail with 27000'
 );
 
 RESET ROLE;

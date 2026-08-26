@@ -29,11 +29,10 @@ describe('AdminContentPage Component (Phase 2.8)', () => {
       expect(screen.getByText('Gezinme Menüleri')).toBeInTheDocument();
       expect(screen.getByText('İçerik Sayfaları')).toBeInTheDocument();
       expect(screen.getByText('SSS & Yardım')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Yeni Hero Ekle/i })).toBeInTheDocument();
+      expect(screen.getByText('Perakende')).toBeInTheDocument();
+      expect(screen.getByText('Toptan')).toBeInTheDocument();
     });
-
-    expect(screen.getByRole('button', { name: /Yeni Hero Ekle/i })).toBeInTheDocument();
-    expect(screen.getByText('Perakende')).toBeInTheDocument();
-    expect(screen.getByText('Toptan')).toBeInTheDocument();
   });
 
   it('switches to wholesale benefits tab and displays benefits list', async () => {

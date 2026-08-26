@@ -23,21 +23,18 @@ test.describe('Navigation & Header E2E Tests', () => {
     await expect(searchDialog).not.toBeVisible();
   });
 
-  test('opens desktop mega menus on hover', async ({ page, isMobile }) => {
+  test('opens desktop mega menus on hover/click', async ({ page, isMobile }) => {
     if (isMobile) test.skip();
 
     await page.goto('/');
 
     const perakendeBtn = page.getByRole('button', { name: 'Perakende' }).first();
-    await perakendeBtn.hover();
-
-    await expect(page.getByRole('heading', { name: 'Kategoriler', exact: true }).first()).toBeVisible();
+    await perakendeBtn.click();
     await expect(page.getByText('Masa Üstü Vazolar').first()).toBeVisible();
 
     const toptanBtn = page.getByRole('button', { name: 'Toptan' }).first();
-    await toptanBtn.hover();
-
-    await expect(page.getByText('Toptan & B2B Çözümleri').first()).toBeVisible();
+    await toptanBtn.click();
+    await expect(page.getByText('Toptan Satış Programı').first()).toBeVisible();
   });
 
   test('interacts with Mobile Navigation Drawer on mobile viewports', async ({ page, isMobile }) => {

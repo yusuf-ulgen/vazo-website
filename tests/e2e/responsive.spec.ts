@@ -17,6 +17,7 @@ test.describe('Responsive Matrix & No Horizontal Scroll Tests', () => {
     test(`renders cleanly without horizontal overflow at ${vp.name}`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto('/');
+      await page.waitForLoadState('domcontentloaded');
 
       // Check for horizontal overflow
       const hasHorizontalScroll = await page.evaluate(() => {
@@ -24,8 +25,8 @@ test.describe('Responsive Matrix & No Horizontal Scroll Tests', () => {
       });
 
       expect(hasHorizontalScroll).toBe(false);
-      await expect(page.locator('header')).toBeVisible();
-      await expect(page.locator('footer')).toBeVisible();
+      await expect(page.locator('header').first()).toBeVisible();
+      await expect(page.locator('footer').first()).toBeVisible();
     });
   }
 });

@@ -22,10 +22,9 @@ This document establishes the security standards and operational policies for th
 - **Mandatory RLS**: Every PostgreSQL table exposed via the Supabase Data API must have Row Level Security enabled.
 - Anonymous/public browser users are granted **SELECT ONLY** on published/active records. Unrestricted public write, update, and delete access is prohibited.
 
-
 ---
 
-## 2. Authentication & Admin Panel Security (Phase 2.2 Architecture)
+## 2. Authentication & Admin Panel Security
 
 ### 2.1 Supabase Auth & Database-Enforced RBAC
 - Admin authentication is handled exclusively through official **Supabase Auth** (`supabase.auth.signInWithPassword` and `supabase.auth.signOut`).
@@ -38,30 +37,68 @@ This document establishes the security standards and operational policies for th
 
 ### 2.2 Client-Side Route Guards & Defense-in-Depth
 - React Router guards (`AdminGuard`) provide UX routing, redirecting unauthenticated or unprivileged users to `/admin/login`.
-- However, all admin management tables (`products`, `categories`, `collections`, `wholesale_price_tiers`, `site_settings`, `trade_applications`, etc.) strictly enforce `is_admin()` in RLS policies. Even if a malicious actor bypasses client JavaScript, Postgres RLS blocks all unauthorized mutations with `42501 (insufficient_privilege)`.
+- All admin management tables strictly enforce `is_admin()` in RLS policies. Even if a malicious actor bypasses client JavaScript, Postgres RLS blocks all unauthorized mutations with `42501 (insufficient_privilege)`.
 
 ### 2.3 Zero Hardcoded Credentials
-- No admin passwords, demo credentials, or credential lists (`ADMIN_CREDENTIALS`) may ever exist in source code.
-
-
----
-
-## 3. Data Validation & Injection Prevention
-
-### 3.1 XSS (Cross-Site Scripting) Prevention
-- Always rely on React's automatic string escaping.
-- Avoid `dangerouslySetInnerHTML` unless rendering sanitized rich-text product descriptions parsed through a strict DOMPurify pipeline.
-- All user inputs in contact forms and trade applications must be sanitized and validated using structured schema validation (e.g., Zod) on both client and server.
-
-### 3.2 File Upload Safety (Future Media Module)
-- When implementing the Media Library in future phases:
-  - File types must be validated by MIME-type and magic bytes (strictly allowing `.jpg`, `.jpeg`, `.png`, `.webp`, `.svg`).
-  - Prohibit direct execution of uploaded media on the host server.
-  - Image files must be served from an isolated CDN/bucket with appropriate Content-Disposition headers.
+- No admin passwords, demo credentials, or credential lists (`ADMIN_CREDENTIALS`, `LocalDev123`) exist in source code.
 
 ---
 
-## 4. Logging & Audit Trails
+## 3. Row Level Security (RLS) Policy Matrix
 
-- Application logs must never print sensitive customer payment details (credit card numbers, CVVs) or authentication credentials.
-- All administrative data mutations (product creation, wholesale price changes, trade customer approval) must generate immutable audit records in the backend audit trail.
+| Table | Public / Anonymous Access | Authenticated Admin Access |
+| :--- | :--- | :--- |
+| `admin_users` | DENIED (0 access) | SELECT (own record via `auth.uid()`) |
+| `products` | SELECT (`status = 'published'`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `product_variants` | SELECT (`active = true` AND parent product published) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `categories` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `collections` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `wholesale_price_tiers` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `content_pages` | SELECT (`is_published = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `content_sections` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `faq_groups` & `faq_items` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `navigation_menu_groups` & `items` | SELECT (`active = true`) | ALL (SELECT, INSERT, UPDATE, DELETE) |
+| `site_settings` | SELECT (public read) | UPDATE / INSERT (`is_admin()`) |
+| `trade_applications` | DENIED (Ingested via Edge Function) | ALL (`is_admin()`) |
+| `contact_messages` | DENIED (Ingested via Edge Function) | ALL (`is_admin()`) |
+| `newsletter_subscriptions` | DENIED (Ingested via Edge Function) | ALL (`is_admin()`) |
+| `admin_audit_logs` | DENIED (0 access) | SELECT & INSERT (`is_admin()`); UPDATE & DELETE BLOCKED BY TRIGGER |
+
+---
+
+## 4. Submissions Ingestion Security Boundary
+
+Public submissions (Trade Applications, Contact Inquiries, Newsletter Subscriptions) must NEVER be directly inserted via PostgreSQL table endpoints:
+
+```
+Browser Form Submission
+        │
+        ▼ (HTTPS POST with Honeypot + Rate Limiting)
+Supabase Edge Function
+        │
+        ▼ (Server-side validation & Sanitization)
+Service Role Backend Client
+        │
+        ▼ (INSERT into PostgreSQL)
+Persisted Record
+```
+
+Direct PostgreSQL `INSERT` by anonymous users is blocked by RLS to prevent database spamming and table enumeration.
+
+---
+
+## 5. Storage Security Rules (`product-media` Bucket)
+
+- **MIME Allowlist**: `image/jpeg`, `image/png`, `image/webp`, `image/svg+xml`.
+- **Max File Size**: 5MB per asset.
+- **Path Sanitization**: Filenames are hashed with UUIDs and sanitized to prevent path traversal (`../`).
+- **Access Policy**: Public read (`SELECT`) allowed; write, update, and delete access strictly restricted to authenticated administrators (`is_admin()`).
+
+---
+
+## 6. Immutable Audit Trail & Database Trigger Enforcement
+
+- **Append-Only Schema**: The `admin_audit_logs` table records all administrative mutations.
+- **Trigger Tamper-Proofing**: The `prevent_audit_log_tampering` trigger raises PostgreSQL exception `27000` on any attempted `UPDATE` or `DELETE` operation, even by administrative roles.
+- **Zero-PII Compliance**: Excludes passwords, tokens, and payment data from audit payloads.
+- **pgTAP Automated Testing**: Verified by 44 automated database security assertions (`supabase/tests/database_security.sql`).

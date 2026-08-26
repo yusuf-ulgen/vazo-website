@@ -20,11 +20,14 @@ const requiredChecks = [
   'contact_messages',
   'newsletter_subscriptions',
   'site_settings',
+  'admin_audit_logs',
   'Direct anonymous INSERT into trade_applications must fail',
   'Direct anonymous INSERT into contact_messages must fail',
   'Direct anonymous INSERT into newsletter_subscriptions must fail',
   'Child variant of draft product is completely invisible to anonymous visitors',
   'Child media of draft product is completely invisible to anonymous visitors',
+  'Audit logs are immutable: UPDATE must fail with 27000',
+  'Audit logs are immutable: DELETE must fail with 27000',
   'SELECT * FROM finish()',
   'ROLLBACK',
 ];
@@ -51,10 +54,10 @@ if (plannedCount !== selectAssertions) {
   process.exit(1);
 }
 
-// If local Supabase CLI is active and accessible, run live pgTAP suite
+// If local Supabase CLI or disposable PostgreSQL is active, run live pgTAP suite
 if (process.env.CI_SUPABASE_TEST === 'true' || process.env.DATABASE_URL) {
   try {
-    console.log('Running pgTAP against active database test runner...');
+    console.log('Running live pgTAP test suite against database test runner...');
     execSync('supabase test db', { stdio: 'inherit' });
   } catch (err) {
     console.error('❌ Error executing supabase test db:', err);

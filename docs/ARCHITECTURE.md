@@ -119,3 +119,36 @@ Following [`ADR.md`](file:///D:/freelance/vazo-website/docs/ADR.md#adr-009), **S
 4. **Mandatory Row Level Security (RLS)**: Public anonymous users can only query active/published records.
 5. **Deterministic Mock Fallback**: When `VITE_ENABLE_MOCK_DATA="true"` or when Supabase is unconfigured, the application runs against isolated mock adapters in `src/shared/mocks/`. Real mode failure triggers clear error handling rather than silent fallback.
 
+---
+
+## 6. Admin Panel & Submissions Data Flow (Phase 2 Architecture)
+
+```
+                     ┌───────────────────────────┐
+                     │     Browser Application   │
+                     └─────────────┬─────────────┘
+                                   │
+               ┌───────────────────┴───────────────────┐
+               │                                       │
+       (Public Submissions)                   (Admin Data Mutations)
+               │                                       │
+               ▼                                       ▼
+     Supabase Edge Function                 Supabase PostgREST API
+  (Honeypot + Validation + Rate Limit)        (RLS + is_admin() Checks)
+               │                                       │
+               ▼ (Service Role)                        ▼ (Authenticated Admin Role)
+  ┌────────────────────────────────────────────────────────────┐
+  │                 PostgreSQL 15 Database                     │
+  │  ├── Core Tables: products, product_variants, categories   │
+  │  ├── Content Tables: content_pages, sections, faq, menus   │
+  │  ├── Submissions: trade_applications, contact_messages     │
+  │  └── Audit Ledger: admin_audit_logs                        │
+  │       └─ Trigger: prevent_audit_log_tampering (Append-Only)│
+  └────────────────────────────────────────────────────────────┘
+```
+
+### Key Subsystems:
+- **Admin Repositories**: Encapsulate typed queries for Inventory, Products, Categories, Collections, Pricing, Navigation, Structured Content, Settings, and Submissions.
+- **Edge Function Boundary**: Public contact, trade applications, and newsletter subscriptions ingest via serverless Edge Functions, preventing direct table exposure.
+- **Audit Logging Subsystem**: Automatically captures admin user ID, email, action type, before/after JSON snapshots, and enforces immutability via DB triggers.
+

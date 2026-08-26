@@ -8,7 +8,9 @@ test.describe('Product Detail Page (PDP) Flagship E2E Tests', () => {
     await expect(page.getByText(/₺/).first()).toBeVisible();
     await expect(page.getByText('Stokta Mevcut')).toBeVisible();
 
-    // Default open accordion section
+    // Open Teknik Detaylar Accordion section
+    const teknikBtn = page.getByRole('button', { name: /Teknik Detaylar & Bakım/i });
+    await teknikBtn.click();
     await expect(page.getByText(/Yüksek derecede \(1250°C\) fırınlanmış/i)).toBeVisible();
 
     // Toggle Kargo, Paketleme & Sevkiyat Accordion

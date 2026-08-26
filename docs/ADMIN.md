@@ -21,50 +21,71 @@ When backend integration is completed, **CRUD** requires:
 
 ---
 
-## 2. Module Blueprint & Scope
+## 2. Implemented Module Architecture
 
 ```
 /admin
-├── /admin/dashboard         # Executive summary, sales & order KPIs, trade application alerts
-├── /admin/products          # Product catalog CRUD, variant matrices, dimensions, media
-├── /admin/categories        # Category hierarchy management
-├── /admin/collections       # Editorial collection curation
-├── /admin/inventory         # Stock tracking, low-stock threshold alerts, warehouse channels
-├── /admin/pricing           # Retail pricing rules, bulk updates
-├── /admin/wholesale         # Wholesale tiers, MOQ management, trade application review
-├── /admin/orders            # Unified order grid (Retail vs Wholesale tabs, fulfillment, tracking)
-├── /admin/content           # CMS Editor (Announcement bar, Hero banners, Mega-menu promos)
-├── /admin/media             # Media asset library and image optimization manager
-├── /admin/promotions        # Discount codes, tier discounts, commercial campaigns
-├── /admin/forms             # Contact inquiries, custom ceramic requests, sample orders
-├── /admin/seo               # Meta titles, descriptions, OpenGraph tags, sitemap controls
-├── /admin/settings          # Public studio info, business hours, tax rates, shipping rules
-└── /admin/audit             # Immutable audit log of administrative mutations
+├── /admin/dashboard         # Real operational metrics, low stock alerts, pending submissions, quick action hub
+├── /admin/products          # Product catalog CRUD, variant matrices, dimensions, media upload/remove
+├── /admin/categories        # Category hierarchy CRUD & sorting
+├── /admin/collections       # Editorial collection curation & banner management
+├── /admin/inventory         # Stock tracking, low-stock threshold alerts, instant adjustment modal
+├── /admin/pricing           # Retail pricing rules, bulk percentage & fixed updates
+├── /admin/wholesale         # Wholesale tiers, MOQ management, commercial discounts
+├── /admin/submissions       # Trade applications, contact messages, newsletter subscriptions
+├── /admin/navigation        # Mega-menu group & link hierarchy builder (Retail & Wholesale)
+├── /admin/content           # Structured CMS (About, Wholesale Landing/How It Works, Policies, FAQ)
+├── /admin/settings          # Public studio info, business hours, commerce/shipping policies, social links
+└── /admin/audit             # Immutable audit log with entity diff viewer & trigger-enforced immutability
 ```
 
 ---
 
-## 3. Detailed Module Contracts
+## 3. Module Specifications & Operational Workflows
 
-### 3.1 Product Management (`/admin/products`)
-- **General Info**: Title, SKU, slug, short summary, rich-text description, status (Draft, Published, Archived).
-- **Physical Specifications**: Material (e.g., Terracotta, Stoneware, Porcelain), Finish (Matte, Glossy), Dimensions (Height, Diameter, Weight), Color palette.
-- **Variants Matrix**: Size/color variants, individual variant SKUs, variant-specific stock.
-- **Media Gallery**: Primary hero image, gallery thumbnails, drag-and-drop order, alt text.
-- **Channel Availability**: Toggle for Retail availability and Wholesale catalog eligibility.
+### 3.1 Executive Dashboard (`/admin/dashboard`)
+- **Real Metrics Only**: Product counts (Total, Published, Draft, Archived), variant stock health (In Stock, Low Stock, Out of Stock), active taxonomies, and pending submissions.
+- **Zero Fake KPIs**: Does not display fabricated revenue, fictional orders, or ungrounded financial charts.
+- **Security & Health Banner**: Real-time Supabase Auth state, schema health, and zero-PII audit trail verification.
+- **Quick Action Hub**: Direct keyboard-navigable shortcuts to add products, adjust stock, manage menus, and review submissions.
 
-### 3.2 Wholesale & Trade Management (`/admin/wholesale`)
-- **Trade Account Applications**: Review queue for architects, interior designers, and retail stockists. Actions: Approve (grants trade tier), Reject (with message), Request More Info.
-- **Volume Pricing Tiers**: Configure dynamic quantity brackets (e.g., 10–49 units: 25% off; 50+ units: 40% off).
-- **MOQ Rules**: Set minimum order units per product or category.
-- **Custom Quote Requests**: Workflow for custom glazing or large-scale architectural projects.
+### 3.2 Product & Variant Management (`/admin/products`, `/admin/inventory`, `/admin/pricing`)
+- **Product Entity**: Title, slug, SKU, category, collection, retail price, wholesale price, status (`draft`, `published`, `archived`), materials, dimensions, images.
+- **Variants Matrix**: Size, color, SKU, barcode, stock quantity, low-stock threshold, price adjustments, and active state.
+- **Stock Adjustments**: Direct mutation modal logging before/after stock levels and reason codes into `admin_audit_logs`.
+- **Bulk Price Adjustments**: Percentage or fixed-amount increments/decrements with confirmation modals.
 
-### 3.3 Homepage & Navigation CMS (`/admin/content`)
-- **Announcement Bar**: Enable/disable toggle, text editor, link target, background accent.
-- **Hero Carousel / Split Hero**: Title, subtitle, background image, primary and secondary CTA buttons.
-- **Mega Menu Cards**: Configurable featured promo cards rendered inside `Perakende` and `Toptan` dropdowns.
-- **Editorial Blocks**: Ordering and content editing for homepage story sections.
+### 3.3 Navigation & Header Menu Builder (`/admin/navigation`)
+- **Group Hierarchy**: Manage navigation menu groups for `retail_mega` and `wholesale_mega` menus.
+- **Link Builder**: Label, destination URL, sort order, and badge tags (`Yeni`, `Popüler`).
+- **Promotional Banners**: Hero promo card configuration with title, subtitle, image, and CTA link.
 
-### 3.4 Security & Secrets Isolation
-- **No Secrets in Admin State**: Sensitive server credentials (API keys, SMTP passwords, database connection strings) must **never** be rendered in frontend inputs or stored in browser state.
-- **Role-Based Access Control (RBAC)**: Future backend integration will enforce server-side token validation; client-side route guards serve purely for UX navigation.
+### 3.4 Structured CMS & Editorial Pages (`/admin/content`)
+- **Structured Pages**: Manage editorial content for `/about`, `/wholesale`, `/wholesale/how-it-works`, `/policies/shipping-returns`, `/policies/privacy-kvkk`, and `/policies/terms`.
+- **Section Ordering**: Ordered sections with title, subtitle, body, image, and CTA configurations.
+- **FAQ Management**: Categorized FAQ groups and items with sort order and active toggles.
+
+### 3.5 Submissions & Inquiries Management (`/admin/submissions`)
+- **Trade Applications**: B2B customer applications (company name, tax ID, email, estimated volume) with status lifecycle (`pending`, `reviewed`, `approved`, `rejected`) and internal admin notes.
+- **Contact Messages**: Customer inquiries with status tracking (`new`, `in_review`, `resolved`, `spam`) and response logs.
+- **Newsletter Subscriptions**: Subscriber email list with source tracking and active status.
+- **Edge Function Lockdown**: Public submissions ingest strictly through authenticated Supabase Edge Functions. Direct public PostgreSQL `INSERT` is blocked.
+
+### 3.6 Site Settings (`/admin/settings`)
+- **General**: Brand name, tagline, meta description.
+- **Contact & Showroom**: Support email, wholesale email, phone, physical address, business hours.
+- **Commerce & Logistics**: Currency, free shipping threshold, standard shipping fee, tax rate, shipping summary.
+- **Social Media**: Instagram, Facebook, Pinterest URLs with URL format validation.
+
+### 3.7 Immutable Audit Trail (`/admin/audit`)
+- **Append-Only Ledger**: Records `admin_id`, `admin_email`, `action`, `entity_type`, `entity_id`, `old_data`, `new_data`, `metadata`, and `created_at`.
+- **Database Trigger Enforcement**: `prevent_audit_log_tampering` trigger raises PostgreSQL exception `27000` on any attempted `UPDATE` or `DELETE`.
+- **Zero-PII Compliance**: Excludes passwords, tokens, and payment data from audit payloads.
+
+---
+
+## 4. Admin Security & Authentication Contract
+
+1. **Supabase Auth & RBAC**: Admin access requires an authenticated session validated server-side against `admin_users` table via `public.is_admin()`.
+2. **Zero Client Trust**: No `localStorage` flags, no hardcoded credentials (`ADMIN_CREDENTIALS`), and no email regex heuristics grant admin privileges.
+3. **Automatic Session Recovery & Logout**: State synchronizes with Supabase Auth events (`SIGNED_IN`, `SIGNED_OUT`, `TOKEN_REFRESHED`). Unauthenticated access redirects immediately to `/admin/login`.
