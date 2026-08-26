@@ -283,6 +283,10 @@ async function loginAdminForA11y(page: Page) {
 }
 
 test.describe('Automated Accessibility Audit (Axe-Core & WCAG 2.1 AA)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
   // Storefront Axe Scans
   for (const path of storefrontRoutes) {
     test(`Storefront route ${path} has zero critical or serious accessibility violations`, async ({ page }) => {
