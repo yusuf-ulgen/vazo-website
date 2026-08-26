@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
+  History,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -39,6 +40,7 @@ export function AdminSidebar({
     { label: 'Toptan Portalı', path: '/admin/wholesale', icon: Building2 },
     { label: 'İçerik & CMS', path: '/admin/content', icon: FileText },
     { label: 'Gelen Başvurular', path: '/admin/submissions', icon: Inbox },
+    { label: 'Denetim İzi', path: '/admin/audit', icon: History },
     { label: 'Site Ayarları', path: '/admin/settings', icon: Settings },
   ];
 

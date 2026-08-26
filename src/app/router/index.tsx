@@ -1,8 +1,5 @@
 import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import {
-  Inbox,
-} from 'lucide-react';
 import { SiteLayout } from '@/site/layouts/SiteLayout';
 import { HomePage } from '@/site/pages/HomePage';
 import { CatalogPage } from '@/site/pages/CatalogPage';
@@ -39,9 +36,6 @@ const AdminLayout = React.lazy(() =>
 const AdminDashboardPage = React.lazy(() =>
   import('@/admin/pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage }))
 );
-const AdminModuleScaffoldPage = React.lazy(() =>
-  import('@/admin/pages/AdminModuleScaffoldPage').then((m) => ({ default: m.AdminModuleScaffoldPage }))
-);
 const AdminProductsPage = React.lazy(() =>
   import('@/admin/products/pages/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage }))
 );
@@ -62,6 +56,12 @@ const AdminWholesalePage = React.lazy(() =>
 );
 const AdminContentPage = React.lazy(() =>
   import('@/admin/content/pages/AdminContentPage').then((m) => ({ default: m.AdminContentPage }))
+);
+const AdminSubmissionsPage = React.lazy(() =>
+  import('@/admin/submissions/pages/AdminSubmissionsPage').then((m) => ({ default: m.AdminSubmissionsPage }))
+);
+const AdminAuditPage = React.lazy(() =>
+  import('@/admin/audit/pages/AdminAuditPage').then((m) => ({ default: m.AdminAuditPage }))
 );
 const AdminSettingsPage = React.lazy(() =>
   import('@/admin/settings/pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage }))
@@ -268,18 +268,15 @@ export const router = createBrowserRouter([
         path: 'submissions',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Gelen Başvurular & İletişim"
-              moduleCode="MOD-SUB-07"
-              description="Trade mimarlık başvuruları, iletişim mesajları ve bülten abonelik kayıtları."
-              icon={Inbox}
-              plannedFeatures={[
-                'B2B Kurumsal Trade başvuru kuyruğunu inceleme ve onaylama',
-                'İletişim mesajlarını yanıtlama, okundu işaretleme ve arşivleme',
-                'Bülten aboneleri listesi ve kaynak analizi',
-                'Detaylı başvuru modalı ve yönetici notları ekleme',
-              ]}
-            />
+            <AdminSubmissionsPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'audit',
+        element: (
+          <Suspense fallback={adminFallback}>
+            <AdminAuditPage />
           </Suspense>
         ),
       },

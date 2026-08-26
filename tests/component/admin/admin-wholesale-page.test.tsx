@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AdminWholesalePage } from '@/admin/wholesale/pages/AdminWholesalePage';
 import { adminWholesaleRepository } from '@/admin/wholesale/api/admin-wholesale-repository';
 import { adminProductRepository } from '@/admin/products/api/admin-product-repository';
@@ -76,9 +77,11 @@ describe('AdminWholesalePage Component (Phase 2.6)', () => {
 
   const renderPage = () => {
     return render(
-      <ToastProvider>
-        <AdminWholesalePage />
-      </ToastProvider>
+      <MemoryRouter>
+        <ToastProvider>
+          <AdminWholesalePage />
+        </ToastProvider>
+      </MemoryRouter>
     );
   };
 

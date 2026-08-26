@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Edit2, Trash2, RefreshCw, Layers } from 'lucide-react';
 import {
   AdminPageHeader,
@@ -133,14 +134,23 @@ export const AdminWholesalePage: React.FC = () => {
         }
       />
 
-      <div className="bg-surface-secondary/40 border border-border-subtle p-3.5 rounded-lg text-xs text-text-secondary flex items-start gap-2.5">
-        <Layers className="w-4 h-4 text-accent-primary shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-text-primary block">Kademe Fiyatlandırma Sistemi</span>
-          <span>
-            Toptan alıcılar sepette belirttikleri adet aralığına göre otomatik olarak tanımlı birim fiyattan yararlanır. Bayilik ve kurumsal başvuru onay süreçleri Faz 2.11 modülünde devreye girecektir.
-          </span>
+      <div className="bg-surface-secondary/40 border border-border-subtle p-3.5 rounded-lg text-xs text-text-secondary flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-2.5">
+          <Layers className="w-4 h-4 text-accent-primary shrink-0 mt-0.5" />
+          <div>
+            <span className="font-semibold text-text-primary block">Kademe Fiyatlandırma Sistemi</span>
+            <span>
+              Toptan alıcılar sepette belirttikleri adet aralığına göre otomatik olarak tanımlı birim fiyattan yararlanır.
+            </span>
+          </div>
         </div>
+        <Link
+          to="/admin/submissions?tab=trade"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-primary hover:bg-surface-secondary border border-border-default rounded text-xs font-semibold text-text-primary transition-colors shrink-0 shadow-xs"
+        >
+          <span>Gelen Trade Başvuruları</span>
+          <span className="text-text-muted">&rarr;</span>
+        </Link>
       </div>
 
       <DataTable
