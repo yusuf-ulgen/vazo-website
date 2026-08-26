@@ -109,7 +109,7 @@ SELECT is(
 
 -- 3.10 Direct Public Browser Mutation Denial: Newsletter Subscriptions
 SELECT throws_ok(
-    $$ INSERT INTO public.newsletter_subscriptions (email, status)
+    $$ INSERT INTO public.newsletter_subscriptions (normalized_email, status)
        VALUES ('spam@test.com', 'active') $$,
     '42501',
     NULL,
@@ -133,8 +133,8 @@ DO $$
 DECLARE
     v_draft_id UUID := 'd0000000-0000-0000-0000-000000000001';
 BEGIN
-    INSERT INTO public.products (id, slug, name, status, retail_price)
-    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'draft', 990.00)
+    INSERT INTO public.products (id, slug, name, short_description, description, status, retail_price)
+    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'Taslak kısa açıklama', 'Taslak açıklama', 'draft', 990.00)
     ON CONFLICT (id) DO UPDATE SET status = 'draft';
 
     INSERT INTO public.product_variants (product_id, sku, variant_name, color_name, retail_price, stock_quantity)
