@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
+import { contentRepository, FaqGroup } from '@/entities/content';
 
 export function FaqPage() {
   useSEO({
@@ -11,52 +12,21 @@ export function FaqPage() {
   });
 
   const [openSection, setOpenSection] = useState<string | null>('0-0');
+  const [faqGroups, setFaqGroups] = useState<FaqGroup[]>([]);
 
-  const faqGroups = [
-    {
-      group: 'Sipariş & Teslimat',
-      items: [
-        {
-          q: 'Siparişler ne kadar sürede kargoya teslim edilir?',
-          a: 'Stokta bulunan ürünlerimiz özenle paketlenerek anlaşmalı kargo firmaları aracılığıyla en kısa sürede sevkiyata hazırlanır.',
-        },
-        {
-          q: 'Seramik ürünler kargoda hasar görürse ne yapmalıyım?',
-          a: 'Tüm gönderilerimiz kırılmaya karşı koruyucu ambalajlarla sevk edilir. Kargo teslimi anında hasar fark edilmesi durumunda kargo görevlisine tutanak tutturulması veya hasarlı ambalajın fotoğraflanarak bize iletilmesi halinde gerekli destek sağlanır.',
-        },
-        {
-          q: 'Kargo ücreti ne kadar?',
-          a: 'Belirlenen sepet tutarının üzerindeki perakende siparişlerde kargo ücretsizdir. Güncel kargo tutarı ve eşikleri sepet ve ödeme adımında görüntülenir.',
-        },
-      ],
-    },
-    {
-      group: 'Ürün Bakımı & Özellikler',
-      items: [
-        {
-          q: 'Vazoların içine canlı çiçek ve su konulabilir mi?',
-          a: 'Evet. Tüm vazolarımız 1250°C fırınlanmış stoneware kilinden üretilir ve iç kısımları su geçirimsiz sırla kaplıdır. Canlı çiçeklerle su doldurarak güvenle kullanabilirsiniz.',
-        },
-        {
-          q: 'Seramik vazolar nasıl temizlenmelidir?',
-          a: 'Ilık su ve yumuşak mikrofiber bez yardımıyla temizlenmesi önerilir. Mat mineral sır dokusunu korumak amacıyla aşındırıcı kimyasallar ve sert süngerler kullanılmamalıdır.',
-        },
-      ],
-    },
-    {
-      group: 'Toptan & Kurumsal Satış',
-      items: [
-        {
-          q: 'Toptan alımlarda minimum sipariş adedi (MOQ) nedir?',
-          a: 'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Belirli adetlerin üzerindeki siparişlerde kademeli toptan iskonto oranları uygulanır.',
-        },
-        {
-          q: 'Mimari projeler için özel renk veya sır geliştiriyor musunuz?',
-          a: 'Evet. Belirli adetlerin üzerindeki otel, restoran ve konut projelerinde mimari ekibinizin renk kartelasına uygun özel mineral sırlar geliştirilebilmektedir.',
-        },
-      ],
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getFaqGroups().then((groups) => {
+      if (isMounted) {
+        setFaqGroups(groups);
+      }
+    }).catch((err) => {
+      console.error('[FaqPage] Error loading FAQs:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="w-full bg-canvas-default min-h-screen py-12 md:py-20">
@@ -80,25 +50,25 @@ export function FaqPage() {
         {/* FAQ Categories Stack */}
         <div className="space-y-12 text-left">
           {faqGroups.map((grp, grpIdx) => (
-            <div key={grp.group} className="space-y-4">
+            <div key={grp.id || grp.title} className="space-y-4">
               <h2 className="text-xs uppercase font-semibold tracking-editorial text-text-secondary border-b border-border-subtle pb-2">
-                {grp.group}
+                {grp.title}
               </h2>
 
               <div className="divide-y divide-border-default border-y border-border-default">
-                {grp.items.map((item, itemIdx) => {
+                {(grp.items || []).map((item, itemIdx) => {
                   const itemId = `${grpIdx}-${itemIdx}`;
                   const isOpen = openSection === itemId;
 
                   return (
-                    <div key={item.q} className="py-4">
+                    <div key={item.id || item.question} className="py-4">
                       <button
                         type="button"
                         onClick={() => setOpenSection(isOpen ? null : itemId)}
                         className="w-full flex items-center justify-between text-left font-display text-lg text-text-primary py-1 hover:opacity-75 transition-opacity"
                         aria-expanded={isOpen}
                       >
-                        <span>{item.q}</span>
+                        <span>{item.question}</span>
                         <ChevronDown
                           className={`w-4 h-4 text-text-secondary transition-transform duration-200 ${
                             isOpen ? 'rotate-180' : ''
@@ -108,7 +78,7 @@ export function FaqPage() {
 
                       {isOpen && (
                         <div className="pt-2 text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal transition-opacity duration-200">
-                          <p>{item.a}</p>
+                          <p>{item.answer}</p>
                         </div>
                       )}
                     </div>

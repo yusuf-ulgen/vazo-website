@@ -10,6 +10,8 @@ import {
   Layers,
   Sparkles,
   Menu as MenuIcon,
+  FileText,
+  HelpCircle,
 } from 'lucide-react';
 import {
   AdminPageHeader,
@@ -21,13 +23,15 @@ import { adminContentRepository } from '../api/admin-content-repository';
 import { HeroSlideEditModal } from '../components/HeroSlideEditModal';
 import { WholesaleBenefitModal } from '../components/WholesaleBenefitModal';
 import { AdminNavigationTab } from '@/admin/navigation/components/AdminNavigationTab';
+import { AdminPagesTab } from '../components/AdminPagesTab';
+import { AdminFaqTab } from '../components/AdminFaqTab';
 import { COMMERCIAL_BENEFIT_ICONS } from '@/site/components/home/commercial-benefit-icons';
 import type { AdminHeroSlide, AdminWholesaleBenefit } from '../types';
 
 export function AdminContentPage() {
   const { success, error: toastError } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'hero' | 'benefits' | 'navigation'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'benefits' | 'navigation' | 'pages' | 'faqs'>('hero');
   const [heroSlides, setHeroSlides] = useState<AdminHeroSlide[]>([]);
   const [benefits, setBenefits] = useState<AdminWholesaleBenefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,9 +128,9 @@ export function AdminContentPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="İçerik & Vitrin Yönetimi (CMS)"
-        description="Ana sayfa Split Hero vitrinleri, ticari avantajlar ve gezinme menüleri yönetimi."
+        description="Ana sayfa Split Hero vitrinleri, ticari avantajlar, kurumsal sayfalar ve SSS yönetimi."
         actions={
-          activeTab !== 'navigation' ? (
+          activeTab === 'hero' || activeTab === 'benefits' ? (
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -168,11 +172,11 @@ export function AdminContentPage() {
 
       {/* Tabs */}
       <div className="border-b border-border-default">
-        <nav className="flex space-x-6">
+        <nav className="flex space-x-6 overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('hero')}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 shrink-0 ${
               activeTab === 'hero'
                 ? 'border-accent-primary text-accent-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -184,7 +188,7 @@ export function AdminContentPage() {
           <button
             type="button"
             onClick={() => setActiveTab('benefits')}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 shrink-0 ${
               activeTab === 'benefits'
                 ? 'border-accent-primary text-accent-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -196,7 +200,7 @@ export function AdminContentPage() {
           <button
             type="button"
             onClick={() => setActiveTab('navigation')}
-            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 shrink-0 ${
               activeTab === 'navigation'
                 ? 'border-accent-primary text-accent-primary'
                 : 'border-transparent text-text-secondary hover:text-text-primary'
@@ -205,11 +209,39 @@ export function AdminContentPage() {
             <MenuIcon className="w-3.5 h-3.5" />
             <span>Gezinme Menüleri</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('pages')}
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 shrink-0 ${
+              activeTab === 'pages'
+                ? 'border-accent-primary text-accent-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>İçerik Sayfaları</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('faqs')}
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 shrink-0 ${
+              activeTab === 'faqs'
+                ? 'border-accent-primary text-accent-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span>SSS & Yardım</span>
+          </button>
         </nav>
       </div>
 
       {activeTab === 'navigation' ? (
         <AdminNavigationTab />
+      ) : activeTab === 'pages' ? (
+        <AdminPagesTab />
+      ) : activeTab === 'faqs' ? (
+        <AdminFaqTab />
       ) : isLoading ? (
         <div className="p-12 text-center text-xs text-text-muted">
           İçerikler yükleniyor...

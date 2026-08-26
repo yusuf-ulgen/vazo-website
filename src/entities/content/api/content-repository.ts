@@ -8,6 +8,10 @@ import {
   MenuGroup,
   MenuItem,
   MenuType,
+  ContentPage,
+  ContentSection,
+  FaqGroup,
+  FaqItem,
 } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import {
@@ -15,38 +19,6 @@ import {
   perakendeMegaMenuData,
   toptanMegaMenuData,
 } from '@/shared/mocks/navigation';
-
-export type { WholesaleBenefit, MenuGroup, MenuItem, MenuType };
-
-export interface TradeApplicationPayload {
-  companyName: string;
-  taxNumber: string;
-  taxOffice: string;
-  businessType: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  website?: string;
-  estimatedMonthlyVolume?: string;
-  customerMessage?: string;
-  notes?: string;
-  company_website_confirm?: string;
-}
-
-export interface ContactMessagePayload {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  company_website_confirm?: string;
-}
-
-export interface NewsletterSubscriptionPayload {
-  email: string;
-  source?: string;
-  company_website_confirm?: string;
-}
-
 import {
   mockAnnouncement,
   mockHero,
@@ -54,7 +26,31 @@ import {
   mockEditorialSections,
   mockWholesaleBenefits,
   emptyMegaMenu,
+  mockContentPages,
+  mockFaqGroups,
+  mockPrimaryNavGroups,
+  mockFooterNavGroups,
 } from './content-mocks';
+import {
+  contentSubmissions,
+  TradeApplicationPayload,
+  ContactMessagePayload,
+  NewsletterSubscriptionPayload,
+} from './content-submissions';
+
+export type {
+  WholesaleBenefit,
+  MenuGroup,
+  MenuItem,
+  MenuType,
+  ContentPage,
+  ContentSection,
+  FaqGroup,
+  FaqItem,
+  TradeApplicationPayload,
+  ContactMessagePayload,
+  NewsletterSubscriptionPayload,
+};
 
 export const contentRepository = {
   async getAnnouncement(): Promise<AnnouncementBarConfig | null> {
@@ -313,66 +309,10 @@ export const contentRepository = {
   async getNavMenu(menuType: MenuType): Promise<MenuGroup[]> {
     if (isStorefrontMockEnabled) {
       if (menuType === 'primary') {
-        return [
-          {
-            id: 'mock-primary-group',
-            menuType: 'primary',
-            title: 'Ana Menü',
-            sortOrder: 1,
-            active: true,
-            items: [
-              { id: 'p1', groupId: 'mock-primary-group', label: 'Yeni', href: '/new', isNew: false, isPopular: false, sortOrder: 1, active: true },
-              { id: 'p2', groupId: 'mock-primary-group', label: 'Perakende', href: '/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
-              { id: 'p3', groupId: 'mock-primary-group', label: 'Toptan', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 3, active: true },
-              { id: 'p4', groupId: 'mock-primary-group', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
-              { id: 'p5', groupId: 'mock-primary-group', label: 'Hakkımızda', href: '/about', isNew: false, isPopular: false, sortOrder: 5, active: true },
-              { id: 'p6', groupId: 'mock-primary-group', label: 'İletişim', href: '/contact', isNew: false, isPopular: false, sortOrder: 6, active: true },
-            ],
-          },
-        ];
+        return mockPrimaryNavGroups;
       }
       if (menuType === 'footer') {
-        return [
-          {
-            id: 'mock-f1',
-            menuType: 'footer',
-            title: 'Alışveriş',
-            sortOrder: 1,
-            active: true,
-            items: [
-              { id: 'f1-1', groupId: 'mock-f1', label: 'Tüm Modeller', href: '/products', isNew: false, isPopular: false, sortOrder: 1, active: true },
-              { id: 'f1-2', groupId: 'mock-f1', label: 'Yeni Gelenler', href: '/new', isNew: false, isPopular: false, sortOrder: 2, active: true },
-              { id: 'f1-3', groupId: 'mock-f1', label: 'Çok Satanlar', href: '/bestsellers', isNew: false, isPopular: false, sortOrder: 3, active: true },
-              { id: 'f1-4', groupId: 'mock-f1', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
-            ],
-          },
-          {
-            id: 'mock-f2',
-            menuType: 'footer',
-            title: 'Toptan',
-            sortOrder: 2,
-            active: true,
-            items: [
-              { id: 'f2-1', groupId: 'mock-f2', label: 'Toptan Satışımız', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 1, active: true },
-              { id: 'f2-2', groupId: 'mock-f2', label: 'Toptan Kataloğu', href: '/wholesale/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
-              { id: 'f2-3', groupId: 'mock-f2', label: 'Nasıl Çalışır?', href: '/wholesale/how-it-works', isNew: false, isPopular: false, sortOrder: 3, active: true },
-              { id: 'f2-4', groupId: 'mock-f2', label: 'Ticari Hesap Başvurusu', href: '/wholesale/apply', isNew: false, isPopular: false, sortOrder: 4, active: true },
-            ],
-          },
-          {
-            id: 'mock-f3',
-            menuType: 'footer',
-            title: 'Müşteri Deneyimi',
-            sortOrder: 3,
-            active: true,
-            items: [
-              { id: 'f3-1', groupId: 'mock-f3', label: 'Hakkımızda & Zanaat', href: '/about', isNew: false, isPopular: false, sortOrder: 1, active: true },
-              { id: 'f3-2', groupId: 'mock-f3', label: 'İletişim & Showroom', href: '/contact', isNew: false, isPopular: false, sortOrder: 2, active: true },
-              { id: 'f3-3', groupId: 'mock-f3', label: 'Sıkça Sorulan Sorular', href: '/faq', isNew: false, isPopular: false, sortOrder: 3, active: true },
-              { id: 'f3-4', groupId: 'mock-f3', label: 'Kargo & İade Koşulları', href: '#policy-shipping', isNew: false, isPopular: false, sortOrder: 4, active: true },
-            ],
-          },
-        ];
+        return mockFooterNavGroups;
       }
     }
 
@@ -422,12 +362,32 @@ export const contentRepository = {
     }));
   },
 
-  async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {
+  async getContentPage(pageKey: string): Promise<ContentPage | null> {
     if (isStorefrontMockEnabled) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      const mock = mockContentPages[pageKey];
+      if (!mock) return null;
       return {
-        success: true,
-        message: 'Toptan başvurunuz başarıyla alındı. Müşteri temsilcimiz en kısa sürede sizinle iletişime geçecektir.',
+        id: mock.id,
+        pageKey: mock.pageKey,
+        title: mock.title,
+        seoTitle: mock.seoTitle,
+        seoDescription: mock.seoDescription,
+        published: mock.published,
+        sections: (mock.sections || []).map((s) => ({
+          id: s.id,
+          pageId: s.pageId,
+          sectionKey: s.sectionKey,
+          eyebrow: s.eyebrow,
+          title: s.title,
+          subtitle: s.subtitle,
+          content: s.content,
+          imageUrl: s.imageUrl,
+          imagePosition: s.imagePosition,
+          ctaText: s.ctaText,
+          ctaUrl: s.ctaUrl,
+          sortOrder: s.sortOrder,
+          active: s.active,
+        })),
       };
     }
 
@@ -435,101 +395,132 @@ export const contentRepository = {
       throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
     }
 
-    try {
-      const { data, error } = await supabase.functions.invoke('submit-trade-application', {
-        body: payload,
-      });
+    const { data, error } = await supabase
+      .from('content_pages')
+      .select(`
+        *,
+        content_sections (*)
+      `)
+      .eq('page_key', pageKey)
+      .eq('published', true)
+      .maybeSingle();
 
-      if (error) {
-        throw new Error(error.message || 'Başvuru sunucuya iletilemedi.');
-      }
-
-      if (data && data.error) {
-        throw new Error(data.error);
-      }
-
-      return {
-        success: true,
-        message: data?.message || 'Toptan / Trade başvurunuz başarıyla alındı.',
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Başvuru iletilirken beklenmeyen bir hata oluştu.';
-      console.error('[contentRepository.submitTradeApplication] Error:', msg);
-      throw new Error(msg);
+    if (error) {
+      console.error(`[contentRepository.getContentPage:${pageKey}] Live error:`, error.message);
+      throw new Error(`İçerik sayfası yüklenemedi: ${error.message}`);
     }
+
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      pageKey: data.page_key,
+      title: data.title,
+      seoTitle: data.seo_title,
+      seoDescription: data.seo_description,
+      published: data.published,
+      sections: (data.content_sections || [])
+        .filter((s: { active: boolean }) => s.active)
+        .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+        .map((s: {
+          id: string;
+          page_id: string;
+          section_key: string;
+          eyebrow: string | null;
+          title: string;
+          subtitle: string | null;
+          content: string | null;
+          image_url: string | null;
+          image_position: string | null;
+          cta_text: string | null;
+          cta_url: string | null;
+          sort_order: number;
+          active: boolean;
+        }) => ({
+          id: s.id,
+          pageId: s.page_id,
+          sectionKey: s.section_key,
+          eyebrow: s.eyebrow,
+          title: s.title,
+          subtitle: s.subtitle,
+          content: s.content,
+          imageUrl: s.image_url,
+          imagePosition: s.image_position || 'left',
+          ctaText: s.cta_text,
+          ctaUrl: s.cta_url,
+          sortOrder: s.sort_order,
+          active: s.active,
+        })),
+    };
+  },
+
+  async getFaqGroups(): Promise<FaqGroup[]> {
+    if (isStorefrontMockEnabled) {
+      return mockFaqGroups;
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    }
+
+    const { data, error } = await supabase
+      .from('faq_groups')
+      .select(`
+        *,
+        faq_items (*)
+      `)
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('[contentRepository.getFaqGroups] Live error:', error.message);
+      throw new Error(`Sıkça sorulan sorular yüklenemedi: ${error.message}`);
+    }
+
+    return (data || []).map((g) => ({
+      id: g.id,
+      title: g.title,
+      sortOrder: g.sort_order,
+      active: g.active,
+      items: (g.faq_items || [])
+        .filter((item: { active: boolean }) => item.active)
+        .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+        .map((item: {
+          id: string;
+          group_id: string;
+          question: string;
+          answer: string;
+          sort_order: number;
+          active: boolean;
+        }) => ({
+          id: item.id,
+          groupId: item.group_id,
+          question: item.question,
+          answer: item.answer,
+          sortOrder: item.sort_order,
+          active: item.active,
+        })),
+    }));
+  },
+
+  async getPolicyContent(policyType: 'privacy' | 'terms' | 'shipping'): Promise<ContentPage | null> {
+    const keyMap: Record<'privacy' | 'terms' | 'shipping', string> = {
+      privacy: 'privacy_kvkk',
+      terms: 'terms',
+      shipping: 'shipping_returns',
+    };
+    return this.getContentPage(keyMap[policyType]);
+  },
+
+  async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {
+    return contentSubmissions.submitTradeApplication(payload);
   },
 
   async submitContactMessage(payload: ContactMessagePayload): Promise<{ success: boolean; message: string }> {
-    if (isStorefrontMockEnabled) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return {
-        success: true,
-        message: 'Mesajınız stüdyo ekibimize iletilmiştir.',
-      };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('submit-contact-message', {
-        body: payload,
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Mesaj sunucuya iletilemedi.');
-      }
-
-      if (data && data.error) {
-        throw new Error(data.error);
-      }
-
-      return {
-        success: true,
-        message: data?.message || 'Mesajınız stüdyo ekibimize iletilmiştir.',
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Mesaj iletilirken bir hata oluştu.';
-      console.error('[contentRepository.submitContactMessage] Error:', msg);
-      throw new Error(msg);
-    }
+    return contentSubmissions.submitContactMessage(payload);
   },
 
   async subscribeNewsletter(payload: NewsletterSubscriptionPayload): Promise<{ success: boolean; message: string }> {
-    if (isStorefrontMockEnabled) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return {
-        success: true,
-        message: 'Bülten kaydınız tamamlandı.',
-      };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('subscribe-newsletter', {
-        body: payload,
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Bülten kaydı oluşturulamadı.');
-      }
-
-      if (data && data.error) {
-        throw new Error(data.error);
-      }
-
-      return {
-        success: true,
-        message: data?.message || 'Bülten kaydınız tamamlandı.',
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bülten kaydı oluşturulamadı.';
-      console.error('[contentRepository.subscribeNewsletter] Error:', msg);
-      throw new Error(msg);
-    }
+    return contentSubmissions.subscribeNewsletter(payload);
   },
 };

@@ -81,10 +81,10 @@ describe('Content & Policy Pages Integration Tests', () => {
     expect(await screen.findByText('Sunucu hatası oluştu')).toBeInTheDocument();
   });
 
-  it('renders FaqPage with accordion groups', () => {
+  it('renders FaqPage with accordion groups', async () => {
     renderWithRouter(<FaqPage />);
     expect(screen.getAllByText('Sıkça Sorulan Sorular').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Sipariş & Teslimat')).toBeInTheDocument();
+    expect(await screen.findByText('Sipariş & Teslimat')).toBeInTheDocument();
   });
 
   it('renders WishlistPage in empty and filled state', async () => {

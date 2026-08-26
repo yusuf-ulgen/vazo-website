@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Building2,
@@ -12,8 +13,33 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
+import { useSEO } from '@/shared/lib/seo';
+import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
 
 export function WholesaleLandingPage() {
+  const [pageData, setPageData] = useState<ContentPageType | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getContentPage('wholesale_landing').then((data) => {
+      if (isMounted && data) {
+        setPageData(data);
+      }
+    }).catch((err) => {
+      console.error('[WholesaleLandingPage] Error loading page:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useSEO({
+    title: pageData?.seoTitle || pageData?.title || 'Kurumsal & Toptan Satış | Vazo Studio',
+    description: pageData?.seoDescription || 'İç mimarlar, HoReCa ve seçkin mağazalar için özel toptan seramik vazo üretimi ve mimari danışmanlık.',
+  });
+
+  const heroSection = pageData?.sections?.find((s) => s.sectionKey === 'hero') || pageData?.sections?.[0];
+
   const targetAudiences = [
     {
       icon: Layers,
@@ -73,25 +99,30 @@ export function WholesaleLandingPage() {
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-left">
               <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-                Kurumsal & Toptan Çözümleri
+                {heroSection?.eyebrow || 'Kurumsal & Toptan Çözümleri'}
               </span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-light text-text-primary leading-[1.08] tracking-tight">
-                Mimari Mekanlara Heykelsi Dokunuş.{' '}
-                <span className="block font-normal italic text-text-secondary">
-                  Özel Toptan Üretim.
-                </span>
+                {heroSection?.title || (
+                  <>
+                    Mimari Mekanlara Heykelsi Dokunuş.{' '}
+                    <span className="block font-normal italic text-text-secondary">
+                      Özel Toptan Üretim.
+                    </span>
+                  </>
+                )}
               </h1>
               <p className="text-sm sm:text-base text-text-secondary leading-relaxed font-sans font-normal max-w-xl">
-                Vazo Studio, iç mimarlar, otel projeleri ve seçkin tasarım mağazaları için yüksek kalite el yapımı seramik ve stoneware vazolar üretir. Esnek hacim kademeleri ve hızlı üretim kapasitesiyle projelerinize değer katın.
+                {heroSection?.content ||
+                  'Vazo Studio, iç mimarlar, otel projeleri ve seçkin tasarım mağazaları için yüksek kalite el yapımı seramik ve stoneware vazolar üretir. Esnek hacim kademeleri ve hızlı üretim kapasitesiyle projelerinize değer katın.'}
               </p>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <Link
-                  to="/wholesale/apply"
+                  to={heroSection?.ctaUrl || '/wholesale/apply'}
                   className="inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
                 >
-                  <span>Toptan Satışa Başvur</span>
+                  <span>{heroSection?.ctaText || 'Toptan Satışa Başvur'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 

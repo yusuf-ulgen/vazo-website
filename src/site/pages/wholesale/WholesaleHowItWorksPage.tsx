@@ -1,8 +1,32 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
+import { useSEO } from '@/shared/lib/seo';
+import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
 
 export function WholesaleHowItWorksPage() {
+  const [pageData, setPageData] = useState<ContentPageType | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getContentPage('wholesale_how_it_works').then((data) => {
+      if (isMounted && data) {
+        setPageData(data);
+      }
+    }).catch((err) => {
+      console.error('[WholesaleHowItWorksPage] Error loading page:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useSEO({
+    title: pageData?.seoTitle || pageData?.title || 'Toptan Nasıl Çalışır? | Vazo Studio',
+    description: pageData?.seoDescription || 'Toptan sipariş adımları, numune süreci, özel sır geliştirme ve lojistik teslimat aşamaları.',
+  });
+
   const steps = [
     {
       step: '01',
@@ -55,61 +79,65 @@ export function WholesaleHowItWorksPage() {
           </nav>
 
           <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light text-text-primary">
-            Toptan Sipariş & Üretim Süreci
+            {pageData?.title || 'Toptan Sipariş & Üretim Süreci'}
           </h1>
           <p className="text-xs sm:text-sm text-text-secondary max-w-xl leading-relaxed font-sans">
-            İlk temastan şantiye teslimine kadar mimari ve ticari projelerinizde şeffaf, güvenilir ve esnek işleyiş.
+            {pageData?.seoDescription ||
+              'İlk temastan şantiye teslimine kadar mimari ve ticari projelerinizde şeffaf, güvenilir ve esnek işleyiş.'}
           </p>
         </div>
 
         {/* Steps Timeline */}
-        <div className="space-y-10 max-w-4xl">
-          {steps.map((s) => (
+        <div className="space-y-8 md:space-y-12">
+          {steps.map((item) => (
             <div
-              key={s.step}
-              className="grid grid-cols-1 md:grid-cols-12 gap-6 p-6 sm:p-8 bg-surface-secondary border border-border-subtle text-left items-start"
+              key={item.step}
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 sm:p-8 bg-surface-primary border border-border-subtle rounded-lg shadow-card text-left transition-all hover:border-border-default"
             >
-              <div className="md:col-span-2">
-                <span className="font-display text-3xl sm:text-4xl font-light text-text-muted">
-                  {s.step}
+              {/* Step indicator */}
+              <div className="lg:col-span-2 flex items-center lg:items-start">
+                <span className="font-display text-3xl sm:text-4xl lg:text-5xl font-light text-text-muted">
+                  {item.step}
                 </span>
               </div>
 
-              <div className="md:col-span-10 space-y-3">
-                <h2 className="font-display text-xl sm:text-2xl text-text-primary font-medium">
-                  {s.title}
-                </h2>
+              {/* Step Content */}
+              <div className="lg:col-span-6 space-y-3">
+                <h3 className="font-display text-xl sm:text-2xl text-text-primary font-medium">
+                  {item.title}
+                </h3>
                 <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
-                  {s.description}
+                  {item.description}
                 </p>
+              </div>
 
-                <div className="pt-2 space-y-1.5">
-                  {s.subPoints.map((point) => (
-                    <div key={point} className="flex items-center gap-2 text-xs text-text-primary">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-feedback-success shrink-0" />
-                      <span>{point}</span>
-                    </div>
-                  ))}
-                </div>
+              {/* Sub points */}
+              <div className="lg:col-span-4 border-t lg:border-t-0 lg:border-l border-border-subtle pt-4 lg:pt-0 lg:pl-6 space-y-2.5 flex flex-col justify-center">
+                {item.subPoints.map((pt) => (
+                  <div key={pt} className="flex items-start gap-2 text-xs text-text-secondary">
+                    <CheckCircle2 className="w-4 h-4 text-feedback-success shrink-0 mt-0.5" />
+                    <span>{pt}</span>
+                  </div>
+                ))}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-16 p-8 sm:p-12 bg-canvas-warm border border-border-default text-center space-y-4 max-w-4xl">
-          <h3 className="font-display text-2xl sm:text-3xl text-text-primary">
+        {/* Bottom CTA Banner */}
+        <div className="mt-16 p-8 sm:p-12 bg-canvas-warm border border-border-subtle rounded-lg text-center space-y-4">
+          <h2 className="font-display text-2xl sm:text-3xl text-text-primary">
             Projenizi Birlikte Hayata Geçirelim
-          </h3>
-          <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto font-sans">
-            Detaylı fiyat teklifi, numune talebi veya atölye ziyareti için formu doldurabilirsiniz.
+          </h2>
+          <p className="text-xs sm:text-sm text-text-secondary max-w-lg mx-auto">
+            Hızlı teklif almak ve numune talebinde bulunmak için kurumsal başvuru formunu doldurun.
           </p>
           <div className="pt-2">
             <Link
               to="/wholesale/apply"
               className="inline-flex items-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
             >
-              <span>Toptan Satışa Başvur</span>
+              <span>Hemen Başvurun</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

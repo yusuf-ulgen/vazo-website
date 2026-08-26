@@ -1,13 +1,35 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, Hammer, ShieldCheck, Heart } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
+import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
 
 export function AboutPage() {
+  const [pageData, setPageData] = useState<ContentPageType | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getContentPage('about').then((data) => {
+      if (isMounted && data) {
+        setPageData(data);
+      }
+    }).catch((err) => {
+      console.error('[AboutPage] Failed to fetch content:', err);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useSEO({
-    title: 'Hakkımızda & Zanaat Hikayemiz',
-    description: 'Vazo Studio; İskandinav sadeliği ile geleneksel el yapımı seramik zanaatını buluşturan heykelsi vazo stüdyosudur.',
+    title: pageData?.seoTitle || pageData?.title || 'Hakkımızda & Zanaat Hikayemiz',
+    description: pageData?.seoDescription || 'Vazo Studio; İskandinav sadeliği ile geleneksel el yapımı seramik zanaatını buluşturan heykelsi vazo stüdyosudur.',
   });
+
+  const heroSection = pageData?.sections?.find((s) => s.sectionKey === 'hero_header');
+  const craftSection = pageData?.sections?.find((s) => s.sectionKey === 'story_craft');
+  const materialSection = pageData?.sections?.find((s) => s.sectionKey === 'story_material');
 
   return (
     <div className="w-full bg-canvas-default min-h-screen">
@@ -16,16 +38,21 @@ export function AboutPage() {
         <Container size="lg">
           <div className="max-w-3xl text-left space-y-4">
             <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-              Felsefemiz & Atölyemiz
+              {heroSection?.eyebrow || 'Felsefemiz & Atölyemiz'}
             </span>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-light text-text-primary leading-[1.1]">
-              Sessizliğin, Toprağın ve{' '}
-              <span className="font-normal italic text-text-secondary">
-                Heykelsi Formların Dengesi.
-              </span>
+              {heroSection?.title || (
+                <>
+                  Sessizliğin, Toprağın ve{' '}
+                  <span className="font-normal italic text-text-secondary">
+                    Heykelsi Formların Dengesi.
+                  </span>
+                </>
+              )}
             </h1>
             <p className="text-sm sm:text-base text-text-secondary leading-relaxed font-sans font-normal pt-2">
-              Vazo Studio, seri üretimin tekdüzeliğine karşı bir duruş olarak doğdu. Doğal mineralli killerin el tornasında usta ellerle şekillendiği, her bir parçanın kendine has yüzey dokusu ve fırın izleri taşıdığı zamansız objeler üretiyoruz.
+              {heroSection?.content ||
+                'Vazo Studio, seri üretimin tekdüzeliğine karşı bir duruş olarak doğdu. Doğal mineralli killerin el tornasında usta ellerle şekillendiği, her bir parçanın kendine has yüzey dokusu ve fırın izleri taşıdığı zamansız objeler üretiyoruz.'}
             </p>
           </div>
         </Container>
@@ -38,8 +65,8 @@ export function AboutPage() {
             <div className="lg:col-span-6">
               <div className="aspect-[4/3] sm:aspect-[16/11] w-full overflow-hidden bg-surface-secondary shadow-card">
                 <img
-                  src="https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=85"
-                  alt="Vazo Studio seramik el tornası zanaat süreci"
+                  src={craftSection?.imageUrl || "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=85"}
+                  alt={craftSection?.title || "Vazo Studio seramik el tornası zanaat süreci"}
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 />
               </div>
@@ -47,17 +74,25 @@ export function AboutPage() {
 
             <div className="lg:col-span-6 space-y-6 text-left">
               <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-                01 / Geleneksel Zanaat
+                {craftSection?.eyebrow || '01 / Geleneksel Zanaat'}
               </span>
               <h2 className="font-display text-3xl sm:text-4xl font-light text-text-primary">
-                El Tornasında Şekillenen Karakter
+                {craftSection?.title || 'El Tornasında Şekillenen Karakter'}
               </h2>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
-                Koleksiyonlarımızdaki her form, kalıplarla dökülmek yerine el tornasında tek tek döndürülerek yükselir. Bu sayede her parça, usta ellerin parmak izlerini ve kilin doğal akışını üzerinde taşır.
-              </p>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
-                Kullandığımız mineral zengini stoneware kili, 1250°C yüksek sıcaklıkta fırınlanarak taş kıvamında monolitik bir sertliğe ve %100 su geçirimsizliğe ulaşır.
-              </p>
+              {craftSection?.content ? (
+                <div className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal space-y-4 whitespace-pre-line">
+                  {craftSection.content}
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
+                    Koleksiyonlarımızdaki her form, kalıplarla dökülmek yerine el tornasında tek tek döndürülerek yükselir. Bu sayede her parça, usta ellerin parmak izlerini ve kilin doğal akışını üzerinde taşır.
+                  </p>
+                  <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
+                    Kullandığımız mineral zengini stoneware kili, 1250°C yüksek sıcaklıkta fırınlanarak taş kıvamında monolitik bir sertliğe ve %100 su geçirimsizliğe ulaşır.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </Container>
@@ -69,20 +104,23 @@ export function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-6 space-y-6 text-left order-2 lg:order-1">
               <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
-                02 / Malzeme ve Doku
+                {materialSection?.eyebrow || '02 / Malzeme ve Doku'}
               </span>
               <h2 className="font-display text-3xl sm:text-4xl font-light text-text-primary">
-                Ham Mineraller & Dingin Mat Yüzeyler
+                {materialSection?.title || 'Ham Mineraller & Dingin Mat Yüzeyler'}
               </h2>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
-                Parlak ve yapay sentetik cilalardan bilinçli olarak kaçınıyoruz. Tebeşir beyazı, ham terakota, volkanik bazalt kili ve kum beji tonlarındaki özel mat mineral sırlarımız mekanlara sakinleştirici bir dokunsallık kazandırır.
-              </p>
+              <div className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans font-normal">
+                <p>
+                  {materialSection?.content ||
+                    'Parlak ve yapay sentetik cilalardan bilinçli olarak kaçınıyoruz. Tebeşir beyazı, ham terakota, volkanik bazalt kili ve kum beji tonlarındaki özel mat mineral sırlarımız mekanlara sakinleştirici bir dokunsallık kazandırır.'}
+                </p>
+              </div>
               <div className="pt-2">
                 <Link
-                  to="/products"
+                  to={materialSection?.ctaUrl || '/products'}
                   className="inline-flex items-center gap-2 bg-action-primary text-action-primary-text px-8 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
                 >
-                  <span>Koleksiyonu Keşfet</span>
+                  <span>{materialSection?.ctaText || 'Koleksiyonu Keşfet'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -91,8 +129,8 @@ export function AboutPage() {
             <div className="lg:col-span-6 order-1 lg:order-2">
               <div className="aspect-[4/3] sm:aspect-[16/11] w-full overflow-hidden bg-surface-secondary shadow-card">
                 <img
-                  src="https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1200&q=85"
-                  alt="Ham mineral mat dokulu heykelsi seramik vazo"
+                  src={materialSection?.imageUrl || "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1200&q=85"}
+                  alt={materialSection?.title || "Ham mineral mat dokulu heykelsi seramik vazo"}
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 />
               </div>

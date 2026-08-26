@@ -30,12 +30,12 @@ describe('PolicyBottomSheet Component', () => {
     // Switch to Terms tab
     const termsTab = screen.getByRole('button', { name: 'Kullanım Koşulları' });
     fireEvent.click(termsTab);
-    expect(screen.getByText(/Kullanım Koşulları & Sözleşme/i)).toBeInTheDocument();
+    expect(await screen.findByText('Mesafeli Satış & Kullanım Koşulları')).toBeInTheDocument();
 
     // Switch to Shipping tab
     const shippingTab = screen.getByRole('button', { name: 'Teslimat & İade' });
     fireEvent.click(shippingTab);
-    expect(screen.getByText(/Teslimat & İade Koşulları/i)).toBeInTheDocument();
+    expect(await screen.findByText('Teslimat & İade Koşulları')).toBeInTheDocument();
   });
 
   it('closes when close button is clicked', async () => {

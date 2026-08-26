@@ -1,10 +1,16 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { X, ShieldCheck, FileText, Truck, RefreshCw, AlertCircle, Lock } from 'lucide-react';
+import { X, ShieldCheck, FileText, Truck, AlertCircle } from 'lucide-react';
 import { usePolicyDrawer, PolicyTab } from '@/shared/stores/policy-drawer-store';
+import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
 
 export function PolicyBottomSheet() {
   const { isOpen, activeTab, close, setTab } = usePolicyDrawer();
+  const [policyData, setPolicyData] = useState<Record<PolicyTab, ContentPageType | null>>({
+    privacy: null,
+    terms: null,
+    shipping: null,
+  });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -24,6 +30,22 @@ export function PolicyBottomSheet() {
     };
   }, [isOpen, close]);
 
+  useEffect(() => {
+    if (isOpen) {
+      let isMounted = true;
+      contentRepository.getPolicyContent(activeTab).then((data) => {
+        if (isMounted && data) {
+          setPolicyData((prev) => ({ ...prev, [activeTab]: data }));
+        }
+      }).catch((err) => {
+        console.error('[PolicyBottomSheet] Error fetching policy:', err);
+      });
+      return () => {
+        isMounted = false;
+      };
+    }
+  }, [isOpen, activeTab]);
+
   if (!isOpen) return null;
 
   const tabs: { id: PolicyTab; label: string; icon: typeof ShieldCheck }[] = [
@@ -31,6 +53,8 @@ export function PolicyBottomSheet() {
     { id: 'terms', label: 'Kullanım Koşulları', icon: FileText },
     { id: 'shipping', label: 'Teslimat & İade', icon: Truck },
   ];
+
+  const currentData = policyData[activeTab];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center transition-opacity duration-300">
@@ -86,192 +110,60 @@ export function PolicyBottomSheet() {
           </button>
         </div>
 
-        {/* Scrollable Content Body (Full Expansive Height) */}
+        {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-8 text-xs sm:text-sm font-sans text-text-secondary leading-relaxed animate-fade-scale">
-          {activeTab === 'privacy' && (
-            <div className="space-y-6 max-w-5xl">
-              <div className="space-y-2 border-b border-border-subtle pb-4">
-                <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
-                  Aydınlatma Bildirimi & Bilgilendirme
-                </span>
-                <h3 className="font-display text-2xl sm:text-3xl text-text-primary font-normal">
-                  Gizlilik Politikası & KVKK Aydınlatma Metni
-                </h3>
+          <div className="space-y-6 max-w-5xl">
+            <div className="space-y-2 border-b border-border-subtle pb-4">
+              <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
+                Yasal Bilgilendirme & Sözleşme
+              </span>
+              <h3 className="font-display text-2xl sm:text-3xl text-text-primary font-normal">
+                {currentData?.title || (
+                  activeTab === 'privacy'
+                    ? 'Gizlilik Politikası & KVKK Aydınlatma Metni'
+                    : activeTab === 'terms'
+                    ? 'Mesafeli Satış & Kullanım Koşulları'
+                    : 'Teslimat & İade Koşulları'
+                )}
+              </h3>
+              {currentData?.seoDescription && (
                 <p className="text-xs text-text-muted">
-                  Son Güncelleme: 2026 • 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") Uyarınca Hazırlanmıştır.
+                  {currentData.seoDescription}
                 </p>
-              </div>
-
-              <div className="p-4 bg-surface-secondary border border-border-default flex items-start gap-3 text-xs text-text-secondary">
-                <AlertCircle className="w-4 h-4 text-feedback-info shrink-0 mt-0.5" />
-                <p>
-                  <strong>Hukuki Güvence:</strong> Vazo Studio Tasarım ve Sanat Ürünleri San. Tic. A.Ş. olarak, ziyaretçilerimizin ve müşterilerimizin mahremiyetine saygı duyuyor; kişisel verilerinizin güvenliğini en üst düzey teknik ve idari tedbirlerle koruyoruz.
-                </p>
-              </div>
-
-              <section className="space-y-2.5">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">1. Veri Sorumlusu Kimliği</h4>
-                <p>
-                  6698 sayılı KVKK kapsamında Veri Sorumlusu: <strong>Vazo Studio Tasarım ve Seramik Ürünleri A.Ş.</strong> (Karaköy Tasarım Bölgesi, Kemankeş Karamustafa Paşa Mah. No:42, Beyoğlu / İstanbul — MERSİS: 012345678900001, Vergi Dairesi: Beyoğlu VD 9876543210).
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">2. Kişisel Verilerin İşlenme Amaçları ve Hukuki Sebepleri</h4>
-                <p>
-                  Kişisel verileriniz; KVKK’nın 5. ve 6. maddelerinde belirtilen kişisel veri işleme şartları çerçevesinde aşağıdaki amaçlarla işlenmektedir:
-                </p>
-                <ul className="list-disc pl-5 space-y-1 text-xs">
-                  <li>Siparişlerinizin alınması, atölye üretim süreçlerinin planlanması ve teslimatın gerçekleştirilmesi (Sözleşmenin ifası),</li>
-                  <li>Mevzuattan kaynaklanan e-fatura, e-arşiv ve mali yükümlülüklerin yerine getirilmesi (Hukuki yükümlülük),</li>
-                  <li>Toptan ve mimari proje teklif taleplerinin değerlendirilmesi ve müşteri ilişkileri yönetimi (Meşru menfaat),</li>
-                  <li>Açık rızanız doğrultusunda yeni koleksiyon, katalog ve sergi duyurularının iletilmesi.</li>
-                </ul>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">3. İşlenen Kişisel Veri Kategorileri & Finansal Güvenlik</h4>
-                <p>
-                  İşlenen veriler: <strong>Kimlik Verileri</strong> (Ad-soyad), <strong>İletişim Verileri</strong> (E-posta, telefon, teslimat/fatura adresi), <strong>Müşteri İşlem Verileri</strong> (Sipariş geçmişi, talep metinleri), <strong>İşlem Güvenliği</strong> (IP adresi, log kayıtları).
-                </p>
-                <div className="p-3.5 bg-surface-secondary border border-border-subtle flex items-center gap-3 text-xs">
-                  <Lock className="w-4 h-4 text-feedback-success shrink-0" />
-                  <span>
-                    <strong>Ödeme Güvenliği:</strong> Kredi kartı ve finansal bilgileriniz doğrudan PCI-DSS uyumlu lisanslı sanal POS altyapısına 256-bit SSL şifrelemeyle iletilir. Sunucularımızda hiçbir kart numarası veya güvenlik kodu saklanmaz.
-                  </span>
-                </div>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">4. Kişisel Verilerin Aktarımı</h4>
-                <p>
-                  Kişisel verileriniz yalnızca siparişin ifası için zorunlu olan anlaşmalı kargo/lojistik firmalarına, e-fatura entegratörlerine ve kanunen yetkili kamu kurum ve kuruluşlarına mevzuata uygun olarak aktarılmaktadır. Verileriniz hiçbir ticari üçüncü tarafa satılmaz.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">5. Çerez (Cookie) Politikası</h4>
-                <p>
-                  Platformumuzda sepetinizin korunması ve güvenli oturum sağlanması için zorunlu teknik çerezler kullanılmaktadır. Tarayıcı ayarlarınızdan dilediğiniz an çerez tercihlerinizi değiştirebilir veya mevcut çerezleri silebilirsiniz.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">6. KVKK 11. Madde Kapsamında Haklarınız</h4>
-                <p>
-                  KVKK’nın 11. maddesi uyarınca; verilerinizin işlenip işlenmediğini öğrenme, düzeltilmesini veya silinmesini talep etme, işlemeye itiraz etme haklarına sahipsiniz. Başvurularınızı <strong>kvkk@vazostudio.com</strong> e-posta adresimize güvenli elektronik imzalı veya atölyemize yazılı olarak iletebilirsiniz.
-                </p>
-              </section>
+              )}
             </div>
-          )}
 
-          {activeTab === 'terms' && (
-            <div className="space-y-6 max-w-5xl">
-              <div className="space-y-2 border-b border-border-subtle pb-4">
-                <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
-                  Yasal Şartlar & Sözleşme İlkeleri
-                </span>
-                <h3 className="font-display text-2xl sm:text-3xl text-text-primary font-normal">
-                  Kullanım Koşulları & Sözleşme İlkeleri
-                </h3>
-                <p className="text-xs text-text-muted">
-                  Vazo Studio web sitesini ziyaret eden veya sipariş veren tüm kullanıcılar aşağıdaki hüküm ve koşulları kabul etmiş sayılır.
-                </p>
-              </div>
-
-              <section className="space-y-2.5">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">1. Fikri ve Sınai Mülkiyet Hakları</h4>
-                <p>
-                  Bu web sitesinde sunulan tüm seramik heykelsi vazo tasarımları, 3D formlar, fotoğraflar, grafikler, metinler ve marka kimliği <strong>Vazo Studio</strong>'ya aittir. 5846 sayılı Fikir ve Sanat Eserleri Kanunu ile 6769 sayılı Sınai Mülkiyet Kanunu kapsamında korunmaktadır. İzinsiz kopyalanması, çoğaltılması veya ticari amaçla taklit edilmesi hukuki ve cezai yaptırıma tabidir.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">2. El Yapımı Zanaat ve Ürün Nitelikleri</h4>
-                <p>
-                  Koleksiyonlarımızdaki tüm vazolar, usta seramik sanatçılarımızın ellerinde geleneksel tornada şekillendirilmekte ve yüksek dereceli fırınlarda pişirilmektedir. Doğal mineral sır tepkimeleri ve fırın atmosferine bağlı olarak oluşabilecek mikron seviyesindeki doku nüansları ve ton geçişleri, her eserin kendine has ve biricik olduğunu simgeler; ayıplı ürün kapsamında değerlendirilmez.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">3. Sipariş, Fiyatlandırma ve Ödeme Hükümleri</h4>
-                <p>
-                  Web sitemizdeki perakende fiyatlar Türk Lirası cinsinden olup KDV dahildir. Toptan siparişlerde minimum sipariş adedi (MOQ) ve kademeli indirim oranları geçerlidir. Vazo Studio, kontrolü dışındaki hammadde veya döviz kur dalgalanmalarında fiyatları güncelleme hakkını saklı tutar.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">4. Kullanıcı Yükümlülükleri ve Güvenlik</h4>
-                <p>
-                  Kullanıcılar; sipariş oluştururken doğru, eksiksiz ve güncel teslimat bilgileri sunmakla yükümlüdür. Platform altyapısının güvenliğini tehdit edecek otomatik bot, kazıma (scraping) ve tersine mühendislik girişimleri kesinlikle yasaktır.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">5. Uyuşmazlıkların Çözümü ve Yetkili Mahkeme</h4>
-                <p>
-                  İşbu Kullanım Koşulları Türkiye Cumhuriyeti yasalarına tabidir. Doğabilecek her türlü uyuşmazlıkta Ticaret Bakanlığı tarafından belirlenen parasal sınırlar dahilinde İl/İlçe Tüketici Hakem Heyetleri ile <strong>İstanbul (Çağlayan) Tüketici Mahkemeleri ve İcra Daireleri</strong> münhasıran yetkilidir.
-                </p>
-              </section>
+            <div className="p-4 bg-surface-secondary border border-border-default flex items-start gap-3 text-xs text-text-secondary">
+              <AlertCircle className="w-4 h-4 text-feedback-info shrink-0 mt-0.5" />
+              <p>
+                <strong>Hukuki Not:</strong> Bu metinler Vazo Studio kurumsal güvencesi altındadır ve güncel mevzuat standartlarına uygundur.
+              </p>
             </div>
-          )}
 
-          {activeTab === 'shipping' && (
-            <div className="space-y-6 max-w-5xl">
-              <div className="space-y-2 border-b border-border-subtle pb-4">
-                <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
-                  Güvenli Sevkiyat & İade Prosedürü
-                </span>
-                <h3 className="font-display text-2xl sm:text-3xl text-text-primary font-normal">
-                  Teslimat & İade Koşulları
-                </h3>
-                <p className="text-xs text-text-muted">
-                  Hassas seramik eserleriniz için özel darbe emici ambalajlama ve %100 sigortalı kargo güvencesi.
-                </p>
+            {currentData?.sections && currentData.sections.length > 0 ? (
+              <div className="space-y-6">
+                {currentData.sections.map((sec, idx) => (
+                  <section
+                    key={sec.id || idx}
+                    className={`space-y-2.5 ${idx > 0 ? 'pt-4 border-t border-border-subtle' : ''}`}
+                  >
+                    <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">
+                      {sec.title}
+                    </h4>
+                    {sec.content && (
+                      <div className="text-xs sm:text-sm text-text-secondary leading-relaxed whitespace-pre-line">
+                        {sec.content}
+                      </div>
+                    )}
+                  </section>
+                ))}
               </div>
-
-              <section className="space-y-2.5">
-                <div className="flex items-center gap-2 text-text-primary font-display text-base sm:text-lg">
-                  <Truck className="w-4 h-4 text-text-secondary" />
-                  <h4>1. Özel Seramik Paketleme & Kargo Güvencesi</h4>
-                </div>
-                <p>
-                  Her bir vazo, kırılma riskini tamamen ortadan kaldıran özel kesimli darbe emici köpük kalıplar ve çift kat oluklu mukavva kutularla ambalajlanır. Tüm gönderilerimiz anlaşmalı kargo şirketimiz aracılığıyla <strong>%100 Kırılma Sigortası</strong> kapsamında adresinize ulaştırılır.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">2. Teslimat Süreleri ve Takip</h4>
-                <p>
-                  Stoktaki perakende siparişleriniz <strong>1-3 iş günü</strong> içerisinde kargoya teslim edilir. Kargo takip kodunuz SMS ve e-posta ile tarafınıza iletilir. Toptan ve mimari özel üretim projelerde ise sipariş onayında belirtilen sözleşmeli takvim (ortalama 7-21 iş günü) uygulanır.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">3. Kargo Teslim Alma & Hasar Tespit Tutanağı</h4>
-                <p>
-                  Kargonuzu teslim alırken dış ambalajı kontrol ediniz. Eğer kolide ezilme, delinme veya hasar mevcutsa, kargo görevlisine derhal <strong>"Hasar Tespit Tutanağı"</strong> tutturunuz. Tutanağı bize iletmeniz halinde hiçbir ek ücret talep edilmeksizin derhal yeni ürün gönderimi sağlanır.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <div className="flex items-center gap-2 text-text-primary font-display text-base sm:text-lg">
-                  <RefreshCw className="w-4 h-4 text-text-secondary" />
-                  <h4>4. 14 Günlük Koşulsuz İade Hakkı</h4>
-                </div>
-                <p>
-                  6502 sayılı Tüketicinin Korunması Hakkında Kanun uyarınca, teslim aldığınız ürünü kullanılmamış, orijinal koruyucu ambalajı ve aksesuarları zarar görmemiş halde teslim tarihinden itibaren <strong>14 gün içerisinde</strong> iade edebilirsiniz.
-                </p>
-              </section>
-
-              <section className="space-y-2.5 pt-4 border-t border-border-subtle">
-                <h4 className="font-display text-base sm:text-lg text-text-primary font-medium">5. Ücretsiz İade Gönderimi ve Geri Ödeme</h4>
-                <p>
-                  İade talebinizi web sitemizden veya <strong>destek@vazostudio.com</strong> adresinden oluşturduktan sonra size verilecek ücretsiz kargo anlaşma koduyla paketinizi bize gönderebilirsiniz. Atölye teknik incelememizden geçen ürünün bedeli, onay takip eden <strong>3-5 iş günü</strong> içinde ödeme yaptığınız karta iade edilir.
-                </p>
-              </section>
-            </div>
-          )}
+            ) : (
+              <div className="p-6 text-center text-xs text-text-muted">
+                İçerik yükleniyor...
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer info in drawer */}

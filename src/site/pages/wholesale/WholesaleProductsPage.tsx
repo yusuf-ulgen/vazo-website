@@ -7,8 +7,14 @@ import { Product } from '@/entities/product/types';
 import { Category } from '@/entities/category/types';
 import { Container } from '@/shared/ui/Container';
 import { ProductCard } from '@/site/components/ProductCard';
+import { useSEO } from '@/shared/lib/seo';
 
 export function WholesaleProductsPage() {
+  useSEO({
+    title: 'Toptan Ürün Kataloğu | Vazo Studio',
+    description: 'İç mimarlar ve kurumsal projeler için toptan alıma uygun el yapımı seramik ve stoneware vazo kataloğu.',
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');

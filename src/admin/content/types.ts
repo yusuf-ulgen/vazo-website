@@ -71,3 +71,121 @@ export interface UpdateWholesaleBenefitInput {
   sort_order?: number;
   active?: boolean;
 }
+
+export interface AdminContentSection {
+  id: string;
+  page_id: string;
+  section_key: string;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  content: string | null;
+  image_url: string | null;
+  image_position: string;
+  cta_text: string | null;
+  cta_url: string | null;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface AdminContentPageItem {
+  id: string;
+  page_key: string;
+  title: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  published: boolean;
+  created_at?: string;
+  updated_at?: string;
+  sections?: AdminContentSection[];
+}
+
+export interface CreateContentPageInput {
+  page_key: string;
+  title: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  published?: boolean;
+}
+
+export interface UpdateContentPageInput {
+  page_key?: string;
+  title?: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  published?: boolean;
+}
+
+export interface CreateContentSectionInput {
+  page_id: string;
+  section_key: string;
+  eyebrow?: string | null;
+  title: string;
+  subtitle?: string | null;
+  content?: string | null;
+  image_url?: string | null;
+  image_position?: string;
+  cta_text?: string | null;
+  cta_url?: string | null;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface UpdateContentSectionInput {
+  section_key?: string;
+  eyebrow?: string | null;
+  title?: string;
+  subtitle?: string | null;
+  content?: string | null;
+  image_url?: string | null;
+  image_position?: string;
+  cta_text?: string | null;
+  cta_url?: string | null;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface AdminFaqItem {
+  id: string;
+  group_id: string;
+  question: string;
+  answer: string;
+  sort_order: number;
+  active: boolean;
+}
+
+export interface AdminFaqGroup {
+  id: string;
+  title: string;
+  sort_order: number;
+  active: boolean;
+  items?: AdminFaqItem[];
+}
+
+export interface CreateFaqGroupInput {
+  title: string;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface UpdateFaqGroupInput {
+  title?: string;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface CreateFaqItemInput {
+  group_id: string;
+  question: string;
+  answer: string;
+  sort_order?: number;
+  active?: boolean;
+}
+
+export interface UpdateFaqItemInput {
+  question?: string;
+  answer?: string;
+  sort_order?: number;
+  active?: boolean;
+}
+

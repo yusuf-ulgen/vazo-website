@@ -93,3 +93,47 @@ export interface MenuGroup {
   items: MenuItem[];
 }
 
+export interface ContentSection {
+  id: string;
+  pageId: string;
+  sectionKey: string;
+  eyebrow?: string | null;
+  title: string;
+  subtitle?: string | null;
+  content?: string | null;
+  imageUrl?: string | null;
+  imagePosition?: 'left' | 'right' | string;
+  ctaText?: string | null;
+  ctaUrl?: string | null;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface ContentPage {
+  id: string;
+  pageKey: string;
+  title: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  published: boolean;
+  sections?: ContentSection[];
+}
+
+export interface FaqItem {
+  id: string;
+  groupId: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface FaqGroup {
+  id: string;
+  title: string;
+  sortOrder: number;
+  active: boolean;
+  items?: FaqItem[];
+}
+
+
