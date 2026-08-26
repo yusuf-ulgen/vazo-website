@@ -68,7 +68,7 @@ export const mockAdminWholesaleBenefits = [
 
 export const mockAdminHeroSlides = [
   {
-    id: 'h0000000-0000-0000-0000-000000000001',
+    id: 'a1000000-0000-0000-0000-000000000001',
     slot: 'retail',
     eyebrow: 'BİREYSEL ALIŞVERİŞ',
     title: 'Perakende',
@@ -83,7 +83,7 @@ export const mockAdminHeroSlides = [
     active: true,
   },
   {
-    id: 'h0000000-0000-0000-0000-000000000002',
+    id: 'a1000000-0000-0000-0000-000000000002',
     slot: 'wholesale',
     eyebrow: 'PROFESYONEL ALIŞVERİŞ',
     title: 'Toptan',

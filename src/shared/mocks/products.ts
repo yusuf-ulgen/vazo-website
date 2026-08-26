@@ -3,7 +3,7 @@ import { Product } from '@/entities/product/types';
 export const mockProducts: Product[] = [
   // --- Original Core Mock Products (for unit & e2e test parity) ---
   {
-    id: 'p0000000-0000-0000-0000-000000000001',
+    id: 'a2000000-0000-0000-0000-000000000001',
     slug: 'amforik-tas-vazo-tebehir',
     name: 'Amforik Taş Vazo',
     shortDescription: 'Doğal mineralli kilden elde edilmiş heykelsi masa üstü vazo.',
@@ -48,7 +48,7 @@ export const mockProducts: Product[] = [
     updatedAt: '2026-08-15T14:30:00Z',
   },
   {
-    id: 'p0000000-0000-0000-0000-000000000002',
+    id: 'a2000000-0000-0000-0000-000000000002',
     slug: 'brutalist-silindirik-zemin-vazosu',
     name: 'Brütalist Silindirik Zemin Vazosu',
     shortDescription: 'Geniş mekanlar için tasarlanmış anıtsal monolitik seramik form.',

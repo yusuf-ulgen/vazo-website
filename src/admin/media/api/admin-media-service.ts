@@ -124,21 +124,11 @@ export const adminMediaService = {
     }
 
     // 2. Get Public URL
-    const { data: publicUrlData } = client.storage
+    const { data: { publicUrl } } = client.storage
       .from(STORAGE_BUCKET)
       .getPublicUrl(storagePath);
 
-    const publicUrl = publicUrlData.publicUrl;
-
-    // 3. Clear existing primary if needed before insert
-    if (options.isPrimary) {
-      await client
-        .from('product_media')
-        .update({ is_primary: false })
-        .eq('product_id', productId);
-    }
-
-    // 4. Insert metadata into public.product_media
+    // 3. Insert metadata into public.product_media (ALWAYS as is_primary = false first to protect existing primary)
     const payload = {
       product_id: productId,
       variant_id: options.variantId || null,
@@ -146,7 +136,7 @@ export const adminMediaService = {
       url: publicUrl,
       alt_text: options.altText?.trim() || file.name.replace(/\.[^/.]+$/, ''),
       sort_order: options.sortOrder !== undefined ? options.sortOrder : 0,
-      is_primary: Boolean(options.isPrimary),
+      is_primary: false,
       storage_bucket: STORAGE_BUCKET,
       storage_path: storagePath,
       mime_type: file.type,
@@ -159,17 +149,35 @@ export const adminMediaService = {
       .select('*, product_variants(sku, variant_name)')
       .single();
 
-    if (dbError) {
+    if (dbError || !dbData) {
       console.error('[adminMediaService.uploadProductMedia] DB insert failed, cleaning up Storage object:', dbError);
       // Orphan cleanup: remove the uploaded file from storage
       await client.storage.from(STORAGE_BUCKET).remove([storagePath]).catch((cleanupErr) => {
         console.warn('Orphan storage cleanup error:', cleanupErr);
       });
 
-      throw new Error(`Görsel veritabanına kaydedilemedi: ${dbError.message}`);
+      throw new Error(`Görsel veritabanına kaydedilemedi: ${dbError?.message || 'Bilinmeyen veritabanı hatası'}`);
     }
 
     const row = dbData as unknown as RawMediaJoinRow;
+
+    // 4. If this image should be primary, atomically switch primary via RPC
+    if (options.isPrimary) {
+      try {
+        await this.setPrimaryImage(productId, row.id);
+      } catch (switchError) {
+        console.error('[adminMediaService.uploadProductMedia] Primary switch failed, rolling back inserted row:', switchError);
+        // Rollback inserted row and storage file
+        try {
+          await client.from('product_media').delete().eq('id', row.id);
+        } catch {
+          // ignore rollback error
+        }
+        await client.storage.from(STORAGE_BUCKET).remove([storagePath]).catch(() => {});
+        throw switchError;
+      }
+    }
+
     return {
       id: row.id,
       product_id: row.product_id,
@@ -180,7 +188,7 @@ export const adminMediaService = {
       width: row.width,
       height: row.height,
       sort_order: row.sort_order,
-      is_primary: row.is_primary,
+      is_primary: Boolean(options.isPrimary),
       storage_bucket: row.storage_bucket || STORAGE_BUCKET,
       storage_path: row.storage_path || storagePath,
       mime_type: row.mime_type || file.type,

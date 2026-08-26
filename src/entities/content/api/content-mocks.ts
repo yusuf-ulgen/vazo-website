@@ -30,7 +30,7 @@ export const mockHero: HeroBannerConfig = {
 
 export const mockSplitHero: SplitHeroConfig = {
   retail: {
-    id: 'h0000000-0000-0000-0000-000000000001',
+    id: 'a1000000-0000-0000-0000-000000000001',
     eyebrow: 'BİREYSEL ALIŞVERİŞ',
     title: 'Perakende',
     subtitle: null,
@@ -45,7 +45,7 @@ export const mockSplitHero: SplitHeroConfig = {
     active: true,
   },
   wholesale: {
-    id: 'h0000000-0000-0000-0000-000000000002',
+    id: 'a1000000-0000-0000-0000-000000000002',
     eyebrow: 'PROFESYONEL ALIŞVERİŞ',
     title: 'Toptan',
     subtitle: null,
@@ -90,28 +90,28 @@ export const mockEditorialSections: EditorialSectionConfig[] = [
 
 export const mockWholesaleBenefits: WholesaleBenefit[] = [
   {
-    id: 'w0000000-0000-0000-0000-000000000001',
+    id: 'a5000000-0000-0000-0000-000000000001',
     title: 'İç Mimarlar & Projelere Özel',
     description: 'Otel, restoran, lobi ve konut projeleri için özel hacim iskontoları ve numune desteği.',
     iconName: 'Building2',
     order: 1,
   },
   {
-    id: 'w0000000-0000-0000-0000-000000000002',
+    id: 'a5000000-0000-0000-0000-000000000002',
     title: 'Düşük Minimum Sipariş (MOQ)',
     description: 'Model başına 3-6 adet arası düşük MOQ ile butik mağazalar için esnek stok yönetimi.',
     iconName: 'PackageCheck',
     order: 2,
   },
   {
-    id: 'w0000000-0000-0000-0000-000000000003',
+    id: 'a5000000-0000-0000-0000-000000000003',
     title: 'Özel Sır & Renk Üretimi',
     description: 'Büyük ölçekli mimari projeler için RAL/Pantone uyumlu özel mineral sır geliştirme.',
     iconName: 'Palette',
     order: 3,
   },
   {
-    id: 'w0000000-0000-0000-0000-000000000004',
+    id: 'a5000000-0000-0000-0000-000000000004',
     title: 'Güvenli Sandıklı Lojistik',
     description: 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.',
     iconName: 'Truck',

@@ -179,6 +179,43 @@ describe('adminMediaService (Phase 2.7)', () => {
       // Verify orphan cleanup occurred
       expect(removeSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('preserves existing primary image when new primary upload encounters a database insert failure', async () => {
+      const mockFile = createMockFile('fail-new-primary.jpg', 512 * 1024, 'image/jpeg');
+      const updateSpy = vi.fn();
+
+      mockClient.storage.from.mockReturnValue({
+        upload: vi.fn().mockResolvedValue({ data: { path: 'products/prod-1/fail-new.jpg' }, error: null }),
+        getPublicUrl: vi.fn().mockReturnValue({
+          data: { publicUrl: 'https://example.supabase.co/storage/v1/object/public/public-media/products/prod-1/fail-new.jpg' },
+        }),
+        remove: vi.fn().mockResolvedValue({ data: [], error: null }),
+      });
+
+      mockClient.from.mockImplementation((table: string) => {
+        if (table === 'product_media') {
+          return {
+            update: updateSpy,
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: 'Forced DB metadata insert failure' },
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      await expect(
+        adminMediaService.uploadProductMedia('prod-1', mockFile, { isPrimary: true })
+      ).rejects.toThrow(/Görsel veritabanına kaydedilemedi/);
+
+      // Existing primary must NEVER have been cleared prior to successful insert!
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('Media Deletion & Storage Removal', () => {

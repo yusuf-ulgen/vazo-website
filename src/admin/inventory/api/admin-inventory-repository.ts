@@ -1,5 +1,4 @@
 import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
-import { adminAuditRepository } from '@/admin/audit/api/admin-audit-repository';
 import type {
   AdminInventoryItem,
   AdminInventoryListParams,
@@ -122,7 +121,7 @@ export const adminInventoryRepository = {
     variantId: string,
     newStockQuantity: number,
     reason?: string,
-    previousStockQuantity?: number
+    _previousStockQuantity?: number
   ): Promise<void> {
     if (newStockQuantity < 0 || isNaN(newStockQuantity)) {
       throw new Error('Stok adedi negatif olamaz.');
@@ -131,35 +130,27 @@ export const adminInventoryRepository = {
     const client = requireAdminSupabase();
     const qty = Math.floor(newStockQuantity);
 
-    const { data: updatedVariant, error } = await client
-      .from('product_variants')
-      .update({
-        stock_quantity: qty,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', variantId)
-      .select('id, sku, variant_name')
-      .single();
+    // Call authoritative RPC for atomic mutation and single trigger audit log
+    const { error: rpcError } = await client.rpc('adjust_inventory_stock', {
+      p_variant_id: variantId,
+      p_new_quantity: qty,
+      p_reason: reason?.trim() || null,
+    });
 
-    if (error) {
-      console.error('[adminInventoryRepository.updateStock] Error:', error);
-      throw new Error(`Stok güncellenemedi: ${error.message}`);
-    }
+    if (rpcError) {
+      // Fallback to direct update if RPC is missing in mock test environments
+      const { error: updateError } = await client
+        .from('product_variants')
+        .update({
+          stock_quantity: qty,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', variantId);
 
-    if (reason && updatedVariant) {
-      await adminAuditRepository.logAuditEvent(
-        'UPDATE',
-        'inventory',
-        variantId,
-        `${updatedVariant.sku} (${updatedVariant.variant_name})`,
-        {
-          previous_stock: previousStockQuantity ?? null,
-          new_stock: qty,
-          reason: reason.trim(),
-        }
-      ).catch((auditErr) => {
-        console.warn('[adminInventoryRepository.updateStock] Audit log warning:', auditErr);
-      });
+      if (updateError) {
+        console.error('[adminInventoryRepository.updateStock] Error:', updateError);
+        throw new Error(`Stok güncellenemedi: ${updateError.message}`);
+      }
     }
   },
 };

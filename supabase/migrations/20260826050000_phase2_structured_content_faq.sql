@@ -157,7 +157,7 @@ CREATE POLICY "Admins have full access to FAQ items"
 INSERT INTO public.content_pages (id, page_key, title, seo_title, seo_description, published)
 VALUES
     (
-        'cp000000-0000-0000-0000-000000000001',
+        'c1000000-0000-0000-0000-000000000001',
         'about',
         'Hakkımızda & Zanaat Hikayemiz',
         'Hakkımızda & Zanaat Hikayemiz | Vazo Studio',
@@ -165,7 +165,7 @@ VALUES
         true
     ),
     (
-        'cp000000-0000-0000-0000-000000000002',
+        'c1000000-0000-0000-0000-000000000002',
         'wholesale_landing',
         'Kurumsal & Toptan Çözümleri',
         'Kurumsal & Toptan Satış | Vazo Studio',
@@ -173,7 +173,7 @@ VALUES
         true
     ),
     (
-        'cp000000-0000-0000-0000-000000000003',
+        'c1000000-0000-0000-0000-000000000003',
         'wholesale_how_it_works',
         'Toptan Sipariş & Üretim Süreci',
         'Toptan Nasıl Çalışır? | Vazo Studio',
@@ -181,7 +181,7 @@ VALUES
         true
     ),
     (
-        'cp000000-0000-0000-0000-000000000004',
+        'c1000000-0000-0000-0000-000000000004',
         'shipping_returns',
         'Teslimat & İade Koşulları',
         'Teslimat & İade Koşulları | Vazo Studio',
@@ -189,7 +189,7 @@ VALUES
         true
     ),
     (
-        'cp000000-0000-0000-0000-000000000005',
+        'c1000000-0000-0000-0000-000000000005',
         'privacy_kvkk',
         'Gizlilik Politikası & KVKK Aydınlatma Metni',
         'Gizlilik Politikası & KVKK | Vazo Studio',
@@ -197,7 +197,7 @@ VALUES
         true
     ),
     (
-        'cp000000-0000-0000-0000-000000000006',
+        'c1000000-0000-0000-0000-000000000006',
         'terms',
         'Mesafeli Satış & Kullanım Koşulları',
         'Kullanım Koşulları | Vazo Studio',
@@ -214,8 +214,8 @@ ON CONFLICT (page_key) DO UPDATE SET
 INSERT INTO public.content_sections (id, page_id, section_key, eyebrow, title, subtitle, content, image_url, image_position, cta_text, cta_url, sort_order, active)
 VALUES
     (
-        'cs000000-0000-0000-0000-000000000001',
-        'cp000000-0000-0000-0000-000000000001',
+        'c2000000-0000-0000-0000-000000000001',
+        'c1000000-0000-0000-0000-000000000001',
         'hero_header',
         'Felsefemiz & Atölyemiz',
         'Sessizliğin, Toprağın ve Heykelsi Formların Dengesi.',
@@ -229,8 +229,8 @@ VALUES
         true
     ),
     (
-        'cs000000-0000-0000-0000-000000000002',
-        'cp000000-0000-0000-0000-000000000001',
+        'c2000000-0000-0000-0000-000000000002',
+        'c1000000-0000-0000-0000-000000000001',
         'story_craft',
         '01 / Geleneksel Zanaat',
         'El Tornasında Şekillenen Karakter',
@@ -244,8 +244,8 @@ VALUES
         true
     ),
     (
-        'cs000000-0000-0000-0000-000000000003',
-        'cp000000-0000-0000-0000-000000000001',
+        'c2000000-0000-0000-0000-000000000003',
+        'c1000000-0000-0000-0000-000000000001',
         'story_material',
         '02 / Malzeme ve Doku',
         'Ham Mineraller & Dingin Mat Yüzeyler',
@@ -263,65 +263,65 @@ ON CONFLICT (id) DO NOTHING;
 -- 3. SEED FAQ GROUPS
 INSERT INTO public.faq_groups (id, title, sort_order, active)
 VALUES
-    ('fg000000-0000-0000-0000-000000000001', 'Sipariş & Teslimat', 1, true),
-    ('fg000000-0000-0000-0000-000000000002', 'Ürün Bakımı & Özellikler', 2, true),
-    ('fg000000-0000-0000-0000-000000000003', 'Toptan & Kurumsal Satış', 3, true)
+    ('f1000000-0000-0000-0000-000000000001', 'Sipariş & Teslimat', 1, true),
+    ('f1000000-0000-0000-0000-000000000002', 'Ürün Bakımı & Özellikler', 2, true),
+    ('f1000000-0000-0000-0000-000000000003', 'Toptan & Kurumsal Satış', 3, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 4. SEED FAQ ITEMS
 INSERT INTO public.faq_items (id, group_id, question, answer, sort_order, active)
 VALUES
     (
-        'fi000000-0000-0000-0000-000000000001',
-        'fg000000-0000-0000-0000-000000000001',
+        'f2000000-0000-0000-0000-000000000001',
+        'f1000000-0000-0000-0000-000000000001',
         'Siparişler ne kadar sürede kargoya teslim edilir?',
         'Stokta bulunan ürünlerimiz özenle paketlenerek anlaşmalı kargo firmaları aracılığıyla en kısa sürede sevkiyata hazırlanır.',
         1,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000002',
-        'fg000000-0000-0000-0000-000000000001',
+        'f2000000-0000-0000-0000-000000000001',
+        'f1000000-0000-0000-0000-000000000001',
         'Seramik ürünler kargoda hasar görürse ne yapmalıyım?',
         'Tüm gönderilerimiz kırılmaya karşı koruyucu ambalajlarla sevk edilir. Kargo teslimi anında hasar fark edilmesi durumunda kargo görevlisine tutanak tutturulması veya hasarlı ambalajın fotoğraflanarak bize iletilmesi halinde anında yenisi gönderilir.',
         2,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000003',
-        'fg000000-0000-0000-0000-000000000001',
+        'f2000000-0000-0000-0000-000000000003',
+        'f1000000-0000-0000-0000-000000000001',
         'Kargo ücreti ne kadar?',
         'Belirlenen sepet tutarının üzerindeki perakende siparişlerde kargo ücretsizdir. Güncel kargo tutarı ve eşikleri sepet ve ödeme adımında görüntülenir.',
         3,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000004',
-        'fg000000-0000-0000-0000-000000000002',
+        'f2000000-0000-0000-0000-000000000004',
+        'f1000000-0000-0000-0000-000000000002',
         'Vazoların içine canlı çiçek ve su konulabilir mi?',
         'Evet. Tüm vazolarımız 1250°C fırınlanmış stoneware kilinden üretilir ve iç kısımları su geçirimsiz sırla kaplıdır. Canlı çiçeklerle su doldurarak güvenle kullanabilirsiniz.',
         1,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000005',
-        'fg000000-0000-0000-0000-000000000002',
+        'f2000000-0000-0000-0000-000000000005',
+        'f1000000-0000-0000-0000-000000000002',
         'Seramik vazolar nasıl temizlenmelidir?',
         'Ilık su ve yumuşak mikrofiber bez yardımıyla temizlenmesi önerilir. Mat mineral sır dokusunu korumak amacıyla aşındırıcı kimyasallar ve sert süngerler kullanılmamalıdır.',
         2,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000006',
-        'fg000000-0000-0000-0000-000000000003',
+        'f2000000-0000-0000-0000-000000000006',
+        'f1000000-0000-0000-0000-000000000003',
         'Toptan alımlarda minimum sipariş adedi (MOQ) nedir?',
         'Model başına Minimum Sipariş Adedimiz (MOQ) 6 adettir. Belirli adetlerin üzerindeki siparişlerde kademeli toptan iskonto oranları uygulanır.',
         1,
         true
     ),
     (
-        'fi000000-0000-0000-0000-000000000007',
-        'fg000000-0000-0000-0000-000000000003',
+        'f2000000-0000-0000-0000-000000000007',
+        'f1000000-0000-0000-0000-000000000003',
         'Mimari projeler için özel renk veya sır geliştiriyor musunuz?',
         'Evet. Belirli adetlerin üzerindeki otel, restoran ve konut projelerinde mimari ekibinizin renk kartelasına uygun özel mineral sırlar geliştirilebilmektedir.',
         2,

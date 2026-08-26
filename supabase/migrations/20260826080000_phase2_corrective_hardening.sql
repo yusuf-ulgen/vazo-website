@@ -217,6 +217,7 @@ DECLARE
     v_entity_name TEXT;
     v_metadata JSONB;
     v_tbl TEXT;
+    v_reason TEXT;
 BEGIN
     v_actor_id := auth.uid();
     v_tbl := TG_TABLE_NAME;
@@ -265,11 +266,15 @@ BEGIN
             v_entity_name := NEW.sku;
             IF TG_OP = 'UPDATE' AND OLD.stock_quantity IS DISTINCT FROM NEW.stock_quantity THEN
                 v_entity_type := 'inventory';
+                v_reason := NULLIF(current_setting('app.inventory_adjustment_reason', true), '');
                 v_metadata := jsonb_build_object(
                     'product_id', NEW.product_id,
                     'previous_stock', OLD.stock_quantity,
                     'new_stock', NEW.stock_quantity
                 );
+                IF v_reason IS NOT NULL THEN
+                    v_metadata := v_metadata || jsonb_build_object('reason', v_reason);
+                END IF;
             ELSE
                 v_metadata := jsonb_build_object(
                     'product_id', NEW.product_id,
@@ -643,14 +648,76 @@ BEGIN
 
     -- Atomically toggle all others to false and the target to true
     UPDATE public.product_media
-    SET is_primary = (id = p_media_id)
-    WHERE product_id = p_product_id;
+    SET is_primary = false
+    WHERE product_id = p_product_id AND is_primary = true;
+
+    UPDATE public.product_media
+    SET is_primary = true
+    WHERE id = p_media_id;
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.set_primary_product_media(UUID, UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.set_primary_product_media(UUID, UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.set_primary_product_media(UUID, UUID) TO authenticated, service_role;
+
+-- 6.4 Authoritative Inventory Stock Adjustment RPC (Atomic Mutation + Single Audit Log)
+CREATE OR REPLACE FUNCTION public.adjust_inventory_stock(
+    p_variant_id UUID,
+    p_new_quantity INT,
+    p_reason TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+    v_old_stock INT;
+    v_sku TEXT;
+    v_name TEXT;
+    v_prod_id UUID;
+BEGIN
+    IF NOT public.is_admin() THEN
+        RAISE EXCEPTION 'Admin authorization required' USING ERRCODE = '42501';
+    END IF;
+
+    IF p_new_quantity < 0 THEN
+        RAISE EXCEPTION 'Stock quantity cannot be negative' USING ERRCODE = '22003';
+    END IF;
+
+    SELECT stock_quantity, sku, variant_name, product_id
+    INTO v_old_stock, v_sku, v_name, v_prod_id
+    FROM public.product_variants
+    WHERE id = p_variant_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Variant not found: %', p_variant_id USING ERRCODE = 'P0002';
+    END IF;
+
+    -- Store reason in transaction-local session config so audit trigger captures it
+    IF p_reason IS NOT NULL AND p_reason <> '' THEN
+        PERFORM set_config('app.inventory_adjustment_reason', p_reason, true);
+    END IF;
+
+    -- Update stock (fires audit trigger once with single authoritative log)
+    UPDATE public.product_variants
+    SET stock_quantity = p_new_quantity,
+        updated_at = now()
+    WHERE id = p_variant_id;
+
+    RETURN jsonb_build_object(
+        'variant_id', p_variant_id,
+        'previous_stock', v_old_stock,
+        'new_stock', p_new_quantity,
+        'reason', p_reason
+    );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.adjust_inventory_stock(UUID, INT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.adjust_inventory_stock(UUID, INT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.adjust_inventory_stock(UUID, INT, TEXT) TO authenticated, service_role;
 
 
 -- ------------------------------------------------------------------------------

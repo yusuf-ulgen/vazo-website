@@ -91,24 +91,25 @@ describe('adminInventoryRepository (Phase 2.6)', () => {
     expect(result.metrics.outOfStockCount).toBe(1);
   });
 
-  it('updateStock updates quantity and denies negative stock', async () => {
-    mockClient.from.mockReturnValue({
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { id: 'var-1', stock_quantity: 20 },
-              error: null,
-            }),
-          }),
-        }),
-      }),
-    } as never);
+  it('updateStock calls adjust_inventory_stock RPC with optional reason', async () => {
+    mockClient.rpc = vi.fn().mockResolvedValue({
+      data: { variant_id: 'var-1', previous_stock: 12, new_stock: 25, reason: 'Sayım Düzeltmesi' },
+      error: null,
+    });
 
+    await adminInventoryRepository.updateStock('var-1', 25, 'Sayım Düzeltmesi', 12);
+
+    expect(mockClient.rpc).toHaveBeenCalledWith('adjust_inventory_stock', {
+      p_variant_id: 'var-1',
+      p_new_quantity: 25,
+      p_reason: 'Sayım Düzeltmesi',
+    });
+  });
+
+  it('updateStock denies negative stock before calling database', async () => {
     await expect(adminInventoryRepository.updateStock('var-1', -5)).rejects.toThrow(
       'Stok adedi negatif olamaz.'
     );
-
-    await expect(adminInventoryRepository.updateStock('var-1', 20)).resolves.not.toThrow();
+    expect(mockClient.rpc).not.toHaveBeenCalled();
   });
 });

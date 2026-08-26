@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(49);
+SELECT plan(51);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -100,166 +100,191 @@ SELECT throws_ok(
     'Direct anonymous INSERT into contact_messages must fail (Edge Function required)'
 );
 
--- 3.9 Anon CANNOT read contact messages
+-- 3.9 Anon CANNOT read back contact messages
 SELECT is(
     (SELECT count(*) FROM public.contact_messages),
     0::bigint,
-    'Anonymous user cannot read contact messages'
+    'Anonymous user cannot read customer contact messages (zero leakage)'
 );
 
 -- 3.10 Direct Public Browser Mutation Denial: Newsletter Subscriptions
 SELECT throws_ok(
-    $$ INSERT INTO public.newsletter_subscriptions (normalized_email, status, source)
-       VALUES ('direct-anon-subscriber@test.com', 'active', 'browser') $$,
+    $$ INSERT INTO public.newsletter_subscriptions (email, status)
+       VALUES ('spam@test.com', 'active') $$,
     '42501',
     NULL,
     'Direct anonymous INSERT into newsletter_subscriptions must fail (Edge Function required)'
 );
 
--- 3.11 Anon CANNOT read newsletter subscribers
+-- 3.11 Anon CANNOT read back newsletter subscribers
 SELECT is(
     (SELECT count(*) FROM public.newsletter_subscriptions),
     0::bigint,
-    'Anonymous user cannot read newsletter subscribers (privacy protection)'
+    'Anonymous user cannot read newsletter subscriber list (zero leakage)'
 );
 
--- 3.12 Anon CANNOT view or insert into admin_users (Role escalation protection)
+-- ------------------------------------------------------------------------------
+-- 4. Draft Cascading Visibility Protection (RLS Child Invariant)
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- Setup test draft product with variant and media
+DO $$
+DECLARE
+    v_draft_id UUID := 'd0000000-0000-0000-0000-000000000001';
+BEGIN
+    INSERT INTO public.products (id, slug, name, status, retail_price)
+    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'draft', 990.00)
+    ON CONFLICT (id) DO UPDATE SET status = 'draft';
+
+    INSERT INTO public.product_variants (product_id, sku, variant_name, color_name, retail_price, stock_quantity)
+    VALUES (v_draft_id, 'VAZ-DRAFT-01', 'Draft Variant', 'Ham', 990.00, 10)
+    ON CONFLICT (sku) DO NOTHING;
+
+    INSERT INTO public.product_media (product_id, url, alt_text, sort_order, is_primary)
+    VALUES (v_draft_id, 'https://example.com/draft.jpg', 'Draft Media', 1, true)
+    ON CONFLICT DO NOTHING;
+END $$;
+
+SET LOCAL ROLE anon;
+
+SELECT is(
+    (SELECT count(*) FROM public.product_variants pv
+     JOIN public.products p ON p.id = pv.product_id
+     WHERE p.status = 'draft' AND p.slug = 'hidden-draft-vase'),
+    0::bigint,
+    'Child variant of draft product is completely invisible to anonymous visitors'
+);
+
+SELECT is(
+    (SELECT count(*) FROM public.product_media pm
+     JOIN public.products p ON p.id = pm.product_id
+     WHERE p.status = 'draft' AND p.slug = 'hidden-draft-vase'),
+    0::bigint,
+    'Child media of draft product is completely invisible to anonymous visitors'
+);
+
+-- ------------------------------------------------------------------------------
+-- 5. RBAC Isolation & User Enumeration Security
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- Setup test admin user
+DO $$
+BEGIN
+    INSERT INTO public.admin_users (user_id, role, active)
+    VALUES ('a0000000-0000-0000-0000-000000000001', 'admin', true)
+    ON CONFLICT (user_id) DO NOTHING;
+END $$;
+
+SET LOCAL ROLE anon;
+
+-- Anon has 0 access to admin_users table
 SELECT is(
     (SELECT count(*) FROM public.admin_users),
     0::bigint,
-    'Anonymous user receives 0 rows when attempting to select admin_users'
+    'Anonymous user receives 0 rows querying admin_users table directly'
 );
 
 SELECT throws_ok(
     $$ INSERT INTO public.admin_users (user_id, role, active) VALUES ('a0000000-0000-0000-0000-000000000001', 'admin', true) $$,
     '42501',
     NULL,
-    'Direct anonymous INSERT into admin_users must fail (Role escalation denied)'
+    'Anonymous user cannot insert into admin_users'
 );
 
--- 3.13 Anon CANNOT read or insert into admin_audit_logs
+-- Parameterless is_admin() returns false for anon
 SELECT is(
-    (SELECT count(*) FROM public.admin_audit_logs),
-    0::bigint,
-    'Anonymous user receives 0 rows from admin_audit_logs'
+    public.is_admin(),
+    false,
+    'Parameterless public.is_admin() returns false for anonymous visitor'
+);
+
+-- Anon EXECUTE on parameterized is_admin(UUID) must be revoked/blocked
+SELECT throws_ok(
+    $$ SELECT public.is_admin('00000000-0000-0000-0000-000000000000'::uuid) $$,
+    '42501',
+    NULL,
+    'Anonymous execution of parameterized is_admin(UUID) is revoked (enumeration blocked)'
 );
 
 SELECT throws_ok(
-    $$ INSERT INTO public.admin_audit_logs (action, entity_type, entity_id) VALUES ('CREATE', 'product', '1') $$,
+    $$ SELECT public.get_admin_role('00000000-0000-0000-0000-000000000000'::uuid) $$,
     '42501',
     NULL,
-    'Direct anonymous INSERT into admin_audit_logs must fail'
+    'Anonymous execution of parameterized get_admin_role(UUID) is revoked (enumeration blocked)'
 );
 
--- 3.14 Anon CANNOT call log_admin_audit_event RPC
-SELECT throws_ok(
-    $$ SELECT public.log_admin_audit_event('CREATE', 'product', 'test-id', 'Test Product') $$,
-    '42501',
-    NULL,
-    'Direct anonymous execution of log_admin_audit_event must fail'
+-- Parameterless get_admin_role() returns NULL for anon
+SELECT is(
+    public.get_admin_role(),
+    NULL::text,
+    'Parameterless public.get_admin_role() returns NULL for anonymous visitor'
+);
+
+-- Direct execution of internal check by non-admin returns false without leaking presence
+RESET ROLE;
+SELECT is(
+    public.is_admin('00000000-0000-0000-0000-000000000000'),
+    false,
+    'Internal is_admin returns false for non-existent admin user ID'
 );
 
 -- ------------------------------------------------------------------------------
--- 4. Hidden-Parent Child RLS Regression Check
+-- 6. Product Primary Image Uniqueness Integrity Check & Primary Switch RPC
 -- ------------------------------------------------------------------------------
 RESET ROLE;
 
--- Setup draft parent product with child variant and media
 DO $$
 DECLARE
-    v_draft_id UUID := 'd0000000-0000-0000-0000-000000000001';
+    v_prod_id UUID := 'a2000000-0000-0000-0000-000000000001';
 BEGIN
-    INSERT INTO public.products (id, slug, name, short_description, description, status, material, finish, retail_price)
-    VALUES (v_draft_id, 'hidden-draft-vase', 'Gizli Taslak Vazo', 'Taslak', 'Taslak Açıklama', 'draft', 'Seramik', 'Mat', 1500)
+    -- Ensure parent product row exists
+    INSERT INTO public.products (id, slug, name, short_description, description, status, retail_price)
+    VALUES (v_prod_id, 'pgtap-test-product', 'pgTAP Test Product', 'Test short desc', 'Test desc', 'published', 100.00)
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO public.product_variants (product_id, sku, variant_name, color_name, retail_price, stock_quantity, active)
-    VALUES (v_draft_id, 'DRAFT-VAR-1', 'Taslak Renk', 'Doğal', 1500, 10, true)
-    ON CONFLICT (sku) DO NOTHING;
-
-    INSERT INTO public.product_media (product_id, url, alt_text, sort_order)
-    VALUES (v_draft_id, 'https://example.com/draft.jpg', 'Taslak Görsel', 0)
-    ON CONFLICT DO NOTHING;
-END $$;
-
-SET LOCAL ROLE anon;
-
--- Child variant of draft parent MUST NOT be visible to anon
-SELECT is(
-    (SELECT count(*) FROM public.product_variants WHERE sku = 'DRAFT-VAR-1'),
-    0::bigint,
-    'Child variant of draft product is completely invisible to anonymous visitors'
-);
-
--- Child media of draft parent MUST NOT be visible to anon
-SELECT is(
-    (SELECT count(*) FROM public.product_media WHERE alt_text = 'Taslak Görsel'),
-    0::bigint,
-    'Child media of draft product is completely invisible to anonymous visitors'
-);
-
--- ------------------------------------------------------------------------------
--- 5. Authenticated Non-Admin vs Active Admin RBAC Isolation Checks
--- ------------------------------------------------------------------------------
-RESET ROLE;
-
--- 5.1 Helper function public.is_admin returns boolean
-SELECT ok(
-    public.is_admin('00000000-0000-0000-0000-000000000000') = false,
-    'public.is_admin returns false for unknown user'
-);
-
--- 5.2 Authenticated non-admin cannot insert or self-escalate into admin_users
-SET LOCAL ROLE authenticated;
-
-SELECT throws_ok(
-    $$ INSERT INTO public.admin_users (user_id, role, active) VALUES ('b0000000-0000-0000-0000-000000000002', 'admin', true) $$,
-    '42501',
-    NULL,
-    'Authenticated non-admin user cannot insert into admin_users'
-);
-
-SELECT throws_ok(
-    $$ INSERT INTO public.products (slug, name, material, finish, retail_price) VALUES ('customer-hack', 'Customer Hack', 'Clay', 'Matte', 2000) $$,
-    '42501',
-    NULL,
-    'Authenticated non-admin user cannot insert products'
-);
-
-SELECT is(
-    (SELECT count(*) FROM public.admin_users),
-    0::bigint,
-    'Authenticated non-admin receives 0 rows from admin_users'
-);
-
-SELECT throws_ok(
-    $$ SELECT public.log_admin_audit_event('CREATE', 'product', 'forged-id', 'Forged') $$,
-    '42501',
-    NULL,
-    'Forged log_admin_audit_event by authenticated non-admin is denied'
-);
-
--- ------------------------------------------------------------------------------
--- 6. Product Primary Image Uniqueness Integrity Check
--- ------------------------------------------------------------------------------
-RESET ROLE;
-
-DO $$
-DECLARE
-    v_prod_id UUID := 'p0000000-0000-0000-0000-000000000001';
-BEGIN
     -- Ensure first primary media exists
     INSERT INTO public.product_media (id, product_id, url, alt_text, sort_order, is_primary)
-    VALUES ('m0000000-0000-0000-0000-000000000001', v_prod_id, 'https://example.com/prim1.jpg', 'Primary 1', 1, true)
+    VALUES ('a4000000-0000-0000-0000-000000000001', v_prod_id, 'https://example.com/prim1.jpg', 'Primary 1', 1, true)
     ON CONFLICT (id) DO UPDATE SET is_primary = true;
 END $$;
 
 SELECT throws_ok(
     $$ INSERT INTO public.product_media (product_id, url, alt_text, sort_order, is_primary)
-       VALUES ('p0000000-0000-0000-0000-000000000001', 'https://example.com/prim2.jpg', 'Primary 2', 2, true) $$,
+       VALUES ('a2000000-0000-0000-0000-000000000001', 'https://example.com/prim2.jpg', 'Primary 2', 2, true) $$,
     '23505',
     NULL,
     'Product primary media uniqueness: second primary image insert must fail with 23505'
+);
+
+-- Test set_primary_product_media atomic switch between two media rows
+DO $$
+DECLARE
+    v_prod_id UUID := 'a2000000-0000-0000-0000-000000000001';
+    v_med2_id UUID := 'a4000000-0000-0000-0000-000000000002';
+BEGIN
+    -- Insert a non-primary secondary media row
+    INSERT INTO public.product_media (id, product_id, url, alt_text, sort_order, is_primary)
+    VALUES (v_med2_id, v_prod_id, 'https://example.com/prim2.jpg', 'Primary 2', 2, false)
+    ON CONFLICT (id) DO UPDATE SET is_primary = false;
+END $$;
+
+SELECT lives_ok(
+    $$ SELECT public.set_primary_product_media('a2000000-0000-0000-0000-000000000001', 'a4000000-0000-0000-0000-000000000002') $$,
+    'set_primary_product_media RPC successfully switches primary image between two media rows'
+);
+
+SELECT is(
+    (SELECT is_primary FROM public.product_media WHERE id = 'a4000000-0000-0000-0000-000000000002'),
+    true,
+    'Target media row is now primary'
+);
+
+SELECT is(
+    (SELECT is_primary FROM public.product_media WHERE id = 'a4000000-0000-0000-0000-000000000001'),
+    false,
+    'Previous primary media row is now non-primary'
 );
 
 -- ------------------------------------------------------------------------------

@@ -130,12 +130,12 @@ export function AdminLoginPage() {
         <div className="pt-4 border-t border-border-subtle flex items-center justify-between text-xs">
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors"
+            className="inline-flex items-center gap-1.5 text-text-primary hover:underline font-medium transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Mağazaya Dön</span>
           </Link>
-          <span className="text-[10px] text-text-muted">
+          <span className="text-[11px] text-text-secondary font-medium">
             Supabase DB RBAC Korumalı
           </span>
         </div>

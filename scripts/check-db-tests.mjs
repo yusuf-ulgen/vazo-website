@@ -6,6 +6,45 @@ const args = process.argv.slice(2);
 const isLiveMode = args.includes('--live');
 const isStaticOnly = args.includes('--static') || !isLiveMode;
 
+// 1. UUID Migration & Test Preflight Scanner
+// ------------------------------------------------------------------------------
+console.log('🔍 Running Database UUID Migration & Test Preflight Scanner...');
+const supabaseDir = path.resolve(process.cwd(), 'supabase');
+let invalidUuidCount = 0;
+
+function scanSqlFilesForUuids(dir) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      scanSqlFilesForUuids(fullPath);
+    } else if (entry.name.endsWith('.sql')) {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      const uuidRegex = /'([0-9a-zA-Z]{8}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{12})'/g;
+      let match;
+      while ((match = uuidRegex.exec(content)) !== null) {
+        const candidate = match[1];
+        const isValidHexUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(candidate);
+        if (!isValidHexUuid) {
+          console.error(`❌ Invalid UUID literal found in ${path.relative(process.cwd(), fullPath)}: "${candidate}"`);
+          invalidUuidCount++;
+        }
+      }
+    }
+  }
+}
+
+scanSqlFilesForUuids(supabaseDir);
+
+if (invalidUuidCount > 0) {
+  console.error(`❌ UUID Preflight FAILED: Found ${invalidUuidCount} invalid UUID literal(s) with non-hex characters.`);
+  process.exit(1);
+}
+console.log('✅ UUID Preflight PASSED: All SQL migration and test literals conform to PostgreSQL UUID syntax [0-9a-fA-F-].');
+
+// 2. pgTAP Security Test Plan & Assertion Validation
+// ------------------------------------------------------------------------------
 const sqlTestPath = path.resolve(process.cwd(), 'supabase/tests/database_security.sql');
 
 if (!fs.existsSync(sqlTestPath)) {
@@ -15,7 +54,6 @@ if (!fs.existsSync(sqlTestPath)) {
 
 const content = fs.readFileSync(sqlTestPath, 'utf-8');
 
-// Required security invariants that must be verified in the SQL test suite
 const requiredChecks = [
   'row_level_security_is_active',
   'SET LOCAL ROLE anon',
@@ -33,6 +71,7 @@ const requiredChecks = [
   'Audit logs are immutable: UPDATE must fail with 27000',
   'Audit logs are immutable: DELETE must fail with 27000',
   'Product primary media uniqueness',
+  'set_primary_product_media',
   'Storage bucket public-media file size limit',
   'SELECT * FROM finish()',
   'ROLLBACK',
@@ -62,7 +101,8 @@ if (plannedCount !== selectAssertions) {
 
 console.log(`✅ Static DB test suite validation passed: ${plannedCount} planned pgTAP assertions verified in SQL file.`);
 
-// If live mode requested or active database test environment present
+// 3. Live Mode Execution
+// ------------------------------------------------------------------------------
 if (isLiveMode || process.env.CI_SUPABASE_TEST === 'true' || process.env.DATABASE_URL) {
   try {
     console.log('Running live pgTAP test suite against PostgreSQL runner via "supabase test db"...');

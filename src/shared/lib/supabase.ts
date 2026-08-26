@@ -1,9 +1,16 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey =
+const defaultLocalUrl = 'http://127.0.0.1:54321';
+const defaultLocalKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDAwMDAwMDAsImV4cCI6MTk1NTY1NzYwMH0.MOCK_ANON_KEY_FOR_LOCAL_DEV';
+
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const supabaseUrl = rawUrl && !rawUrl.includes('your-project') ? rawUrl : defaultLocalUrl;
+const supabasePublishableKey = rawKey && !rawKey.includes('your-anon') ? rawKey : defaultLocalKey;
 
 /**
  * Indicates whether storefront features should run against isolated mock data.
@@ -22,13 +29,12 @@ const hasValidSupabaseConfig = Boolean(
 
 /**
  * Initializes the client-side Supabase instance.
- * Initialization depends ONLY on valid Supabase URL and Publishable/Anon key.
- * VITE_ENABLE_MOCK_DATA does NOT prevent Supabase from initializing.
+ * Initialization defaults to local Supabase URL (http://127.0.0.1:54321) if unconfigured.
  */
 let clientInstance: SupabaseClient | null = null;
 
 if (hasValidSupabaseConfig) {
-  clientInstance = createClient(supabaseUrl!, supabasePublishableKey!, {
+  clientInstance = createClient(supabaseUrl, supabasePublishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

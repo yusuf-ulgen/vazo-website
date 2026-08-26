@@ -40,7 +40,7 @@ VALUES (
 -- ------------------------------------------------------------------------------
 INSERT INTO public.hero_slides (id, eyebrow, title, subtitle, description, image_url, primary_cta_text, primary_cta_url, secondary_cta_text, secondary_cta_url, active, sort_order)
 VALUES (
-    'h0000000-0000-0000-0000-000000000001',
+    'a1000000-0000-0000-0000-000000000001',
     '2026 Koleksiyonu • Heykelsi Seramikler',
     'Sessizliğin ve Ham Dokunun Mimari Formu',
     'Modern formlar. Zamansız dokunuşlar.',
@@ -80,7 +80,7 @@ VALUES
 -- 6.1 Amforik Taş Vazo No: 01
 INSERT INTO public.products (id, slug, name, short_description, description, status, material, finish, origin_country, retail_price, compare_at_price, wholesale_enabled, wholesale_moq, featured, new_arrival, bestseller, tags)
 VALUES (
-    'p0000000-0000-0000-0000-000000000001',
+    'a2000000-0000-0000-0000-000000000001',
     'amforik-tas-vazo-tebehir',
     'Amforik Taş Vazo',
     'Doğal mineralli kilden elde edilmiş heykelsi masa üstü vazo.',
@@ -101,8 +101,8 @@ VALUES (
 
 INSERT INTO public.product_variants (id, product_id, sku, variant_name, color_name, color_hex, finish, size_label, height_cm, diameter_cm, weight_kg, retail_price, stock_quantity)
 VALUES (
-    'v0000000-0000-0000-0000-000000000001',
-    'p0000000-0000-0000-0000-000000000001',
+    'a3000000-0000-0000-0000-000000000001',
+    'a2000000-0000-0000-0000-000000000001',
     'VAZ-AMF-WHT-M',
     'Medium / Tebeşir Beyazı',
     'Tebeşir Beyazı',
@@ -118,24 +118,24 @@ VALUES (
 
 INSERT INTO public.product_media (id, product_id, variant_id, url, alt_text, sort_order, is_primary)
 VALUES
-('m0000000-0000-0000-0000-000000000001', 'p0000000-0000-0000-0000-000000000001', 'v0000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=800&q=80', 'Amforik Taş Vazo Tebeşir Beyazı Ana Görsel', 1, true),
-('m0000000-0000-0000-0000-000000000002', 'p0000000-0000-0000-0000-000000000001', 'v0000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80', 'Amforik Taş Vazo Detay Açısı', 2, false);
+('a4000000-0000-0000-0000-000000000001', 'a2000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=800&q=80', 'Amforik Taş Vazo Tebeşir Beyazı Ana Görsel', 1, true),
+('a4000000-0000-0000-0000-000000000002', 'a2000000-0000-0000-0000-000000000001', 'a3000000-0000-0000-0000-000000000001', 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80', 'Amforik Taş Vazo Detay Açısı', 2, false);
 
 INSERT INTO public.product_categories (product_id, category_id) VALUES
-('p0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001');
+('a2000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000001');
 
 INSERT INTO public.product_collections (product_id, collection_id) VALUES
-('p0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001');
+('a2000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001');
 
 INSERT INTO public.wholesale_price_tiers (product_id, min_quantity, max_quantity, unit_price, discount_percentage) VALUES
-('p0000000-0000-0000-0000-000000000001', 5, 19, 1650.00, 32.00),
-('p0000000-0000-0000-0000-000000000001', 20, 49, 1400.00, 42.00),
-('p0000000-0000-0000-0000-000000000001', 50, NULL, 1200.00, 51.00);
+('a2000000-0000-0000-0000-000000000001', 5, 19, 1650.00, 32.00),
+('a2000000-0000-0000-0000-000000000001', 20, 49, 1400.00, 42.00),
+('a2000000-0000-0000-0000-000000000001', 50, NULL, 1200.00, 51.00);
 
 -- 6.2 Brütalist Silindirik Zemin Vazosu
 INSERT INTO public.products (id, slug, name, short_description, description, status, material, finish, origin_country, retail_price, compare_at_price, wholesale_enabled, wholesale_moq, featured, new_arrival, bestseller, tags)
 VALUES (
-    'p0000000-0000-0000-0000-000000000002',
+    'a2000000-0000-0000-0000-000000000002',
     'brutalist-silindirik-zemin-vazosu',
     'Brütalist Silindirik Zemin Vazosu',
     'Geniş mekanlar için tasarlanmış anıtsal monolitik seramik form.',
@@ -156,8 +156,8 @@ VALUES (
 
 INSERT INTO public.product_variants (id, product_id, sku, variant_name, color_name, color_hex, finish, size_label, height_cm, diameter_cm, weight_kg, retail_price, stock_quantity)
 VALUES (
-    'v0000000-0000-0000-0000-000000000002',
-    'p0000000-0000-0000-0000-000000000002',
+    'a3000000-0000-0000-0000-000000000002',
+    'a2000000-0000-0000-0000-000000000002',
     'VAZ-BRT-CHR-L',
     'Large / Antrasit Kömür',
     'Antrasit Taş',
@@ -173,17 +173,17 @@ VALUES (
 
 INSERT INTO public.product_media (id, product_id, variant_id, url, alt_text, sort_order, is_primary)
 VALUES
-('m0000000-0000-0000-0000-000000000003', 'p0000000-0000-0000-0000-000000000002', 'v0000000-0000-0000-0000-000000000002', 'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?auto=format&fit=crop&w=800&q=80', 'Brütalist Zemin Vazosu Koyu Taş', 1, true);
+('a4000000-0000-0000-0000-000000000003', 'a2000000-0000-0000-0000-000000000002', 'a3000000-0000-0000-0000-000000000002', 'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?auto=format&fit=crop&w=800&q=80', 'Brütalist Zemin Vazosu Koyu Taş', 1, true);
 
 INSERT INTO public.product_categories (product_id, category_id) VALUES
-('p0000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002');
+('a2000000-0000-0000-0000-000000000002', 'c0000000-0000-0000-0000-000000000002');
 
 INSERT INTO public.product_collections (product_id, collection_id) VALUES
-('p0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000003');
+('a2000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000003');
 
 INSERT INTO public.wholesale_price_tiers (product_id, min_quantity, max_quantity, unit_price, discount_percentage) VALUES
-('p0000000-0000-0000-0000-000000000002', 3, 9, 3200.00, 33.00),
-('p0000000-0000-0000-0000-000000000002', 10, NULL, 2750.00, 42.00);
+('a2000000-0000-0000-0000-000000000002', 3, 9, 3200.00, 33.00),
+('a2000000-0000-0000-0000-000000000002', 10, NULL, 2750.00, 42.00);
 
 -- ------------------------------------------------------------------------------
 -- 7. Editorial Storytelling Sections
@@ -220,7 +220,7 @@ VALUES
 -- ------------------------------------------------------------------------------
 INSERT INTO public.wholesale_benefits (id, title, description, icon_name, sort_order, active)
 VALUES
-('w0000000-0000-0000-0000-000000000001', 'İç Mimarlar & Projelere Özel', 'Otel, restoran, lobi ve konut projeleri için özel hacim iskontoları ve numune desteği.', 'Building2', 1, true),
-('w0000000-0000-0000-0000-000000000002', 'Düşük Minimum Sipariş (MOQ)', 'Model başına 3-6 adet arası düşük MOQ ile butik mağazalar için esnek stok yönetimi.', 'PackageCheck', 2, true),
-('w0000000-0000-0000-0000-000000000003', 'Özel Sır & Renk Üretimi', 'Büyük ölçekli mimari projeler için RAL/Pantone uyumlu özel mineral sır geliştirme.', 'Palette', 3, true),
-('w0000000-0000-0000-0000-000000000004', 'Güvenli Sandıklı Lojistik', 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.', 'Truck', 4, true);
+('a5000000-0000-0000-0000-000000000001', 'İç Mimarlar & Projelere Özel', 'Otel, restoran, lobi ve konut projeleri için özel hacim iskontoları ve numune desteği.', 'Building2', 1, true),
+('a5000000-0000-0000-0000-000000000002', 'Düşük Minimum Sipariş (MOQ)', 'Model başına 3-6 adet arası düşük MOQ ile butik mağazalar için esnek stok yönetimi.', 'PackageCheck', 2, true),
+('a5000000-0000-0000-0000-000000000003', 'Özel Sır & Renk Üretimi', 'Büyük ölçekli mimari projeler için RAL/Pantone uyumlu özel mineral sır geliştirme.', 'Palette', 3, true),
+('a5000000-0000-0000-0000-000000000004', 'Güvenli Sandıklı Lojistik', 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.', 'Truck', 4, true);
