@@ -3,6 +3,8 @@ export type ProductStatus = 'draft' | 'published' | 'archived' | 'out_of_stock';
 export interface ProductDimensions {
   heightCm: number;
   diameterCm: number;
+  widthCm?: number;
+  depthCm?: number;
   weightKg: number;
 }
 
@@ -36,7 +38,8 @@ export interface ProductVariant {
   name: string;
   colorName: string;
   colorHex?: string;
-  finish: 'matte' | 'glossy' | 'raw_clay' | 'textured';
+  sizeLabel?: string;
+  finish: 'matte' | 'glossy' | 'raw_clay' | 'textured' | string;
   dimensions: ProductDimensions;
   retailPrice: number;
   compareAtPrice?: number;

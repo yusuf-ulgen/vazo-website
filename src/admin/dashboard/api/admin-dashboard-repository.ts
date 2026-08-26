@@ -1,123 +1,80 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { adminProductRepository } from '@/admin/products/api/admin-product-repository';
-import { adminInventoryRepository } from '@/admin/inventory/api/admin-inventory-repository';
-import { adminCategoryRepository } from '@/admin/categories/api/admin-category-repository';
-import { adminCollectionRepository } from '@/admin/collections/api/admin-collection-repository';
-import { adminContactMessagesRepository } from '@/admin/submissions/api/admin-contact-messages-repository';
-import { adminTradeApplicationsRepository } from '@/admin/submissions/api/admin-trade-applications-repository';
-import { adminNewsletterRepository } from '@/admin/submissions/api/admin-newsletter-repository';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import { adminAuditRepository } from '@/admin/audit/api/admin-audit-repository';
-import { mockProducts } from '@/shared/mocks/products';
-import { mockCategories } from '@/entities/category/api/category-repository';
-import { mockCollections } from '@/entities/collection/api/collection-repository';
-import {
-  mockContactMessages,
-  mockTradeApplications,
-  mockNewsletterSubscriptions,
-} from '@/admin/submissions/api/submissions-mocks';
-import { mockAuditLogs } from '@/admin/audit/api/audit-mocks';
-import type { AdminProduct } from '@/admin/products/types';
-import type { AdminCategory } from '@/admin/categories/types';
-import type { AdminCollection } from '@/admin/collections/types';
 import type { DashboardSummary } from '../types';
 
 export const adminDashboardRepository = {
   async getDashboardSummary(): Promise<DashboardSummary> {
-    if (!isSupabaseConfigured || !supabase) {
-      const prods = mockProducts;
-      const publishedCount = prods.filter((p) => p.status === 'published').length;
-      const draftCount = prods.filter((p) => p.status === 'draft').length;
-      const archivedCount = prods.filter((p) => p.status === 'archived').length;
-
-      const allVariants = prods.flatMap((p) => p.variants || []);
-      const lowStockCount = allVariants.filter(
-        (v) => (v.stockQuantity ?? 0) > 0 && (v.stockQuantity ?? 0) <= 5
-      ).length;
-      const outOfStockCount = allVariants.filter((v) => (v.stockQuantity ?? 0) === 0).length;
-      const inStockCount = allVariants.filter((v) => (v.stockQuantity ?? 0) > 5).length;
-
-      const activeCategoriesCount = mockCategories.length;
-      const activeCollectionsCount = mockCollections.length;
-
-      const pendingTradeCount = mockTradeApplications.filter((a) => a.status === 'pending').length;
-      const newContactCount = mockContactMessages.filter((m) => m.status === 'new').length;
-      const activeNewsletterCount = mockNewsletterSubscriptions.filter((s) => s.status === 'active').length;
-
-      return {
-        products: {
-          total: prods.length,
-          published: publishedCount,
-          draft: draftCount,
-          archived: archivedCount,
-        },
-        inventory: {
-          totalVariants: allVariants.length,
-          inStockVariants: inStockCount,
-          lowStockVariants: lowStockCount,
-          outOfStockVariants: outOfStockCount,
-        },
-        submissions: {
-          pendingTradeApplications: pendingTradeCount,
-          newContactMessages: newContactCount,
-          activeNewsletterSubscribers: activeNewsletterCount,
-        },
-        taxonomies: {
-          activeCategories: activeCategoriesCount,
-          activeCollections: activeCollectionsCount,
-        },
-        recentAuditLogs: mockAuditLogs.slice(0, 6),
-      };
-    }
+    const client = requireAdminSupabase();
 
     const [
-      productsResult,
-      inventoryResult,
-      categories,
-      collections,
-      contactMessagesResult,
-      tradeAppsResult,
-      newsletterResult,
+      totalProductsRes,
+      publishedProductsRes,
+      draftProductsRes,
+      archivedProductsRes,
+      variantsRes,
+      categoriesRes,
+      collectionsRes,
+      tradeAppsRes,
+      contactMessagesRes,
+      newsletterRes,
       auditLogsResult,
     ] = await Promise.all([
-      adminProductRepository.getProducts({ page: 1, pageSize: 100 }),
-      adminInventoryRepository.getInventory({ page: 1, pageSize: 100 }),
-      adminCategoryRepository.getAllCategories(),
-      adminCollectionRepository.getAllCollections(),
-      adminContactMessagesRepository.getContactMessages({ status: 'new', pageSize: 1 }),
-      adminTradeApplicationsRepository.getTradeApplications({ status: 'pending', pageSize: 1 }),
-      adminNewsletterRepository.getNewsletterSubscriptions({ status: 'active', pageSize: 1 }),
+      client.from('products').select('*', { count: 'exact', head: true }),
+      client.from('products').select('*', { count: 'exact', head: true }).eq('status', 'published'),
+      client.from('products').select('*', { count: 'exact', head: true }).eq('status', 'draft'),
+      client.from('products').select('*', { count: 'exact', head: true }).eq('status', 'archived'),
+      client.from('product_variants').select('stock_quantity'),
+      client.from('categories').select('*', { count: 'exact', head: true }).eq('active', true),
+      client.from('collections').select('*', { count: 'exact', head: true }).eq('active', true),
+      client.from('trade_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      client.from('contact_messages').select('*', { count: 'exact', head: true }).eq('status', 'new'),
+      client.from('newsletter_subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       adminAuditRepository.getAuditLogs({ pageSize: 6 }),
     ]);
 
-    const prods: AdminProduct[] = productsResult.data;
-    const publishedCount = prods.filter((p: AdminProduct) => p.status === 'published').length;
-    const draftCount = prods.filter((p: AdminProduct) => p.status === 'draft').length;
-    const archivedCount = prods.filter((p: AdminProduct) => p.status === 'archived').length;
+    if (totalProductsRes.error) {
+      console.error('[adminDashboardRepository] Total products count error:', totalProductsRes.error.message);
+      throw new Error(`Ürün metrikleri alınamadı: ${totalProductsRes.error.message}`);
+    }
 
-    const activeCategoriesCount = categories.filter((c: AdminCategory) => c.active).length;
-    const activeCollectionsCount = collections.filter((c: AdminCollection) => c.active).length;
+    const allVariants = variantsRes.data || [];
+    let inStockCount = 0;
+    let lowStockCount = 0;
+    let outOfStockCount = 0;
+
+    allVariants.forEach((v: { stock_quantity: number | string | null }) => {
+      const qty = Number(v.stock_quantity) || 0;
+      if (qty === 0) {
+        outOfStockCount++;
+      } else if (qty <= 5) {
+        lowStockCount++;
+        inStockCount++;
+      } else {
+        inStockCount++;
+      }
+    });
 
     return {
       products: {
-        total: productsResult.totalCount || prods.length,
-        published: publishedCount,
-        draft: draftCount,
-        archived: archivedCount,
+        total: totalProductsRes.count || 0,
+        published: publishedProductsRes.count || 0,
+        draft: draftProductsRes.count || 0,
+        archived: archivedProductsRes.count || 0,
       },
       inventory: {
-        totalVariants: inventoryResult.metrics.totalVariants,
-        inStockVariants: inventoryResult.metrics.inStockCount,
-        lowStockVariants: inventoryResult.metrics.lowStockCount,
-        outOfStockVariants: inventoryResult.metrics.outOfStockCount,
+        totalVariants: allVariants.length,
+        inStockVariants: inStockCount,
+        lowStockVariants: lowStockCount,
+        outOfStockVariants: outOfStockCount,
       },
       submissions: {
-        pendingTradeApplications: tradeAppsResult.totalCount,
-        newContactMessages: contactMessagesResult.totalCount,
-        activeNewsletterSubscribers: newsletterResult.totalCount,
+        pendingTradeApplications: tradeAppsRes.count || 0,
+        newContactMessages: contactMessagesRes.count || 0,
+        activeNewsletterSubscribers: newsletterRes.count || 0,
       },
       taxonomies: {
-        activeCategories: activeCategoriesCount,
-        activeCollections: activeCollectionsCount,
+        activeCategories: categoriesRes.count || 0,
+        activeCollections: collectionsRes.count || 0,
       },
       recentAuditLogs: auditLogsResult.data,
     };

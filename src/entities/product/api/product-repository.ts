@@ -46,8 +46,11 @@ interface SupabaseProductRow {
     color_name: string;
     color_hex: string | null;
     finish: string | null;
+    size_label: string | null;
     height_cm: number | null;
     diameter_cm: number | null;
+    width_cm: number | null;
+    depth_cm: number | null;
     weight_kg: number | null;
     retail_price: number;
     compare_at_price: number | null;
@@ -80,10 +83,13 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
     name: v.variant_name,
     colorName: v.color_name,
     colorHex: v.color_hex || undefined,
+    sizeLabel: v.size_label || undefined,
     finish: (v.finish as 'matte' | 'glossy' | 'raw_clay' | 'textured') || 'matte',
     dimensions: {
       heightCm: Number(v.height_cm || 0),
       diameterCm: Number(v.diameter_cm || 0),
+      widthCm: v.width_cm !== null && v.width_cm !== undefined ? Number(v.width_cm) : undefined,
+      depthCm: v.depth_cm !== null && v.depth_cm !== undefined ? Number(v.depth_cm) : undefined,
       weightKg: Number(v.weight_kg || 0),
     },
     retailPrice: Number(v.retail_price),

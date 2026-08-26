@@ -210,19 +210,15 @@ describe('adminMediaService (Phase 2.7)', () => {
   });
 
   describe('Primary Image & Reordering Operations', () => {
-    it('sets primary image and unsets others for the same product', async () => {
-      const updateSpy = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ data: null, error: null }),
-      });
-
-      mockClient.from.mockReturnValue({
-        update: updateSpy,
-      } as never);
+    it('sets primary image via atomic RPC function', async () => {
+      mockClient.rpc = vi.fn().mockResolvedValue({ data: true, error: null });
 
       await adminMediaService.setPrimaryImage('prod-1', 'med-target');
 
-      expect(updateSpy).toHaveBeenCalledWith({ is_primary: false });
-      expect(updateSpy).toHaveBeenCalledWith({ is_primary: true });
+      expect(mockClient.rpc).toHaveBeenCalledWith('set_primary_product_media', {
+        p_product_id: 'prod-1',
+        p_media_id: 'med-target',
+      });
     });
 
     it('reorders media items by sort_order', async () => {

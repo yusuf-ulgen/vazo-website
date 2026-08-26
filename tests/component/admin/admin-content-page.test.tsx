@@ -7,7 +7,7 @@ import { adminContentRepository } from '@/admin/content/api/admin-content-reposi
 
 describe('AdminContentPage Component (Phase 2.8)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   const renderComponent = () =>

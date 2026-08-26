@@ -1,9 +1,26 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { adminContactMessagesRepository } from '@/admin/submissions/api/admin-contact-messages-repository';
 import { adminTradeApplicationsRepository } from '@/admin/submissions/api/admin-trade-applications-repository';
 import { adminNewsletterRepository } from '@/admin/submissions/api/admin-newsletter-repository';
+import * as supabaseModule from '@/shared/lib/supabase';
+import { createMockSupabaseClient } from '../../mocks/supabase-mock';
+import {
+  mockContactMessages,
+  mockTradeApplications,
+  mockNewsletterSubscriptions,
+} from '@/admin/submissions/api/submissions-mocks';
 
 describe('Admin Submissions Repositories', () => {
+  beforeEach(() => {
+    const mockClient = createMockSupabaseClient({
+      contact_messages: { data: mockContactMessages, error: null },
+      trade_applications: { data: mockTradeApplications, error: null },
+      newsletter_subscriptions: { data: mockNewsletterSubscriptions, error: null },
+    });
+    vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+    vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+  });
+
   describe('adminContactMessagesRepository', () => {
     it('returns paginated contact messages with correct structure', async () => {
       const result = await adminContactMessagesRepository.getContactMessages({ page: 1, pageSize: 2 });

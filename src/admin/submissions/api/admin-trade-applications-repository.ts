@@ -1,5 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { mockTradeApplications } from './submissions-mocks';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import type {
   AdminTradeApplication,
   TradeApplicationsFilter,
@@ -7,59 +6,59 @@ import type {
   PaginatedResult,
 } from '../types';
 
-let localApplications: AdminTradeApplication[] = [...mockTradeApplications];
+interface RawTradeApplicationRow {
+  id: string;
+  company_name: string;
+  tax_number: string;
+  tax_office: string;
+  business_type: string;
+  contact_person: string;
+  email: string;
+  phone: string;
+  website: string | null;
+  estimated_monthly_volume: string | null;
+  customer_message?: string | null;
+  notes?: string | null;
+  status: string;
+  admin_notes: string | null;
+  submitted_at: string;
+  reviewed_at: string | null;
+}
+
+function mapRowToTradeApplication(row: RawTradeApplicationRow): AdminTradeApplication {
+  const message = row.customer_message || row.notes || null;
+  return {
+    id: row.id,
+    company_name: row.company_name,
+    tax_number: row.tax_number,
+    tax_office: row.tax_office,
+    business_type: row.business_type,
+    contact_person: row.contact_person,
+    email: row.email,
+    phone: row.phone,
+    website: row.website,
+    estimated_monthly_volume: row.estimated_monthly_volume,
+    customer_message: message,
+    notes: row.notes || message,
+    status: row.status as AdminTradeApplication['status'],
+    admin_notes: row.admin_notes,
+    submitted_at: row.submitted_at,
+    reviewed_at: row.reviewed_at,
+  };
+}
 
 export const adminTradeApplicationsRepository = {
   async getTradeApplications(
     filters: TradeApplicationsFilter = {}
   ): Promise<PaginatedResult<AdminTradeApplication>> {
+    const client = requireAdminSupabase();
+
     const page = Math.max(1, filters.page || 1);
     const pageSize = Math.max(1, filters.pageSize || 10);
     const status = filters.status || 'all';
     const search = filters.search?.trim().toLowerCase();
 
-    if (!isSupabaseConfigured || !supabase) {
-      let filtered = [...localApplications];
-
-      if (status !== 'all') {
-        filtered = filtered.filter((a) => a.status === status);
-      }
-
-      if (search) {
-        filtered = filtered.filter(
-          (a) =>
-            a.company_name.toLowerCase().includes(search) ||
-            a.contact_person.toLowerCase().includes(search) ||
-            a.email.toLowerCase().includes(search) ||
-            a.tax_number.toLowerCase().includes(search) ||
-            a.phone.toLowerCase().includes(search)
-        );
-      }
-
-      // Order newest first
-      filtered.sort(
-        (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
-      );
-
-      const totalCount = filtered.length;
-      const totalPages = Math.ceil(totalCount / pageSize) || 1;
-      const start = (page - 1) * pageSize;
-      const data = filtered.slice(start, start + pageSize);
-
-      return {
-        data,
-        totalCount,
-        page,
-        pageSize,
-        totalPages,
-      };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış. Canlı mod geçerli ortam değişkenleri gerektirir.');
-    }
-
-    let query = supabase
+    let query = client
       .from('trade_applications')
       .select('*', { count: 'exact' });
 
@@ -90,7 +89,7 @@ export const adminTradeApplicationsRepository = {
     const totalPages = Math.ceil(totalCount / pageSize) || 1;
 
     return {
-      data: (data || []) as AdminTradeApplication[],
+      data: ((data as unknown as RawTradeApplicationRow[]) || []).map(mapRowToTradeApplication),
       totalCount,
       page,
       pageSize,
@@ -99,12 +98,9 @@ export const adminTradeApplicationsRepository = {
   },
 
   async getTradeApplicationById(id: string): Promise<AdminTradeApplication | null> {
-    if (!isSupabaseConfigured || !supabase) {
-      const app = localApplications.find((a) => a.id === id);
-      return app ? { ...app } : null;
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('trade_applications')
       .select('*')
       .eq('id', id)
@@ -116,37 +112,21 @@ export const adminTradeApplicationsRepository = {
       throw new Error(`Başvuru detayları yüklenemedi: ${error.message}`);
     }
 
-    return data as AdminTradeApplication;
+    return mapRowToTradeApplication(data as unknown as RawTradeApplicationRow);
   },
 
   async updateTradeApplication(
     id: string,
     input: UpdateTradeApplicationInput
   ): Promise<AdminTradeApplication> {
-    if (!isSupabaseConfigured || !supabase) {
-      const idx = localApplications.findIndex((a) => a.id === id);
-      if (idx === -1) {
-        throw new Error(`Toptan başvuru bulunamadı: ${id}`);
-      }
-
-      const existing = localApplications[idx]!;
-      const updated: AdminTradeApplication = {
-        ...existing,
-        status: input.status !== undefined ? input.status : existing.status,
-        admin_notes: input.admin_notes !== undefined ? input.admin_notes : existing.admin_notes,
-        reviewed_at: input.reviewed_at !== undefined ? input.reviewed_at : new Date().toISOString(),
-      };
-
-      localApplications[idx] = updated;
-      return { ...updated };
-    }
+    const client = requireAdminSupabase();
 
     const updatePayload: Record<string, unknown> = {};
     if (input.status !== undefined) updatePayload.status = input.status;
     if (input.admin_notes !== undefined) updatePayload.admin_notes = input.admin_notes;
     updatePayload.reviewed_at = input.reviewed_at || new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('trade_applications')
       .update(updatePayload)
       .eq('id', id)
@@ -158,20 +138,13 @@ export const adminTradeApplicationsRepository = {
       throw new Error(`Başvuru güncellenemedi: ${error.message}`);
     }
 
-    return data as AdminTradeApplication;
+    return mapRowToTradeApplication(data as unknown as RawTradeApplicationRow);
   },
 
   async deleteTradeApplication(id: string): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      localApplications = localApplications.filter((a) => a.id !== id);
-      return;
-    }
+    const client = requireAdminSupabase();
 
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış.');
-    }
-
-    const { error } = await supabase.from('trade_applications').delete().eq('id', id);
+    const { error } = await client.from('trade_applications').delete().eq('id', id);
 
     if (error) {
       console.error('[adminTradeApplicationsRepository.deleteTradeApplication] Error:', error.message);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle, Plus, Minus } from 'lucide-react';
 import { useToast } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminInventoryRepository } from '../api/admin-inventory-repository';
 import type { AdminInventoryItem } from '../types';
 
@@ -19,12 +20,19 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
 }) => {
   const { success, error: toastError } = useToast();
   const [stockValue, setStockValue] = useState<string>('0');
+  const [reason, setReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   useEffect(() => {
     if (item) {
       setStockValue(String(item.stock_quantity));
+      setReason('');
       setErrorMessage(null);
     }
   }, [item, isOpen]);
@@ -49,7 +57,12 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
     setErrorMessage(null);
 
     try {
-      await adminInventoryRepository.updateStock(item.id, qty);
+      await adminInventoryRepository.updateStock(
+        item.id,
+        qty,
+        reason.trim() || undefined,
+        item.stock_quantity
+      );
       success('Stok Güncellendi', `"${item.sku}" stok adedi ${qty} olarak ayarlandı.`);
       onSuccess();
       onClose();
@@ -71,7 +84,11 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
       aria-modal="true"
       aria-labelledby="stock-modal-title"
     >
-      <div className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col focus:outline-none"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/30">
           <div>
             <h2 id="stock-modal-title" className="font-serif text-base font-medium text-text-primary">
@@ -159,6 +176,20 @@ export const StockAdjustmentModal: React.FC<StockAdjustmentModalProps> = ({
                 +10
               </button>
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="stock-reason" className="block text-xs font-medium text-text-primary mb-1.5">
+              Düzeltme Nedeni / Açıklama (İsteğe Bağlı)
+            </label>
+            <input
+              id="stock-reason"
+              type="text"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Örn: Manuel sayım düzeltmesi, Sevkiyat girişi..."
+              className="w-full py-2 px-3 text-xs rounded-md bg-canvas-default border border-border-default text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-border-subtle">

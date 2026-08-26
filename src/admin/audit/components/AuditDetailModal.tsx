@@ -1,5 +1,6 @@
 import { X, ShieldCheck, User, Calendar, Tag, Activity } from 'lucide-react';
 import { StatusBadge } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import type { AdminAuditLog, AuditAction } from '../types';
 
 interface AuditDetailModalProps {
@@ -9,6 +10,11 @@ interface AuditDetailModalProps {
 }
 
 export function AuditDetailModal({ log, isOpen, onClose }: AuditDetailModalProps) {
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
+
   if (!isOpen || !log) return null;
 
   const getActionBadge = (action: AuditAction) => {
@@ -29,8 +35,17 @@ export function AuditDetailModal({ log, isOpen, onClose }: AuditDetailModalProps
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left">
-      <div className="bg-surface-primary border border-border-default rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="audit-modal-title"
+    >
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up focus:outline-none"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-primary shrink-0">
           <div className="flex items-center gap-2">
@@ -39,7 +54,7 @@ export function AuditDetailModal({ log, isOpen, onClose }: AuditDetailModalProps
               <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
                 Denetim İzi Kaydı
               </span>
-              <h3 className="font-display text-lg text-text-primary font-normal">
+              <h3 id="audit-modal-title" className="font-display text-lg text-text-primary font-normal">
                 {log.entity_name || log.entity_id}
               </h3>
             </div>

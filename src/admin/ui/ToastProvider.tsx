@@ -7,6 +7,14 @@ const DEFAULT_DURATION = 4000;
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const timeoutsRef = React.useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  React.useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach((t) => clearTimeout(t));
+      timeoutsRef.current = [];
+    };
+  }, []);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -26,9 +34,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       setToasts((prev) => [...prev, newToast]);
 
       if (duration > 0) {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           dismissToast(id);
         }, duration);
+        timeoutsRef.current.push(timer);
       }
 
       return id;

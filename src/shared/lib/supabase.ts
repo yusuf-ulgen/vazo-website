@@ -55,4 +55,8 @@ export function getSupabase(): SupabaseClient {
 }
 
 export const supabase = clientInstance;
+export { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
+
+
+
 

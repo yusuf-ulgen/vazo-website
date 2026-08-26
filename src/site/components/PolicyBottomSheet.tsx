@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { X, ShieldCheck, FileText, Truck, AlertCircle } from 'lucide-react';
 import { usePolicyDrawer, PolicyTab } from '@/shared/stores/policy-drawer-store';
 import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
 export function PolicyBottomSheet() {
   const { isOpen, activeTab, close, setTab } = usePolicyDrawer();
@@ -12,23 +13,21 @@ export function PolicyBottomSheet() {
     shipping: null,
   });
 
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose: close,
+  });
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        close();
-      }
-    };
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
     } else {
       document.body.style.overflow = '';
     }
     return () => {
       document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, close]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,10 +66,12 @@ export function PolicyBottomSheet() {
 
       {/* Bottom Sheet Container (Expansive Standard Size) */}
       <div
+        ref={containerRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label="Yasal Bilgilendirme ve Politikalar"
-        className="relative w-full max-w-6xl h-[85vh] bg-surface-primary rounded-t-2xl shadow-elevated z-10 flex flex-col overflow-hidden animate-slide-up border-t border-border-default text-left mx-auto"
+        className="relative w-full max-w-6xl h-[85vh] bg-surface-primary rounded-t-2xl shadow-elevated z-10 flex flex-col overflow-hidden animate-slide-up border-t border-border-default text-left mx-auto focus:outline-none"
       >
         {/* Drag Handle Bar Indicator */}
         <div className="w-full flex items-center justify-center pt-3 pb-1 shrink-0">

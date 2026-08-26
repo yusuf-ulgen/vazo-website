@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminPricingRepository } from '../api/admin-pricing-repository';
 import type { AdminPricingItem } from '../types';
 
@@ -18,6 +19,12 @@ export const PriceEditModal: React.FC<PriceEditModalProps> = ({
   item,
 }) => {
   const { success, error: toastError } = useToast();
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
+
   const [retailPrice, setRetailPrice] = useState('0');
   const [compareAtPrice, setCompareAtPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,7 +86,11 @@ export const PriceEditModal: React.FC<PriceEditModalProps> = ({
       aria-modal="true"
       aria-labelledby="price-modal-title"
     >
-      <div className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col focus:outline-none"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/30">
           <div>
             <h2 id="price-modal-title" className="font-serif text-base font-medium text-text-primary">

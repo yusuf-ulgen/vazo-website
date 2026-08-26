@@ -7,7 +7,7 @@ import { adminSettingsRepository } from '@/admin/settings/api/admin-settings-rep
 
 describe('AdminSettingsPage Component (Phase 2.9)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   const renderComponent = () =>
@@ -85,10 +85,12 @@ describe('AdminSettingsPage Component (Phase 2.9)', () => {
     renderComponent();
 
     await waitFor(() => {
+      expect(screen.queryByText('Ayarlar yükleniyor...')).not.toBeInTheDocument();
       expect(screen.getByLabelText(/Ücretsiz Kargo Limiti/i)).toBeInTheDocument();
     });
 
-    fireEvent.change(screen.getByLabelText(/Ücretsiz Kargo Limiti/i), {
+    const thresholdInput = screen.getByLabelText(/Ücretsiz Kargo Limiti/i);
+    fireEvent.change(thresholdInput, {
       target: { value: '6000' },
     });
 

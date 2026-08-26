@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminVariantRepository } from '../api/admin-variant-repository';
 import type { AdminProductVariant } from '../types';
 
@@ -21,6 +22,11 @@ export const VariantFormModal: React.FC<VariantFormModalProps> = ({
 }) => {
   const { success, error: toastError } = useToast();
   const isEditing = Boolean(initialData);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [sku, setSku] = useState('');
   const [variantName, setVariantName] = useState('');
@@ -199,7 +205,11 @@ export const VariantFormModal: React.FC<VariantFormModalProps> = ({
       aria-modal="true"
       aria-labelledby="variant-modal-title"
     >
-      <div className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-xl max-h-[90vh] flex flex-col my-8 rounded-lg overflow-hidden">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-xl max-h-[90vh] flex flex-col my-8 rounded-lg overflow-hidden focus:outline-none"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/30">
           <div>
             <h2 id="variant-modal-title" className="font-serif text-base font-medium text-text-primary">

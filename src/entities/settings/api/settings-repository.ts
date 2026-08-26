@@ -33,46 +33,52 @@ export const settingsRepository = {
 
     if (error) {
       console.error('[settingsRepository.getPublicSiteSettings] Supabase error:', error.message);
-      throw new Error(`Failed to fetch site settings from Supabase: ${error.message}`);
+      throw new Error(`Canlı site ayarları veritabanından alınamadı: ${error.message}`);
     }
 
     const rows = (data || []) as SiteSettingRow[];
-    const generalRow = rows.find((r) => r.key === 'general')?.value || {};
-    const contactRow = rows.find((r) => r.key === 'contact')?.value || {};
-    const commerceRow = rows.find((r) => r.key === 'commerce')?.value || {};
-    const socialRow = rows.find((r) => r.key === 'social')?.value || {};
+    const generalRow = rows.find((r) => r.key === 'general')?.value;
+    const contactRow = rows.find((r) => r.key === 'contact')?.value;
+    const commerceRow = rows.find((r) => r.key === 'commerce')?.value;
+    const socialRow = rows.find((r) => r.key === 'social')?.value;
+
+    if (!generalRow || !contactRow || !commerceRow || !socialRow) {
+      const missingKeys = [
+        !generalRow && 'general',
+        !contactRow && 'contact',
+        !commerceRow && 'commerce',
+        !socialRow && 'social',
+      ].filter(Boolean);
+      throw new Error(
+        `Canlı modda gerekli site ayarları veritabanında bulunamadı (${missingKeys.join(', ')}). Lütfen tohum verilerini yükleyin veya yönetici panelinden ayarları kaydedin.`
+      );
+    }
 
     const general: GeneralSettings = {
-      brandName: (generalRow.brand_name as string) || DEFAULT_PUBLIC_SITE_SETTINGS.general.brandName,
-      tagline: (generalRow.tagline as string) || DEFAULT_PUBLIC_SITE_SETTINGS.general.tagline,
-      description: (generalRow.description as string) || DEFAULT_PUBLIC_SITE_SETTINGS.general.description,
+      brandName: String(generalRow.brand_name || ''),
+      tagline: String(generalRow.tagline || ''),
+      description: String(generalRow.description || ''),
     };
 
     const contact: ContactSettings = {
-      email: (contactRow.email as string) || DEFAULT_PUBLIC_SITE_SETTINGS.contact.email,
-      wholesaleEmail: (contactRow.wholesale_email as string) || DEFAULT_PUBLIC_SITE_SETTINGS.contact.wholesaleEmail,
-      phone: (contactRow.phone as string) || DEFAULT_PUBLIC_SITE_SETTINGS.contact.phone,
-      address: (contactRow.address as string) || DEFAULT_PUBLIC_SITE_SETTINGS.contact.address,
-      businessHours: (contactRow.business_hours as string) || DEFAULT_PUBLIC_SITE_SETTINGS.contact.businessHours,
+      email: String(contactRow.email || ''),
+      wholesaleEmail: String(contactRow.wholesale_email || ''),
+      phone: String(contactRow.phone || ''),
+      address: String(contactRow.address || ''),
+      businessHours: String(contactRow.business_hours || ''),
     };
 
     const commerce: CommerceSettings = {
-      freeShippingThreshold:
-        typeof commerceRow.free_shipping_threshold === 'number'
-          ? commerceRow.free_shipping_threshold
-          : DEFAULT_PUBLIC_SITE_SETTINGS.commerce.freeShippingThreshold,
-      shippingEstimateText:
-        (commerceRow.shipping_estimate_text as string) || DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingEstimateText,
-      shippingSummary:
-        (commerceRow.shipping_summary as string) || DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingSummary,
-      returnsPolicyText:
-        (commerceRow.returns_policy_text as string) || DEFAULT_PUBLIC_SITE_SETTINGS.commerce.returnsPolicyText,
+      freeShippingThreshold: Number(commerceRow.free_shipping_threshold) || 0,
+      shippingEstimateText: String(commerceRow.shipping_estimate_text || ''),
+      shippingSummary: String(commerceRow.shipping_summary || ''),
+      returnsPolicyText: String(commerceRow.returns_policy_text || ''),
     };
 
     const social: SocialSettings = {
-      instagram: (socialRow.instagram as string) || DEFAULT_PUBLIC_SITE_SETTINGS.social.instagram,
-      facebook: (socialRow.facebook as string) || DEFAULT_PUBLIC_SITE_SETTINGS.social.facebook,
-      pinterest: (socialRow.pinterest as string) || DEFAULT_PUBLIC_SITE_SETTINGS.social.pinterest,
+      instagram: String(socialRow.instagram || ''),
+      facebook: String(socialRow.facebook || ''),
+      pinterest: String(socialRow.pinterest || ''),
     };
 
     return {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Building2, Phone, Mail, Globe, Calendar, FileText, AlertCircle, Info } from 'lucide-react';
 import { FormField } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import type { AdminTradeApplication, TradeApplicationStatus, UpdateTradeApplicationInput } from '../types';
 
 interface TradeApplicationDetailModalProps {
@@ -20,6 +21,11 @@ export function TradeApplicationDetailModal({
   const [adminNotes, setAdminNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   useEffect(() => {
     if (application) {
@@ -57,21 +63,34 @@ export function TradeApplicationDetailModal({
     { value: 'rejected', label: 'Reddedildi' },
   ];
 
+  const customerMessageContent = application.customer_message || application.notes;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left">
-      <div className="bg-surface-primary border border-border-default rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="trade-modal-title"
+    >
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up focus:outline-none"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-primary shrink-0">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
               Kurumsal B2B Başvuru Detayı
             </span>
-            <h3 className="font-display text-lg text-text-primary font-normal truncate">
+            <h3 id="trade-modal-title" className="font-display text-lg text-text-primary font-normal truncate">
               {application.company_name}
             </h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Kapat"
             className="p-1.5 text-text-secondary hover:text-text-primary rounded-lg hover:bg-surface-muted transition-colors"
           >
             <X className="w-5 h-5" />
@@ -137,15 +156,15 @@ export function TradeApplicationDetailModal({
             </div>
           </div>
 
-          {/* Applicant Notes */}
-          {application.notes && (
+          {/* Applicant Notes & Customer Message */}
+          {customerMessageContent && (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-text-muted" />
-                <span>Başvuru Notu & Proje Kapsamı</span>
+                <span>Başvuru Notu & Müşteri Mesajı</span>
               </label>
               <div className="p-4 bg-surface-secondary/50 border border-border-subtle rounded-lg text-xs sm:text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-                {application.notes}
+                {customerMessageContent}
               </div>
             </div>
           )}

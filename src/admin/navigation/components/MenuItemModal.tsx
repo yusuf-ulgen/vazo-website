@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { FormField, AdminInput, useToast } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminNavigationRepository } from '../api/admin-navigation-repository';
 import type { AdminMenuItem } from '../types';
 
@@ -20,7 +21,11 @@ export function MenuItemModal({
   onSuccess,
 }: MenuItemModalProps) {
   const { success, error: toastError } = useToast();
-  const modalRef = useRef<HTMLDivElement>(null);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [label, setLabel] = useState('');
   const [href, setHref] = useState('');
@@ -50,15 +55,6 @@ export function MenuItemModal({
     }
     setErrors({});
   }, [item, isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -112,11 +108,12 @@ export function MenuItemModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs" onClick={onClose} />
       <div
-        ref={modalRef}
+        ref={containerRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="item-modal-title"
-        className="relative w-full max-w-md bg-surface-primary border border-border-default shadow-elevated z-10 flex flex-col max-h-[90vh] rounded-lg overflow-hidden animate-fade-scale text-left"
+        className="relative w-full max-w-md bg-surface-primary border border-border-default shadow-elevated z-10 flex flex-col max-h-[90vh] rounded-lg overflow-hidden animate-fade-scale text-left focus:outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-default bg-surface-secondary/50">

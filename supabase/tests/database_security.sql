@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(44);
+SELECT plan(49);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -69,7 +69,13 @@ SELECT is(
     'Anonymous user receives 0 rows for private site settings'
 );
 
--- 3.5 Direct Public Browser Mutation Denial: Trade Applications
+-- 3.5 Anon CAN view public site settings
+SELECT ok(
+    (SELECT count(*) FROM public.site_settings WHERE is_public = true) >= 4,
+    'Anonymous user can read public site settings (general, contact, commerce, social)'
+);
+
+-- 3.6 Direct Public Browser Mutation Denial: Trade Applications
 SELECT throws_ok(
     $$ INSERT INTO public.trade_applications (company_name, tax_number, tax_office, business_type, contact_person, email, phone, status)
        VALUES ('Direct Browser Test', '1234567890', 'Kadıköy VD', 'Tasarım', 'Caner Yılmaz', 'caner@test.com', '05551112233', 'pending') $$,
@@ -78,14 +84,14 @@ SELECT throws_ok(
     'Direct anonymous INSERT into trade_applications must fail (Edge Function required)'
 );
 
--- 3.6 Anon CANNOT read back trade applications
+-- 3.7 Anon CANNOT read back trade applications
 SELECT is(
     (SELECT count(*) FROM public.trade_applications),
     0::bigint,
     'Anonymous user cannot read submitted trade applications (zero leakage)'
 );
 
--- 3.7 Direct Public Browser Mutation Denial: Contact Messages
+-- 3.8 Direct Public Browser Mutation Denial: Contact Messages
 SELECT throws_ok(
     $$ INSERT INTO public.contact_messages (name, email, subject, message, status)
        VALUES ('Ziyaretçi', 'ziyaretci@test.com', 'Bilgi', 'Doğrudan mesaj iletimi', 'new') $$,
@@ -94,14 +100,14 @@ SELECT throws_ok(
     'Direct anonymous INSERT into contact_messages must fail (Edge Function required)'
 );
 
--- 3.8 Anon CANNOT read contact messages
+-- 3.9 Anon CANNOT read contact messages
 SELECT is(
     (SELECT count(*) FROM public.contact_messages),
     0::bigint,
     'Anonymous user cannot read contact messages'
 );
 
--- 3.9 Direct Public Browser Mutation Denial: Newsletter Subscriptions
+-- 3.10 Direct Public Browser Mutation Denial: Newsletter Subscriptions
 SELECT throws_ok(
     $$ INSERT INTO public.newsletter_subscriptions (normalized_email, status, source)
        VALUES ('direct-anon-subscriber@test.com', 'active', 'browser') $$,
@@ -110,14 +116,14 @@ SELECT throws_ok(
     'Direct anonymous INSERT into newsletter_subscriptions must fail (Edge Function required)'
 );
 
--- 3.10 Anon CANNOT read newsletter subscribers
+-- 3.11 Anon CANNOT read newsletter subscribers
 SELECT is(
     (SELECT count(*) FROM public.newsletter_subscriptions),
     0::bigint,
     'Anonymous user cannot read newsletter subscribers (privacy protection)'
 );
 
--- 3.11 Anon CANNOT view or insert into admin_users (Role escalation protection)
+-- 3.12 Anon CANNOT view or insert into admin_users (Role escalation protection)
 SELECT is(
     (SELECT count(*) FROM public.admin_users),
     0::bigint,
@@ -131,7 +137,7 @@ SELECT throws_ok(
     'Direct anonymous INSERT into admin_users must fail (Role escalation denied)'
 );
 
--- 3.12 Anon CANNOT read or insert into admin_audit_logs
+-- 3.13 Anon CANNOT read or insert into admin_audit_logs
 SELECT is(
     (SELECT count(*) FROM public.admin_audit_logs),
     0::bigint,
@@ -143,6 +149,14 @@ SELECT throws_ok(
     '42501',
     NULL,
     'Direct anonymous INSERT into admin_audit_logs must fail'
+);
+
+-- 3.14 Anon CANNOT call log_admin_audit_event RPC
+SELECT throws_ok(
+    $$ SELECT public.log_admin_audit_event('CREATE', 'product', 'test-id', 'Test Product') $$,
+    '42501',
+    NULL,
+    'Direct anonymous execution of log_admin_audit_event must fail'
 );
 
 -- ------------------------------------------------------------------------------
@@ -218,23 +232,90 @@ SELECT is(
     'Authenticated non-admin receives 0 rows from admin_users'
 );
 
+SELECT throws_ok(
+    $$ SELECT public.log_admin_audit_event('CREATE', 'product', 'forged-id', 'Forged') $$,
+    '42501',
+    NULL,
+    'Forged log_admin_audit_event by authenticated non-admin is denied'
+);
+
 -- ------------------------------------------------------------------------------
--- 6. Audit Trail Immutability Checks (Enforced by Database Trigger)
+-- 6. Product Primary Image Uniqueness Integrity Check
 -- ------------------------------------------------------------------------------
 RESET ROLE;
 
+DO $$
+DECLARE
+    v_prod_id UUID := 'p0000000-0000-0000-0000-000000000001';
+BEGIN
+    -- Ensure first primary media exists
+    INSERT INTO public.product_media (id, product_id, url, alt_text, sort_order, is_primary)
+    VALUES ('m0000000-0000-0000-0000-000000000001', v_prod_id, 'https://example.com/prim1.jpg', 'Primary 1', 1, true)
+    ON CONFLICT (id) DO UPDATE SET is_primary = true;
+END $$;
+
 SELECT throws_ok(
-    $$ UPDATE public.admin_audit_logs SET action = 'UPDATE' WHERE id = '00000000-0000-0000-0000-000000000000' $$,
+    $$ INSERT INTO public.product_media (product_id, url, alt_text, sort_order, is_primary)
+       VALUES ('p0000000-0000-0000-0000-000000000001', 'https://example.com/prim2.jpg', 'Primary 2', 2, true) $$,
+    '23505',
+    NULL,
+    'Product primary media uniqueness: second primary image insert must fail with 23505'
+);
+
+-- ------------------------------------------------------------------------------
+-- 7. Audit Trail Immutability Checks (Tested Against Real Existing Row)
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- Create real authorized setup row directly
+DO $$
+DECLARE
+    v_audit_id UUID := 'a1000000-0000-0000-0000-000000000001';
+BEGIN
+    INSERT INTO public.admin_audit_logs (
+        id,
+        actor_user_id,
+        actor_email,
+        action,
+        entity_type,
+        entity_id,
+        entity_name,
+        safe_metadata,
+        created_at
+    ) VALUES (
+        v_audit_id,
+        '00000000-0000-0000-0000-000000000001',
+        'admin@vazo.design',
+        'CREATE',
+        'product',
+        'p-setup-test',
+        'Setup Test Product',
+        '{}'::jsonb,
+        now()
+    ) ON CONFLICT (id) DO NOTHING;
+END $$;
+
+SELECT throws_ok(
+    $$ UPDATE public.admin_audit_logs SET action = 'UPDATE' WHERE id = 'a1000000-0000-0000-0000-000000000001' $$,
     '27000',
     NULL,
     'Audit logs are immutable: UPDATE must fail with 27000'
 );
 
 SELECT throws_ok(
-    $$ DELETE FROM public.admin_audit_logs WHERE id = '00000000-0000-0000-0000-000000000000' $$,
+    $$ DELETE FROM public.admin_audit_logs WHERE id = 'a1000000-0000-0000-0000-000000000001' $$,
     '27000',
     NULL,
     'Audit logs are immutable: DELETE must fail with 27000'
+);
+
+-- ------------------------------------------------------------------------------
+-- 8. Storage Bucket 5 MB Limit Verification
+-- ------------------------------------------------------------------------------
+SELECT is(
+    (SELECT file_size_limit FROM storage.buckets WHERE id = 'public-media'),
+    5242880::bigint,
+    'Storage bucket public-media file size limit is canonical 5 MB (5242880 bytes)'
 );
 
 RESET ROLE;

@@ -1,5 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { mockContentPages } from '@/entities/content/api/content-mocks';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import type {
   AdminContentPageItem,
   AdminContentSection,
@@ -9,42 +8,11 @@ import type {
   UpdateContentSectionInput,
 } from '../types';
 
-let mockAdminPages: AdminContentPageItem[] = Object.values(mockContentPages).map((p) => ({
-  id: p.id,
-  page_key: p.pageKey,
-  title: p.title,
-  seo_title: p.seoTitle || null,
-  seo_description: p.seoDescription || null,
-  published: p.published,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  sections: (p.sections || []).map((s) => ({
-    id: s.id,
-    page_id: p.id,
-    section_key: s.sectionKey,
-    eyebrow: s.eyebrow || null,
-    title: s.title,
-    subtitle: s.subtitle || null,
-    content: s.content || null,
-    image_url: s.imageUrl || null,
-    image_position: s.imagePosition || 'left',
-    cta_text: s.ctaText || null,
-    cta_url: s.ctaUrl || null,
-    sort_order: s.sortOrder,
-    active: s.active,
-  })),
-}));
-
 export const adminContentPagesRepository = {
   async getContentPages(): Promise<AdminContentPageItem[]> {
-    if (!isSupabaseConfigured || !supabase) {
-      return mockAdminPages.map((p) => ({
-        ...p,
-        sections: [...(p.sections || [])].sort((a, b) => a.sort_order - b.sort_order),
-      }));
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_pages')
       .select(`
         *,
@@ -101,12 +69,9 @@ export const adminContentPagesRepository = {
   },
 
   async getContentPageById(id: string): Promise<AdminContentPageItem | null> {
-    if (!isSupabaseConfigured || !supabase) {
-      const page = mockAdminPages.find((p) => p.id === id);
-      return page || null;
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_pages')
       .select(`
         *,
@@ -166,23 +131,9 @@ export const adminContentPagesRepository = {
   },
 
   async createContentPage(input: CreateContentPageInput): Promise<AdminContentPageItem> {
-    if (!isSupabaseConfigured || !supabase) {
-      const newPage: AdminContentPageItem = {
-        id: `cp-mock-${Date.now()}`,
-        page_key: input.page_key,
-        title: input.title,
-        seo_title: input.seo_title || null,
-        seo_description: input.seo_description || null,
-        published: input.published ?? true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sections: [],
-      };
-      mockAdminPages.push(newPage);
-      return newPage;
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_pages')
       .insert([
         {
@@ -215,22 +166,7 @@ export const adminContentPagesRepository = {
   },
 
   async updateContentPage(id: string, input: UpdateContentPageInput): Promise<AdminContentPageItem> {
-    if (!isSupabaseConfigured || !supabase) {
-      const existing = mockAdminPages.find((p) => p.id === id);
-      if (!existing) throw new Error('Page not found');
-      const updated: AdminContentPageItem = {
-        ...existing,
-        page_key: input.page_key ?? existing.page_key,
-        title: input.title ?? existing.title,
-        seo_title: input.seo_title !== undefined ? input.seo_title : existing.seo_title,
-        seo_description: input.seo_description !== undefined ? input.seo_description : existing.seo_description,
-        published: input.published !== undefined ? input.published : existing.published,
-        updated_at: new Date().toISOString(),
-      };
-      const idx = mockAdminPages.findIndex((p) => p.id === id);
-      mockAdminPages[idx] = updated;
-      return updated;
-    }
+    const client = requireAdminSupabase();
 
     const payload: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -241,7 +177,7 @@ export const adminContentPagesRepository = {
     if (input.seo_description !== undefined) payload.seo_description = input.seo_description;
     if (input.published !== undefined) payload.published = input.published;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_pages')
       .update(payload)
       .eq('id', id)
@@ -266,12 +202,9 @@ export const adminContentPagesRepository = {
   },
 
   async deleteContentPage(id: string): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      mockAdminPages = mockAdminPages.filter((p) => p.id !== id);
-      return;
-    }
+    const client = requireAdminSupabase();
 
-    const { error } = await supabase.from('content_pages').delete().eq('id', id);
+    const { error } = await client.from('content_pages').delete().eq('id', id);
     if (error) {
       console.error('[adminContentPagesRepository.deleteContentPage] Error:', error.message);
       throw new Error(`Sayfa silinemedi: ${error.message}`);
@@ -279,31 +212,9 @@ export const adminContentPagesRepository = {
   },
 
   async createContentSection(input: CreateContentSectionInput): Promise<AdminContentSection> {
-    if (!isSupabaseConfigured || !supabase) {
-      const page = mockAdminPages.find((p) => p.id === input.page_id);
-      const newSec: AdminContentSection = {
-        id: `cs-mock-${Date.now()}`,
-        page_id: input.page_id,
-        section_key: input.section_key,
-        eyebrow: input.eyebrow || null,
-        title: input.title,
-        subtitle: input.subtitle || null,
-        content: input.content || null,
-        image_url: input.image_url || null,
-        image_position: input.image_position || 'left',
-        cta_text: input.cta_text || null,
-        cta_url: input.cta_url || null,
-        sort_order: input.sort_order ?? 1,
-        active: input.active ?? true,
-      };
-      if (page) {
-        page.sections = page.sections || [];
-        page.sections.push(newSec);
-      }
-      return newSec;
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_sections')
       .insert([
         {
@@ -347,33 +258,7 @@ export const adminContentPagesRepository = {
   },
 
   async updateContentSection(id: string, input: UpdateContentSectionInput): Promise<AdminContentSection> {
-    if (!isSupabaseConfigured || !supabase) {
-      let targetSection: AdminContentSection | null = null;
-      for (const page of mockAdminPages) {
-        if (page.sections) {
-          const s = page.sections.find((sec) => sec.id === id);
-          if (s) {
-            targetSection = s;
-            break;
-          }
-        }
-      }
-      if (!targetSection) throw new Error('Section not found');
-
-      if (input.section_key !== undefined) targetSection.section_key = input.section_key;
-      if (input.eyebrow !== undefined) targetSection.eyebrow = input.eyebrow;
-      if (input.title !== undefined) targetSection.title = input.title;
-      if (input.subtitle !== undefined) targetSection.subtitle = input.subtitle;
-      if (input.content !== undefined) targetSection.content = input.content;
-      if (input.image_url !== undefined) targetSection.image_url = input.image_url;
-      if (input.image_position !== undefined) targetSection.image_position = input.image_position;
-      if (input.cta_text !== undefined) targetSection.cta_text = input.cta_text;
-      if (input.cta_url !== undefined) targetSection.cta_url = input.cta_url;
-      if (input.sort_order !== undefined) targetSection.sort_order = input.sort_order;
-      if (input.active !== undefined) targetSection.active = input.active;
-
-      return { ...targetSection };
-    }
+    const client = requireAdminSupabase();
 
     const payload: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -390,7 +275,7 @@ export const adminContentPagesRepository = {
     if (input.sort_order !== undefined) payload.sort_order = input.sort_order;
     if (input.active !== undefined) payload.active = input.active;
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('content_sections')
       .update(payload)
       .eq('id', id)
@@ -420,16 +305,9 @@ export const adminContentPagesRepository = {
   },
 
   async deleteContentSection(id: string): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      for (const page of mockAdminPages) {
-        if (page.sections) {
-          page.sections = page.sections.filter((s) => s.id !== id);
-        }
-      }
-      return;
-    }
+    const client = requireAdminSupabase();
 
-    const { error } = await supabase.from('content_sections').delete().eq('id', id);
+    const { error } = await client.from('content_sections').delete().eq('id', id);
     if (error) {
       console.error('[adminContentPagesRepository.deleteContentSection] Error:', error.message);
       throw new Error(`Bölüm silinemedi: ${error.message}`);
@@ -437,19 +315,8 @@ export const adminContentPagesRepository = {
   },
 
   async reorderContentSections(orders: { id: string; sort_order: number }[]): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      for (const { id, sort_order } of orders) {
-        for (const page of mockAdminPages) {
-          if (page.sections) {
-            const s = page.sections.find((sec) => sec.id === id);
-            if (s) s.sort_order = sort_order;
-          }
-        }
-      }
-      return;
-    }
+    const client = requireAdminSupabase();
 
-    const client = supabase;
     await Promise.all(
       orders.map(({ id, sort_order }) =>
         client.from('content_sections').update({ sort_order }).eq('id', id)

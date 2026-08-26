@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import {
   PublicSiteSettings,
   DEFAULT_PUBLIC_SITE_SETTINGS,
@@ -9,32 +9,19 @@ import {
 } from '@/entities/settings/types';
 import { siteSettingsStore } from '@/shared/stores/settings-store';
 
-const mockSettings: PublicSiteSettings = {
-  general: { ...DEFAULT_PUBLIC_SITE_SETTINGS.general },
-  contact: { ...DEFAULT_PUBLIC_SITE_SETTINGS.contact },
-  commerce: { ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce },
-  social: { ...DEFAULT_PUBLIC_SITE_SETTINGS.social },
-};
-
 interface SiteSettingRow {
   key: string;
   value: Record<string, unknown>;
+  is_public?: boolean;
 }
 
 export const adminSettingsRepository = {
   async getSettings(): Promise<PublicSiteSettings> {
-    if (!isSupabaseConfigured || !supabase) {
-      return {
-        general: { ...mockSettings.general },
-        contact: { ...mockSettings.contact },
-        commerce: { ...mockSettings.commerce },
-        social: { ...mockSettings.social },
-      };
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('site_settings')
-      .select('key, value')
+      .select('key, value, is_public')
       .in('key', ['general', 'contact', 'commerce', 'social']);
 
     if (error) {
@@ -84,11 +71,7 @@ export const adminSettingsRepository = {
   },
 
   async updateGeneralSettings(data: GeneralSettings): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      mockSettings.general = { ...data };
-      siteSettingsStore.setSettings({ ...mockSettings });
-      return;
-    }
+    const client = requireAdminSupabase();
 
     const payload = {
       brand_name: data.brandName.trim(),
@@ -96,9 +79,12 @@ export const adminSettingsRepository = {
       description: data.description.trim(),
     };
 
-    const { error } = await supabase
+    const { error } = await client
       .from('site_settings')
-      .upsert({ key: 'general', value: payload }, { onConflict: 'key' });
+      .upsert(
+        { key: 'general', value: payload, is_public: true, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
 
     if (error) {
       console.error('[adminSettingsRepository.updateGeneralSettings] Error:', error.message);
@@ -109,11 +95,7 @@ export const adminSettingsRepository = {
   },
 
   async updateContactSettings(data: ContactSettings): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      mockSettings.contact = { ...data };
-      siteSettingsStore.setSettings({ ...mockSettings });
-      return;
-    }
+    const client = requireAdminSupabase();
 
     const payload = {
       email: data.email.trim(),
@@ -123,9 +105,12 @@ export const adminSettingsRepository = {
       business_hours: data.businessHours.trim(),
     };
 
-    const { error } = await supabase
+    const { error } = await client
       .from('site_settings')
-      .upsert({ key: 'contact', value: payload }, { onConflict: 'key' });
+      .upsert(
+        { key: 'contact', value: payload, is_public: true, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
 
     if (error) {
       console.error('[adminSettingsRepository.updateContactSettings] Error:', error.message);
@@ -136,11 +121,7 @@ export const adminSettingsRepository = {
   },
 
   async updateCommerceSettings(data: CommerceSettings): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      mockSettings.commerce = { ...data };
-      siteSettingsStore.setSettings({ ...mockSettings });
-      return;
-    }
+    const client = requireAdminSupabase();
 
     const payload = {
       free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
@@ -149,9 +130,12 @@ export const adminSettingsRepository = {
       returns_policy_text: data.returnsPolicyText.trim(),
     };
 
-    const { error } = await supabase
+    const { error } = await client
       .from('site_settings')
-      .upsert({ key: 'commerce', value: payload }, { onConflict: 'key' });
+      .upsert(
+        { key: 'commerce', value: payload, is_public: true, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
 
     if (error) {
       console.error('[adminSettingsRepository.updateCommerceSettings] Error:', error.message);
@@ -162,11 +146,7 @@ export const adminSettingsRepository = {
   },
 
   async updateSocialSettings(data: SocialSettings): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      mockSettings.social = { ...data };
-      siteSettingsStore.setSettings({ ...mockSettings });
-      return;
-    }
+    const client = requireAdminSupabase();
 
     const payload = {
       instagram: data.instagram.trim(),
@@ -174,9 +154,12 @@ export const adminSettingsRepository = {
       pinterest: data.pinterest.trim(),
     };
 
-    const { error } = await supabase
+    const { error } = await client
       .from('site_settings')
-      .upsert({ key: 'social', value: payload }, { onConflict: 'key' });
+      .upsert(
+        { key: 'social', value: payload, is_public: true, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
 
     if (error) {
       console.error('[adminSettingsRepository.updateSocialSettings] Error:', error.message);

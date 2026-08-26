@@ -1,16 +1,10 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import {
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
+import { adminAuditRepository } from '@/admin/audit/api/admin-audit-repository';
+import type {
   AdminInventoryItem,
   AdminInventoryListParams,
   AdminInventoryListResult,
 } from '../types';
-
-function getClient() {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
-  }
-  return supabase;
-}
 
 interface RawVariantRow {
   id: string;
@@ -31,7 +25,7 @@ interface RawVariantRow {
 
 export const adminInventoryRepository = {
   async getInventory(params: AdminInventoryListParams = {}): Promise<AdminInventoryListResult> {
-    const client = getClient();
+    const client = requireAdminSupabase();
     const page = Math.max(1, params.page || 1);
     const pageSize = Math.max(1, params.pageSize || 15);
     const from = (page - 1) * pageSize;
@@ -124,25 +118,48 @@ export const adminInventoryRepository = {
     };
   },
 
-  async updateStock(variantId: string, newStockQuantity: number): Promise<void> {
+  async updateStock(
+    variantId: string,
+    newStockQuantity: number,
+    reason?: string,
+    previousStockQuantity?: number
+  ): Promise<void> {
     if (newStockQuantity < 0 || isNaN(newStockQuantity)) {
       throw new Error('Stok adedi negatif olamaz.');
     }
 
-    const client = getClient();
+    const client = requireAdminSupabase();
     const qty = Math.floor(newStockQuantity);
 
-    const { error } = await client
+    const { data: updatedVariant, error } = await client
       .from('product_variants')
       .update({
         stock_quantity: qty,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', variantId);
+      .eq('id', variantId)
+      .select('id, sku, variant_name')
+      .single();
 
     if (error) {
       console.error('[adminInventoryRepository.updateStock] Error:', error);
       throw new Error(`Stok güncellenemedi: ${error.message}`);
+    }
+
+    if (reason && updatedVariant) {
+      await adminAuditRepository.logAuditEvent(
+        'UPDATE',
+        'inventory',
+        variantId,
+        `${updatedVariant.sku} (${updatedVariant.variant_name})`,
+        {
+          previous_stock: previousStockQuantity ?? null,
+          new_stock: qty,
+          reason: reason.trim(),
+        }
+      ).catch((auditErr) => {
+        console.warn('[adminInventoryRepository.updateStock] Audit log warning:', auditErr);
+      });
     }
   },
 };

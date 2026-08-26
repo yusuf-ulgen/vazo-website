@@ -104,7 +104,12 @@ describe('AdminInventoryPage Component (Phase 2.6)', () => {
     fireEvent.click(saveBtn);
 
     await waitFor(() => {
-      expect(adminInventoryRepository.updateStock).toHaveBeenCalledWith('var-1', 12);
+      expect(adminInventoryRepository.updateStock).toHaveBeenCalledWith(
+        'var-1',
+        12,
+        undefined,
+        12
+      );
     });
   });
 });

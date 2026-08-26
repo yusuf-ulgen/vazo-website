@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import {
   AdminProductMedia,
   UploadProductMediaOptions,
@@ -8,13 +8,6 @@ import {
 export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 export const STORAGE_BUCKET = 'public-media';
-
-function getClient() {
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
-  }
-  return supabase;
-}
 
 export function validateMediaFile(file: File): void {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
@@ -71,7 +64,7 @@ interface RawMediaJoinRow {
 
 export const adminMediaService = {
   async getProductMedia(productId: string): Promise<AdminProductMedia[]> {
-    const client = getClient();
+    const client = requireAdminSupabase();
 
     const { data, error } = await client
       .from('product_media')
@@ -113,7 +106,7 @@ export const adminMediaService = {
   ): Promise<AdminProductMedia> {
     validateMediaFile(file);
 
-    const client = getClient();
+    const client = requireAdminSupabase();
     const ext = getFileExtension(file);
     const storagePath = generateStoragePath('products', ext, productId);
 
@@ -137,7 +130,7 @@ export const adminMediaService = {
 
     const publicUrl = publicUrlData.publicUrl;
 
-    // 3. If this is primary, clear existing primary flags for product
+    // 3. Clear existing primary if needed before insert
     if (options.isPrimary) {
       await client
         .from('product_media')
@@ -199,7 +192,7 @@ export const adminMediaService = {
   },
 
   async updateMediaMetadata(id: string, input: UpdateMediaMetadataInput): Promise<void> {
-    const client = getClient();
+    const client = requireAdminSupabase();
     const payload: Record<string, unknown> = {};
 
     if (input.alt_text !== undefined) payload.alt_text = input.alt_text.trim();
@@ -207,7 +200,6 @@ export const adminMediaService = {
     if (input.variant_id !== undefined) payload.variant_id = input.variant_id || null;
 
     if (input.is_primary === true) {
-      // Find product_id
       const { data: mediaRow } = await client
         .from('product_media')
         .select('product_id')
@@ -215,48 +207,49 @@ export const adminMediaService = {
         .single();
 
       if (mediaRow) {
-        await client
-          .from('product_media')
-          .update({ is_primary: false })
-          .eq('product_id', mediaRow.product_id);
+        await this.setPrimaryImage(mediaRow.product_id, id);
       }
-      payload.is_primary = true;
     } else if (input.is_primary === false) {
       payload.is_primary = false;
+      const { error } = await client
+        .from('product_media')
+        .update(payload)
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Görsel bilgileri güncellenemedi: ${error.message}`);
+      }
+      return;
     }
 
-    const { error } = await client
-      .from('product_media')
-      .update(payload)
-      .eq('id', id);
+    if (Object.keys(payload).length > 0) {
+      const { error } = await client
+        .from('product_media')
+        .update(payload)
+        .eq('id', id);
 
-    if (error) {
-      throw new Error(`Görsel bilgileri güncellenemedi: ${error.message}`);
+      if (error) {
+        throw new Error(`Görsel bilgileri güncellenemedi: ${error.message}`);
+      }
     }
   },
 
   async setPrimaryImage(productId: string, mediaId: string): Promise<void> {
-    const client = getClient();
+    const client = requireAdminSupabase();
 
-    // 1. Set all to false for product
-    await client
-      .from('product_media')
-      .update({ is_primary: false })
-      .eq('product_id', productId);
-
-    // 2. Set target to true
-    const { error } = await client
-      .from('product_media')
-      .update({ is_primary: true })
-      .eq('id', mediaId);
+    const { error } = await client.rpc('set_primary_product_media', {
+      p_product_id: productId,
+      p_media_id: mediaId,
+    });
 
     if (error) {
+      console.error('[adminMediaService.setPrimaryImage] RPC error:', error);
       throw new Error(`Ana görsel belirlenemedi: ${error.message}`);
     }
   },
 
   async reorderMedia(orderedMedia: Array<{ id: string; sort_order: number }>): Promise<void> {
-    const client = getClient();
+    const client = requireAdminSupabase();
 
     await Promise.all(
       orderedMedia.map(({ id, sort_order }) =>
@@ -269,7 +262,7 @@ export const adminMediaService = {
   },
 
   async deleteProductMedia(id: string): Promise<void> {
-    const client = getClient();
+    const client = requireAdminSupabase();
 
     // 1. Fetch storage_path before delete
     const { data: mediaRow } = await client
@@ -304,7 +297,7 @@ export const adminMediaService = {
   ): Promise<{ url: string; storagePath: string; mimeType: string; fileSizeBytes: number }> {
     validateMediaFile(file);
 
-    const client = getClient();
+    const client = requireAdminSupabase();
     const ext = getFileExtension(file);
     const storagePath = generateStoragePath(prefix, ext, entityId);
 

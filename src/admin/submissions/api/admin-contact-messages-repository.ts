@@ -1,5 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { mockContactMessages } from './submissions-mocks';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import type {
   AdminContactMessage,
   ContactMessagesFilter,
@@ -7,58 +6,18 @@ import type {
   PaginatedResult,
 } from '../types';
 
-let localMessages: AdminContactMessage[] = [...mockContactMessages];
-
 export const adminContactMessagesRepository = {
   async getContactMessages(
     filters: ContactMessagesFilter = {}
   ): Promise<PaginatedResult<AdminContactMessage>> {
+    const client = requireAdminSupabase();
+
     const page = Math.max(1, filters.page || 1);
     const pageSize = Math.max(1, filters.pageSize || 10);
     const status = filters.status || 'all';
     const search = filters.search?.trim().toLowerCase();
 
-    if (!isSupabaseConfigured || !supabase) {
-      let filtered = [...localMessages];
-
-      if (status !== 'all') {
-        filtered = filtered.filter((m) => m.status === status);
-      }
-
-      if (search) {
-        filtered = filtered.filter(
-          (m) =>
-            m.name.toLowerCase().includes(search) ||
-            m.email.toLowerCase().includes(search) ||
-            m.subject.toLowerCase().includes(search) ||
-            m.message.toLowerCase().includes(search)
-        );
-      }
-
-      // Order newest first
-      filtered.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      const totalCount = filtered.length;
-      const totalPages = Math.ceil(totalCount / pageSize) || 1;
-      const start = (page - 1) * pageSize;
-      const data = filtered.slice(start, start + pageSize);
-
-      return {
-        data,
-        totalCount,
-        page,
-        pageSize,
-        totalPages,
-      };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış. Canlı mod geçerli ortam değişkenleri gerektirir.');
-    }
-
-    let query = supabase
+    let query = client
       .from('contact_messages')
       .select('*', { count: 'exact' });
 
@@ -98,12 +57,9 @@ export const adminContactMessagesRepository = {
   },
 
   async getContactMessageById(id: string): Promise<AdminContactMessage | null> {
-    if (!isSupabaseConfigured || !supabase) {
-      const msg = localMessages.find((m) => m.id === id);
-      return msg ? { ...msg } : null;
-    }
+    const client = requireAdminSupabase();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('contact_messages')
       .select('*')
       .eq('id', id)
@@ -122,30 +78,14 @@ export const adminContactMessagesRepository = {
     id: string,
     input: UpdateContactMessageInput
   ): Promise<AdminContactMessage> {
-    if (!isSupabaseConfigured || !supabase) {
-      const idx = localMessages.findIndex((m) => m.id === id);
-      if (idx === -1) {
-        throw new Error(`İletişim mesajı bulunamadı: ${id}`);
-      }
-
-      const existing = localMessages[idx]!;
-      const updated: AdminContactMessage = {
-        ...existing,
-        status: input.status !== undefined ? input.status : existing.status,
-        admin_notes: input.admin_notes !== undefined ? input.admin_notes : existing.admin_notes,
-        reviewed_at: input.reviewed_at !== undefined ? input.reviewed_at : new Date().toISOString(),
-      };
-
-      localMessages[idx] = updated;
-      return { ...updated };
-    }
+    const client = requireAdminSupabase();
 
     const updatePayload: Record<string, unknown> = {};
     if (input.status !== undefined) updatePayload.status = input.status;
     if (input.admin_notes !== undefined) updatePayload.admin_notes = input.admin_notes;
     updatePayload.reviewed_at = input.reviewed_at || new Date().toISOString();
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('contact_messages')
       .update(updatePayload)
       .eq('id', id)
@@ -161,16 +101,9 @@ export const adminContactMessagesRepository = {
   },
 
   async deleteContactMessage(id: string): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      localMessages = localMessages.filter((m) => m.id !== id);
-      return;
-    }
+    const client = requireAdminSupabase();
 
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış.');
-    }
-
-    const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+    const { error } = await client.from('contact_messages').delete().eq('id', id);
 
     if (error) {
       console.error('[adminContactMessagesRepository.deleteContactMessage] Error:', error.message);

@@ -2,6 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
+const args = process.argv.slice(2);
+const isLiveMode = args.includes('--live');
+const isStaticOnly = args.includes('--static') || !isLiveMode;
+
 const sqlTestPath = path.resolve(process.cwd(), 'supabase/tests/database_security.sql');
 
 if (!fs.existsSync(sqlTestPath)) {
@@ -28,6 +32,8 @@ const requiredChecks = [
   'Child media of draft product is completely invisible to anonymous visitors',
   'Audit logs are immutable: UPDATE must fail with 27000',
   'Audit logs are immutable: DELETE must fail with 27000',
+  'Product primary media uniqueness',
+  'Storage bucket public-media file size limit',
   'SELECT * FROM finish()',
   'ROLLBACK',
 ];
@@ -54,16 +60,20 @@ if (plannedCount !== selectAssertions) {
   process.exit(1);
 }
 
-// If local Supabase CLI or disposable PostgreSQL is active, run live pgTAP suite
-if (process.env.CI_SUPABASE_TEST === 'true' || process.env.DATABASE_URL) {
+console.log(`✅ Static DB test suite validation passed: ${plannedCount} planned pgTAP assertions verified in SQL file.`);
+
+// If live mode requested or active database test environment present
+if (isLiveMode || process.env.CI_SUPABASE_TEST === 'true' || process.env.DATABASE_URL) {
   try {
-    console.log('Running live pgTAP test suite against database test runner...');
+    console.log('Running live pgTAP test suite against PostgreSQL runner via "supabase test db"...');
     execSync('supabase test db', { stdio: 'inherit' });
+    console.log(`✅ Live pgTAP database security test suite (${plannedCount} assertions) PASSED.`);
   } catch (err) {
-    console.error('❌ Error executing supabase test db:', err);
+    console.error('❌ Error executing live pgTAP suite ("supabase test db"):', err);
     process.exit(1);
   }
+} else if (isStaticOnly) {
+  console.log('ℹ️  Note: Static validation only. To execute live against PostgreSQL, run "npm run test:db:live" with active Supabase.');
 }
 
-console.log(`✅ Database security test suite (${plannedCount} pgTAP assertions) validated successfully.`);
 process.exit(0);

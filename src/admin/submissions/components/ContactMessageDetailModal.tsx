@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Mail, Calendar, User, Info, AlertCircle } from 'lucide-react';
 import { FormField } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import type { AdminContactMessage, ContactMessageStatus, UpdateContactMessageInput } from '../types';
 
 interface ContactMessageDetailModalProps {
@@ -16,6 +17,11 @@ export function ContactMessageDetailModal({
   onClose,
   onSave,
 }: ContactMessageDetailModalProps) {
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
+
   const [status, setStatus] = useState<ContactMessageStatus>('new');
   const [adminNotes, setAdminNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -58,15 +64,24 @@ export function ContactMessageDetailModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left">
-      <div className="bg-surface-primary border border-border-default rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in text-left"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contact-modal-title"
+    >
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-elevated overflow-hidden animate-slide-up focus:outline-none"
+      >
         {/* Header */}
         <div className="px-6 py-4 border-b border-border-subtle flex items-center justify-between bg-surface-primary shrink-0">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
               İletişim Mesajı Detayı
             </span>
-            <h3 className="font-display text-lg text-text-primary font-normal truncate">
+            <h3 id="contact-modal-title" className="font-display text-lg text-text-primary font-normal truncate">
               {message.subject}
             </h3>
           </div>

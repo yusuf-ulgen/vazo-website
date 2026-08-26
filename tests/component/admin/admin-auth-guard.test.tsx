@@ -9,7 +9,7 @@ import { adminAuthService } from '@/admin/auth/admin-auth-service';
 
 describe('Admin Guard & UI Components (Phase 2.2 RBAC Integration)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('AdminGuard Component', () => {

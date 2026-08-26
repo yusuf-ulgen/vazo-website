@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/admin/ui';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminWholesaleRepository } from '../api/admin-wholesale-repository';
 import type { AdminWholesaleTier } from '../types';
 import type { AdminProduct } from '@/admin/products/types';
@@ -22,6 +23,11 @@ export const WholesaleTierModal: React.FC<WholesaleTierModalProps> = ({
 }) => {
   const { success, error: toastError } = useToast();
   const isEditing = Boolean(tier);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [productId, setProductId] = useState('');
   const [minQuantity, setMinQuantity] = useState('10');
@@ -129,7 +135,11 @@ export const WholesaleTierModal: React.FC<WholesaleTierModalProps> = ({
       aria-modal="true"
       aria-labelledby="tier-modal-title"
     >
-      <div className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-md rounded-lg overflow-hidden flex flex-col focus:outline-none"
+      >
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/30">
           <div>
             <h2 id="tier-modal-title" className="font-serif text-base font-medium text-text-primary">

@@ -94,9 +94,13 @@ describe('adminInventoryRepository (Phase 2.6)', () => {
   it('updateStock updates quantity and denies negative stock', async () => {
     mockClient.from.mockReturnValue({
       update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({
-          data: null,
-          error: null,
+        eq: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'var-1', stock_quantity: 20 },
+              error: null,
+            }),
+          }),
         }),
       }),
     } as never);

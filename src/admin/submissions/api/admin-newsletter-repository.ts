@@ -1,5 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
-import { mockNewsletterSubscriptions } from './submissions-mocks';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import type {
   AdminNewsletterSubscription,
   NewsletterFilter,
@@ -7,56 +6,19 @@ import type {
   PaginatedResult,
 } from '../types';
 
-let localSubscriptions: AdminNewsletterSubscription[] = [...mockNewsletterSubscriptions];
-
 export const adminNewsletterRepository = {
   async getNewsletterSubscriptions(
     filters: NewsletterFilter = {}
   ): Promise<PaginatedResult<AdminNewsletterSubscription>> {
+    const client = requireAdminSupabase();
+
     const page = Math.max(1, filters.page || 1);
     const pageSize = Math.max(1, filters.pageSize || 10);
     const status = filters.status || 'all';
+    const source = filters.source || 'all';
     const search = filters.search?.trim().toLowerCase();
-    const source = filters.source;
 
-    if (!isSupabaseConfigured || !supabase) {
-      let filtered = [...localSubscriptions];
-
-      if (status !== 'all') {
-        filtered = filtered.filter((s) => s.status === status);
-      }
-
-      if (source && source !== 'all') {
-        filtered = filtered.filter((s) => s.source === source);
-      }
-
-      if (search) {
-        filtered = filtered.filter((s) => s.normalized_email.toLowerCase().includes(search));
-      }
-
-      filtered.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      const totalCount = filtered.length;
-      const totalPages = Math.ceil(totalCount / pageSize) || 1;
-      const start = (page - 1) * pageSize;
-      const data = filtered.slice(start, start + pageSize);
-
-      return {
-        data,
-        totalCount,
-        page,
-        pageSize,
-        totalPages,
-      };
-    }
-
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış. Canlı mod geçerli ortam değişkenleri gerektirir.');
-    }
-
-    let query = supabase
+    let query = client
       .from('newsletter_subscriptions')
       .select('*', { count: 'exact' });
 
@@ -64,7 +26,7 @@ export const adminNewsletterRepository = {
       query = query.eq('status', status);
     }
 
-    if (source && source !== 'all') {
+    if (source !== 'all') {
       query = query.eq('source', source);
     }
 
@@ -82,7 +44,7 @@ export const adminNewsletterRepository = {
 
     if (error) {
       console.error('[adminNewsletterRepository.getNewsletterSubscriptions] Error:', error.message);
-      throw new Error(`Bülten aboneleri yüklenemedi: ${error.message}`);
+      throw new Error(`Bülten abonelikleri yüklenemedi: ${error.message}`);
     }
 
     const totalCount = count || 0;
@@ -97,60 +59,52 @@ export const adminNewsletterRepository = {
     };
   },
 
-  async updateNewsletterSubscription(
+  async updateSubscription(
     id: string,
     input: UpdateNewsletterInput
   ): Promise<AdminNewsletterSubscription> {
-    if (!isSupabaseConfigured || !supabase) {
-      const idx = localSubscriptions.findIndex((s) => s.id === id);
-      if (idx === -1) {
-        throw new Error(`Bülten abonesi bulunamadı: ${id}`);
-      }
+    const client = requireAdminSupabase();
 
-      const existing = localSubscriptions[idx]!;
-      const updated: AdminNewsletterSubscription = {
-        ...existing,
-        status: input.status !== undefined ? input.status : existing.status,
-        updated_at: new Date().toISOString(),
-      };
+    const updatePayload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (input.status !== undefined) updatePayload.status = input.status;
 
-      localSubscriptions[idx] = updated;
-      return { ...updated };
-    }
-
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('newsletter_subscriptions')
-      .update({
-        status: input.status,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('[adminNewsletterRepository.updateNewsletterSubscription] Error:', error.message);
-      throw new Error(`Abone durumu güncellenemedi: ${error.message}`);
+      console.error('[adminNewsletterRepository.updateSubscription] Error:', error.message);
+      throw new Error(`Abonelik güncellenemedi: ${error.message}`);
     }
 
     return data as AdminNewsletterSubscription;
   },
 
-  async deleteNewsletterSubscription(id: string): Promise<void> {
-    if (!isSupabaseConfigured || !supabase) {
-      localSubscriptions = localSubscriptions.filter((s) => s.id !== id);
-      return;
-    }
+  async deleteSubscription(id: string): Promise<void> {
+    const client = requireAdminSupabase();
 
-    if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase istemcisi yapılandırılmamış.');
-    }
-
-    const { error } = await supabase.from('newsletter_subscriptions').delete().eq('id', id);
+    const { error } = await client.from('newsletter_subscriptions').delete().eq('id', id);
 
     if (error) {
-      console.error('[adminNewsletterRepository.deleteNewsletterSubscription] Error:', error.message);
-      throw new Error(`Abone kaydı silinemedi: ${error.message}`);
+      console.error('[adminNewsletterRepository.deleteSubscription] Error:', error.message);
+      throw new Error(`Abonelik silinemedi: ${error.message}`);
     }
   },
+
+  async updateNewsletterSubscription(
+    id: string,
+    input: UpdateNewsletterInput
+  ): Promise<AdminNewsletterSubscription> {
+    return this.updateSubscription(id, input);
+  },
+
+  async deleteNewsletterSubscription(id: string): Promise<void> {
+    return this.deleteSubscription(id);
+  },
 };
+

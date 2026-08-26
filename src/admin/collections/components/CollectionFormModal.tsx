@@ -8,6 +8,7 @@ import {
 import { generateSlug, validateSlug } from '@/admin/categories/api/admin-category-repository';
 import { FormField, AdminInput, AdminTextarea } from '@/admin/ui/FormField';
 import { AssetUploadButton } from '@/admin/media/components/AssetUploadButton';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
 export interface CollectionFormModalProps {
   isOpen: boolean;
@@ -23,6 +24,11 @@ export function CollectionFormModal({
   collection,
 }: CollectionFormModalProps) {
   const isEditing = Boolean(collection);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -134,10 +140,12 @@ export function CollectionFormModal({
 
       {/* Modal Container */}
       <div
+        ref={containerRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="collection-modal-title"
-        className="relative w-full max-w-2xl bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left my-8"
+        className="relative w-full max-w-2xl bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left my-8 focus:outline-none"
       >
         <button
           onClick={onClose}

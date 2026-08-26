@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+      - phase-2
       - 'feat/**'
       - 'fix/**'
   pull_request:
     branches:
       - main
+      - phase-2
 
 jobs:
   quality:
@@ -47,7 +49,7 @@ jobs:
         run: npm run build
 
   database:
-    name: Database Security & RLS Verification
+    name: Database Security & Live pgTAP Verification
     runs-on: ubuntu-latest
 
     steps:
@@ -63,8 +65,22 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Validate Database Security & pgTAP Test Assertions
-        run: npm run test:db
+      - name: Validate Static Database Security Assertions
+        run: npm run test:db:static
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Disposable Supabase Database Engine
+        run: supabase start
+
+      - name: Apply Migrations & Seed Schema
+        run: supabase db reset
+
+      - name: Run Live pgTAP Test Suite
+        run: supabase test db
 
   e2e:
     name: Browser E2E & A11y Verification

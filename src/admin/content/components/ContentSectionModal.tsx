@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { FormField } from '@/admin/ui';
 import { AssetUploadButton } from '@/admin/media/components/AssetUploadButton';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import type {
   AdminContentSection,
   CreateContentSectionInput,
@@ -26,6 +27,11 @@ export function ContentSectionModal({
   onClose,
   onSave,
 }: ContentSectionModalProps) {
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
+
   const [sectionKey, setSectionKey] = useState('');
   const [eyebrow, setEyebrow] = useState('');
   const [title, setTitle] = useState('');
@@ -129,12 +135,21 @@ export function ContentSectionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in text-left">
-      <div className="relative w-full max-w-2xl bg-surface-primary rounded-xl shadow-elevated border border-border-default overflow-hidden flex flex-col max-h-[90vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in text-left"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="content-section-modal-title"
+    >
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="relative w-full max-w-2xl bg-surface-primary rounded-xl shadow-elevated border border-border-default overflow-hidden flex flex-col max-h-[90vh] focus:outline-none"
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/40">
           <div>
-            <h2 className="text-base font-semibold text-text-primary">
+            <h2 id="content-section-modal-title" className="text-base font-semibold text-text-primary">
               {section ? 'İçerik Bölümünü Düzenle' : 'Yeni İçerik Bölümü Ekle'}
             </h2>
             <p className="text-xs text-text-muted mt-0.5">

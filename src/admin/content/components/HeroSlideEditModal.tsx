@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { FormField, AdminInput, AdminTextarea, AdminSelect, useToast } from '@/admin/ui';
 import { AssetUploadButton } from '@/admin/media/components/AssetUploadButton';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { adminContentRepository } from '../api/admin-content-repository';
 import type { AdminHeroSlide, HeroSlot } from '../types';
 
@@ -14,7 +15,11 @@ interface HeroSlideEditModalProps {
 
 export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSlideEditModalProps) {
   const { success, error: toastError } = useToast();
-  const modalRef = useRef<HTMLDivElement>(null);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [slot, setSlot] = useState<HeroSlot>('retail');
   const [eyebrow, setEyebrow] = useState('');
@@ -53,15 +58,6 @@ export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSl
     }
     setErrors({});
   }, [slide, isOpen]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -123,11 +119,12 @@ export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSl
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-xs" onClick={onClose} />
       <div
-        ref={modalRef}
+        ref={containerRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="hero-modal-title"
-        className="relative w-full max-w-lg bg-surface-primary border border-border-default shadow-elevated z-10 flex flex-col max-h-[90vh] rounded-lg overflow-hidden animate-fade-scale text-left"
+        className="relative w-full max-w-lg bg-surface-primary border border-border-default shadow-elevated z-10 flex flex-col max-h-[90vh] rounded-lg overflow-hidden animate-fade-scale text-left focus:outline-none"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-default bg-surface-secondary/50">

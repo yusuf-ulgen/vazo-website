@@ -1,7 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { adminAuditRepository } from '@/admin/audit/api/admin-audit-repository';
+import * as supabaseModule from '@/shared/lib/supabase';
+import { createMockSupabaseClient } from '../../mocks/supabase-mock';
+import { mockAuditLogs } from '@/admin/audit/api/audit-mocks';
 
 describe('adminAuditRepository', () => {
+  beforeEach(() => {
+    const mockClient = createMockSupabaseClient({
+      admin_audit_logs: { data: mockAuditLogs, error: null },
+    });
+    vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
+    vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
+  });
+
   it('returns paginated audit logs', async () => {
     const result = await adminAuditRepository.getAuditLogs({ page: 1, pageSize: 3 });
     expect(result.data.length).toBeLessThanOrEqual(3);

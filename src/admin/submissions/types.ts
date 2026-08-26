@@ -38,7 +38,8 @@ export interface AdminTradeApplication {
   phone: string;
   website: string | null;
   estimated_monthly_volume: string | null;
-  notes: string | null;
+  customer_message: string | null;
+  notes?: string | null;
   status: TradeApplicationStatus;
   admin_notes: string | null;
   submitted_at: string;

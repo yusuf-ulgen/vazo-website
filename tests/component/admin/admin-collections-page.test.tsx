@@ -53,7 +53,7 @@ function renderCollectionsPage() {
 
 describe('AdminCollectionsPage Component (Phase 2.4)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders collection list with headers, records, and star icon for featured item', async () => {

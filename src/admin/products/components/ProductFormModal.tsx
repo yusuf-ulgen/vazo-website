@@ -3,6 +3,7 @@ import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/admin/ui';
 import { adminProductRepository } from '../api/admin-product-repository';
 import { generateSlug } from '@/admin/categories/api/admin-category-repository';
+import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { ProductFormGeneralTab } from './ProductFormGeneralTab';
 import { ProductFormPricingTab } from './ProductFormPricingTab';
 import { ProductFormRelationsTab } from './ProductFormRelationsTab';
@@ -33,6 +34,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 }) => {
   const { success, error: toastError } = useToast();
   const isEditing = Boolean(initialData);
+
+  const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose,
+  });
 
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -265,7 +271,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       aria-modal="true"
       aria-labelledby="product-modal-title"
     >
-      <div className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-2xl max-h-[90vh] flex flex-col my-8 rounded-lg overflow-hidden">
+      <div
+        ref={containerRef}
+        tabIndex={-1}
+        className="bg-surface-primary border border-border-default shadow-elevated w-full max-w-2xl max-h-[90vh] flex flex-col my-8 rounded-lg overflow-hidden focus:outline-none"
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-secondary/30">
           <div>

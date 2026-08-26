@@ -7,7 +7,7 @@ import { adminNavigationRepository } from '@/admin/navigation/api/admin-navigati
 
 describe('AdminNavigationTab Component (Phase 2.9)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   const renderComponent = () =>

@@ -133,7 +133,7 @@ function renderProductsPage() {
 
 describe('AdminProductsPage Component (Phase 2.5)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
     vi.spyOn(adminCategoryRepository, 'getAllCategories').mockResolvedValue(mockCategoriesList);
     vi.spyOn(adminCollectionRepository, 'getAllCollections').mockResolvedValue(mockCollectionsList);
   });

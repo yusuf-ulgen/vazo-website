@@ -49,7 +49,7 @@ function renderCategoriesPage() {
 
 describe('AdminCategoriesPage Component (Phase 2.4)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders category list with table headers, records, and status badges', async () => {
