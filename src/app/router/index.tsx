@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import {
   Inbox,
-  Settings,
 } from 'lucide-react';
 import { SiteLayout } from '@/site/layouts/SiteLayout';
 import { HomePage } from '@/site/pages/HomePage';
@@ -63,6 +62,9 @@ const AdminWholesalePage = React.lazy(() =>
 );
 const AdminContentPage = React.lazy(() =>
   import('@/admin/content/pages/AdminContentPage').then((m) => ({ default: m.AdminContentPage }))
+);
+const AdminSettingsPage = React.lazy(() =>
+  import('@/admin/settings/pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage }))
 );
 
 const adminFallback = (
@@ -293,17 +295,7 @@ export const router = createBrowserRouter([
         path: 'settings',
         element: (
           <Suspense fallback={adminFallback}>
-            <AdminModuleScaffoldPage
-              moduleName="Sistem & Stüdyo Ayarları"
-              moduleCode="MOD-SET-09"
-              description="Stüdyo iletişim bilgileri, adres, çalışma saatleri ve genel e-ticaret parametreleri."
-              icon={Settings}
-              plannedFeatures={[
-                'Stüdyo iletişim ve fatura bilgileri',
-                'Varsayılan kargo ve teslimat parametreleri',
-                'Sosyal medya hesap bağlantıları',
-              ]}
-            />
+            <AdminSettingsPage />
           </Suspense>
         ),
       },

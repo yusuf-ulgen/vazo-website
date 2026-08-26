@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Mail } from 'lucide-react';
-import { siteConfig } from '@/shared/config/site-config';
 import { usePolicyDrawer } from '@/shared/stores/policy-drawer-store';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 
 export function SiteFooter() {
   const { open: openPolicy } = usePolicyDrawer();
+  const { settings } = useSiteSettings();
 
   return (
     <footer className="bg-canvas-warm border-t border-border-default pt-10 pb-8 text-xs font-sans text-text-secondary">
@@ -17,44 +18,50 @@ export function SiteFooter() {
               to="/"
               className="font-display text-2xl md:text-3xl tracking-widest uppercase text-text-primary block"
             >
-              {siteConfig.name}
+              {settings.general.brandName}
             </Link>
             <p className="text-xs max-w-sm leading-relaxed text-text-secondary font-normal">
-              {siteConfig.description}
+              {settings.general.description}
             </p>
             <div className="pt-1 text-xs space-y-1 text-text-secondary">
-              <p>📍 {siteConfig.contact.address}</p>
-              <p>📞 {siteConfig.contact.phone}</p>
-              <p>✉️ {siteConfig.contact.email}</p>
+              <p>📍 {settings.contact.address}</p>
+              <p>📞 {settings.contact.phone}</p>
+              <p>✉️ {settings.contact.email}</p>
             </div>
 
             {/* Social Links */}
             <div className="flex items-center gap-2.5 pt-1">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="Instagram"
-                className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
-              >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="Facebook"
-                className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
-              >
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href={`mailto:${siteConfig.contact.email}`}
-                aria-label="E-Posta"
-                className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
-              >
-                <Mail className="w-3.5 h-3.5" />
-              </a>
+              {settings.social.instagram && (
+                <a
+                  href={settings.social.instagram}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="Instagram"
+                  className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {settings.social.facebook && (
+                <a
+                  href={settings.social.facebook}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="Facebook"
+                  className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
+                >
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {settings.contact.email && (
+                <a
+                  href={`mailto:${settings.contact.email}`}
+                  aria-label="E-Posta"
+                  className="w-7 h-7 rounded-full bg-surface-primary border border-border-default flex items-center justify-center text-text-primary hover:text-text-secondary transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -152,7 +159,7 @@ export function SiteFooter() {
 
         {/* Bottom Legal Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-muted">
-          <p>© {new Date().getFullYear()} {siteConfig.name}. Tüm hakları saklıdır.</p>
+          <p>© {new Date().getFullYear()} {settings.general.brandName}. Tüm hakları saklıdır.</p>
           <div className="flex flex-wrap items-center justify-center gap-6">
             <button
               type="button"

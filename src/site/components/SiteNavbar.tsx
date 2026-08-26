@@ -8,10 +8,10 @@ import {
   ShoppingBag,
   ChevronDown,
 } from 'lucide-react';
-import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useCart } from '@/shared/stores/cart-store';
 import { useAuth } from '@/shared/stores/auth-store';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 import { PerakendeMegaMenu } from './PerakendeMegaMenu';
 import { ToptanMegaMenu } from './ToptanMegaMenu';
 import { MobileNavDrawer } from './MobileNavDrawer';
@@ -30,6 +30,7 @@ export function SiteNavbar() {
   const { count: wishlistCount } = useWishlist();
   const { totalItems: cartCount } = useCart();
   const { user, isAdmin } = useAuth();
+  const { settings } = useSiteSettings();
 
   const handleMouseEnter = (menu: 'perakende' | 'toptan') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -79,7 +80,7 @@ export function SiteNavbar() {
                 to="/"
                 className="font-display text-2xl md:text-3xl tracking-widest uppercase font-normal text-text-primary"
               >
-                {siteConfig.name}
+                {settings.general.brandName}
               </Link>
             </div>
 

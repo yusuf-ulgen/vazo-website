@@ -15,6 +15,7 @@ import { MegaMenuData, perakendeMegaMenuData, toptanMegaMenuData } from '@/share
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 
 export interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
   const [retailMenu, setRetailMenu] = useState<MegaMenuData>(perakendeMegaMenuData);
   const [wholesaleMenu, setWholesaleMenu] = useState<MegaMenuData>(toptanMegaMenuData);
   const { count: wishlistCount } = useWishlist();
+  const { settings } = useSiteSettings();
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
     isOpen,
@@ -63,7 +65,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border-default">
             <span className="font-display text-xl tracking-wider text-text-primary uppercase">
-              {siteConfig.name}
+              {settings.general.brandName}
             </span>
             <button
               type="button"

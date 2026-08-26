@@ -25,7 +25,8 @@ describe('AdminContentPage Component (Phase 2.8)', () => {
     await waitFor(() => {
       expect(screen.getByText('İçerik & Vitrin Yönetimi (CMS)')).toBeInTheDocument();
       expect(screen.getByText('Split Hero Vitrini')).toBeInTheDocument();
-      expect(screen.getByText('Ticari Avantajlar (Wholesale Benefits)')).toBeInTheDocument();
+      expect(screen.getByText('Ticari Avantajlar')).toBeInTheDocument();
+      expect(screen.getByText('Gezinme Menüleri')).toBeInTheDocument();
     });
 
     expect(screen.getByRole('button', { name: /Yeni Hero Ekle/i })).toBeInTheDocument();

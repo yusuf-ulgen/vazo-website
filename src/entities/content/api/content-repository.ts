@@ -5,16 +5,18 @@ import {
   HeroSlide,
   SplitHeroConfig,
   WholesaleBenefit,
+  MenuGroup,
+  MenuItem,
+  MenuType,
 } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
-import { siteConfig } from '@/shared/config/site-config';
 import {
   MegaMenuData,
   perakendeMegaMenuData,
   toptanMegaMenuData,
 } from '@/shared/mocks/navigation';
 
-export type { WholesaleBenefit };
+export type { WholesaleBenefit, MenuGroup, MenuItem, MenuType };
 
 export interface TradeApplicationPayload {
   companyName: string;
@@ -45,127 +47,14 @@ export interface NewsletterSubscriptionPayload {
   company_website_confirm?: string;
 }
 
-const mockAnnouncement: AnnouncementBarConfig = {
-  isEnabled: true,
-  message: siteConfig.announcement.text,
-  linkText: siteConfig.announcement.actionText,
-  linkUrl: siteConfig.announcement.actionUrl,
-};
-
-const mockHero: HeroBannerConfig = {
-  title: 'Sessizliğin ve Ham Dokunun Mimari Formu',
-  subtitle: 'Modern formlar. Zamansız dokunuşlar.',
-  description:
-    'İskandinav yalınlığı ile el işçiliği seramik zanaatını buluşturan koleksiyonumuz; yaşam alanları ve mimari projeler için heykelsi bir dinginlik sunar.',
-  imageUrl:
-    'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=1200&q=85',
-  primaryCtaText: 'Alışverişe Başla',
-  primaryCtaUrl: '/products',
-  secondaryCtaText: 'Toptan Satış',
-  secondaryCtaUrl: '/wholesale',
-};
-
-const mockSplitHero: SplitHeroConfig = {
-  retail: {
-    id: 'h0000000-0000-0000-0000-000000000001',
-    eyebrow: 'BİREYSEL ALIŞVERİŞ',
-    title: 'Perakende',
-    subtitle: null,
-    description: 'Evinize estetik dokunuşlar katacak vazo koleksiyonlarımızı keşfedin.',
-    imageUrl: '/images/hero-retail.jpg',
-    primaryCtaText: 'Alışverişe Başla',
-    primaryCtaUrl: '/products',
-    secondaryCtaText: null,
-    secondaryCtaUrl: null,
-    slot: 'retail',
-    sortOrder: 1,
-    active: true,
-  },
-  wholesale: {
-    id: 'h0000000-0000-0000-0000-000000000002',
-    eyebrow: 'PROFESYONEL ALIŞVERİŞ',
-    title: 'Toptan',
-    subtitle: null,
-    description: 'Projeleriniz için özel fiyatlar, geniş ürün seçeneği ve profesyonel destek alın.',
-    imageUrl: '/images/hero-wholesale.jpg',
-    primaryCtaText: 'Toptan Alışverişe Geç',
-    primaryCtaUrl: '/wholesale',
-    secondaryCtaText: null,
-    secondaryCtaUrl: null,
-    slot: 'wholesale',
-    sortOrder: 2,
-    active: true,
-  },
-};
-
-const mockEditorialSections: EditorialSectionConfig[] = [
-  {
-    id: 'e0000000-0000-0000-0000-000000000001',
-    eyebrow: 'Yeni Koleksiyon',
-    title: 'Formun sadeliği, mekâna anlam katar.',
-    description:
-      'Zamana meydan okuyan tasarımları ve doğal mineral malzemeleri buluşturarak yaşam alanlarınıza sade ve güçlü bir estetik kazandırıyoruz.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1000&q=85',
-    imagePosition: 'left',
-    ctaText: 'Keşfet',
-    ctaUrl: '/collections/nordik-sessizlik',
-  },
-  {
-    id: 'e0000000-0000-0000-0000-000000000002',
-    eyebrow: 'El Yapımı Seramik',
-    title: 'Doğadan ilham alan özgün tasarımlar.',
-    description:
-      'Her bir parça, usta ellerde el tornasında şekillenir ve 1250°C fırınlama ile kendine has yüzey dokusu ve ton farklılıklarına kavuşur.',
-    imageUrl:
-      'https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=1000&q=85',
-    imagePosition: 'right',
-    ctaText: 'Koleksiyonu İncele',
-    ctaUrl: '/products',
-  },
-];
-
-const mockWholesaleBenefits: WholesaleBenefit[] = [
-  {
-    id: 'w0000000-0000-0000-0000-000000000001',
-    title: 'İç Mimarlar & Projelere Özel',
-    description: 'Otel, restoran, lobi ve konut projeleri için özel hacim iskontoları ve numune desteği.',
-    iconName: 'Building2',
-    order: 1,
-  },
-  {
-    id: 'w0000000-0000-0000-0000-000000000002',
-    title: 'Düşük Minimum Sipariş (MOQ)',
-    description: 'Model başına 3-6 adet arası düşük MOQ ile butik mağazalar için esnek stok yönetimi.',
-    iconName: 'PackageCheck',
-    order: 2,
-  },
-  {
-    id: 'w0000000-0000-0000-0000-000000000003',
-    title: 'Özel Sır & Renk Üretimi',
-    description: 'Büyük ölçekli mimari projeler için RAL/Pantone uyumlu özel mineral sır geliştirme.',
-    iconName: 'Palette',
-    order: 3,
-  },
-  {
-    id: 'w0000000-0000-0000-0000-000000000004',
-    title: 'Güvenli Sandıklı Lojistik',
-    description: 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.',
-    iconName: 'Truck',
-    order: 4,
-  },
-];
-
-const emptyMegaMenu: MegaMenuData = {
-  groups: [],
-  promo: {
-    title: '',
-    subtitle: '',
-    imageUrl: '',
-    ctaText: 'Keşfet',
-    ctaHref: '/products',
-  },
-};
+import {
+  mockAnnouncement,
+  mockHero,
+  mockSplitHero,
+  mockEditorialSections,
+  mockWholesaleBenefits,
+  emptyMegaMenu,
+} from './content-mocks';
 
 export const contentRepository = {
   async getAnnouncement(): Promise<AnnouncementBarConfig | null> {
@@ -419,6 +308,118 @@ export const contentRepository = {
       : emptyMegaMenu.promo;
 
     return { groups, promo };
+  },
+
+  async getNavMenu(menuType: MenuType): Promise<MenuGroup[]> {
+    if (isStorefrontMockEnabled) {
+      if (menuType === 'primary') {
+        return [
+          {
+            id: 'mock-primary-group',
+            menuType: 'primary',
+            title: 'Ana Menü',
+            sortOrder: 1,
+            active: true,
+            items: [
+              { id: 'p1', groupId: 'mock-primary-group', label: 'Yeni', href: '/new', isNew: false, isPopular: false, sortOrder: 1, active: true },
+              { id: 'p2', groupId: 'mock-primary-group', label: 'Perakende', href: '/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
+              { id: 'p3', groupId: 'mock-primary-group', label: 'Toptan', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 3, active: true },
+              { id: 'p4', groupId: 'mock-primary-group', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
+              { id: 'p5', groupId: 'mock-primary-group', label: 'Hakkımızda', href: '/about', isNew: false, isPopular: false, sortOrder: 5, active: true },
+              { id: 'p6', groupId: 'mock-primary-group', label: 'İletişim', href: '/contact', isNew: false, isPopular: false, sortOrder: 6, active: true },
+            ],
+          },
+        ];
+      }
+      if (menuType === 'footer') {
+        return [
+          {
+            id: 'mock-f1',
+            menuType: 'footer',
+            title: 'Alışveriş',
+            sortOrder: 1,
+            active: true,
+            items: [
+              { id: 'f1-1', groupId: 'mock-f1', label: 'Tüm Modeller', href: '/products', isNew: false, isPopular: false, sortOrder: 1, active: true },
+              { id: 'f1-2', groupId: 'mock-f1', label: 'Yeni Gelenler', href: '/new', isNew: false, isPopular: false, sortOrder: 2, active: true },
+              { id: 'f1-3', groupId: 'mock-f1', label: 'Çok Satanlar', href: '/bestsellers', isNew: false, isPopular: false, sortOrder: 3, active: true },
+              { id: 'f1-4', groupId: 'mock-f1', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
+            ],
+          },
+          {
+            id: 'mock-f2',
+            menuType: 'footer',
+            title: 'Toptan',
+            sortOrder: 2,
+            active: true,
+            items: [
+              { id: 'f2-1', groupId: 'mock-f2', label: 'Toptan Satışımız', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 1, active: true },
+              { id: 'f2-2', groupId: 'mock-f2', label: 'Toptan Kataloğu', href: '/wholesale/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
+              { id: 'f2-3', groupId: 'mock-f2', label: 'Nasıl Çalışır?', href: '/wholesale/how-it-works', isNew: false, isPopular: false, sortOrder: 3, active: true },
+              { id: 'f2-4', groupId: 'mock-f2', label: 'Ticari Hesap Başvurusu', href: '/wholesale/apply', isNew: false, isPopular: false, sortOrder: 4, active: true },
+            ],
+          },
+          {
+            id: 'mock-f3',
+            menuType: 'footer',
+            title: 'Müşteri Deneyimi',
+            sortOrder: 3,
+            active: true,
+            items: [
+              { id: 'f3-1', groupId: 'mock-f3', label: 'Hakkımızda & Zanaat', href: '/about', isNew: false, isPopular: false, sortOrder: 1, active: true },
+              { id: 'f3-2', groupId: 'mock-f3', label: 'İletişim & Showroom', href: '/contact', isNew: false, isPopular: false, sortOrder: 2, active: true },
+              { id: 'f3-3', groupId: 'mock-f3', label: 'Sıkça Sorulan Sorular', href: '/faq', isNew: false, isPopular: false, sortOrder: 3, active: true },
+              { id: 'f3-4', groupId: 'mock-f3', label: 'Kargo & İade Koşulları', href: '#policy-shipping', isNew: false, isPopular: false, sortOrder: 4, active: true },
+            ],
+          },
+        ];
+      }
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+    }
+
+    const { data, error } = await supabase
+      .from('menu_groups')
+      .select(`
+        *,
+        menu_items (*)
+      `)
+      .eq('menu_type', menuType)
+      .eq('active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error(`[contentRepository.getNavMenu:${menuType}] Live Supabase error:`, error.message);
+      throw new Error(`Failed to fetch navigation menu from Supabase: ${error.message}`);
+    }
+
+    return (data || []).map((g) => ({
+      id: g.id,
+      menuType: g.menu_type,
+      title: g.title,
+      promoTitle: g.promo_title,
+      promoSubtitle: g.promo_subtitle,
+      promoImageUrl: g.promo_image_url,
+      promoCtaText: g.promo_cta_text,
+      promoCtaUrl: g.promo_cta_url,
+      sortOrder: g.sort_order,
+      active: g.active,
+      items: (g.menu_items || [])
+        .filter((item: { active: boolean }) => item.active)
+        .sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+        .map((item: { id: string; group_id: string; label: string; href: string; is_new: boolean; is_popular: boolean; sort_order: number; active: boolean }) => ({
+          id: item.id,
+          groupId: item.group_id,
+          label: item.label,
+          href: item.href,
+          isNew: item.is_new,
+          isPopular: item.is_popular,
+          sortOrder: item.sort_order,
+          active: item.active,
+        })),
+    }));
   },
 
   async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {

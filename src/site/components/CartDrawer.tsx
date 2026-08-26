@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
 import { formatCurrency } from '@/shared/lib/formatters';
-import { siteConfig } from '@/shared/config/site-config';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 import { QuantitySelector } from '@/shared/ui/QuantitySelector';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 
@@ -12,6 +12,7 @@ export interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const { settings } = useSiteSettings();
   const {
     items,
     totalItems,
@@ -180,7 +181,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <div className="flex justify-between text-text-secondary">
                 <span>Tahmini Kargo</span>
                 <span className="text-text-primary">
-                  {isFreeShipping ? 'Ücretsiz' : siteConfig.commerce.shippingEstimateText}
+                  {isFreeShipping ? 'Ücretsiz' : settings.commerce.shippingEstimateText}
                 </span>
               </div>
               <div className="flex justify-between text-sm font-semibold text-text-primary pt-2 border-t border-border-subtle">
@@ -202,7 +203,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                <span>{siteConfig.commerce.shippingSummary}</span>
+                <span>{settings.commerce.shippingSummary}</span>
               </div>
             </div>
           </div>

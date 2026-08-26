@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { MapPin, Mail, Phone, Clock, ArrowRight, CheckCircle2, AlertCircle, RefreshCcw } from 'lucide-react';
-import { siteConfig } from '@/shared/config/site-config';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 import { contentRepository } from '@/entities/content/api/content-repository';
 
 export function ContactPage() {
+  const { settings } = useSiteSettings();
+
   useSEO({
     title: 'İletişim & Showroom',
     description: 'Vazo Studio showroom adresi, müşteri destek hattı, toptan randevu ve iletişim formu.',
@@ -194,7 +196,7 @@ export function ContactPage() {
                   <MapPin className="w-4 h-4 text-text-primary shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-text-primary">Showroom Adresi:</strong>
-                    <span className="text-text-secondary">{siteConfig.contact.address}</span>
+                    <span className="text-text-secondary">{settings.contact.address}</span>
                   </div>
                 </div>
 
@@ -202,8 +204,8 @@ export function ContactPage() {
                   <Mail className="w-4 h-4 text-text-primary shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-text-primary">E-Posta:</strong>
-                    <a href={`mailto:${siteConfig.contact.email}`} className="text-text-secondary hover:underline">
-                      {siteConfig.contact.email}
+                    <a href={`mailto:${settings.contact.email}`} className="text-text-secondary hover:underline">
+                      {settings.contact.email}
                     </a>
                   </div>
                 </div>
@@ -212,7 +214,7 @@ export function ContactPage() {
                   <Phone className="w-4 h-4 text-text-primary shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-text-primary">Telefon & WhatsApp:</strong>
-                    <span className="text-text-secondary">{siteConfig.contact.phone}</span>
+                    <span className="text-text-secondary">{settings.contact.phone}</span>
                   </div>
                 </div>
 
@@ -220,7 +222,7 @@ export function ContactPage() {
                   <Clock className="w-4 h-4 text-text-primary shrink-0 mt-0.5" />
                   <div>
                     <strong className="block text-text-primary">Çalışma Saatleri:</strong>
-                    <span className="text-text-secondary">Pazartesi – Cumartesi: 10:00 – 19:00 (Pazar Kapalı)</span>
+                    <span className="text-text-secondary">{settings.contact.businessHours}</span>
                   </div>
                 </div>
               </div>

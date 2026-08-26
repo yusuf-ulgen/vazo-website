@@ -65,3 +65,31 @@ export interface EditorialSectionConfig {
   ctaText: string;
   ctaUrl: string;
 }
+
+export type MenuType = 'retail_mega' | 'wholesale_mega' | 'primary' | 'footer';
+
+export interface MenuItem {
+  id: string;
+  groupId: string;
+  label: string;
+  href: string;
+  isNew: boolean;
+  isPopular: boolean;
+  sortOrder: number;
+  active: boolean;
+}
+
+export interface MenuGroup {
+  id: string;
+  menuType: MenuType;
+  title: string;
+  promoTitle?: string | null;
+  promoSubtitle?: string | null;
+  promoImageUrl?: string | null;
+  promoCtaText?: string | null;
+  promoCtaUrl?: string | null;
+  sortOrder: number;
+  active: boolean;
+  items: MenuItem[];
+}
+

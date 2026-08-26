@@ -9,6 +9,7 @@ import {
   Image as ImageIcon,
   Layers,
   Sparkles,
+  Menu as MenuIcon,
 } from 'lucide-react';
 import {
   AdminPageHeader,
@@ -19,13 +20,14 @@ import {
 import { adminContentRepository } from '../api/admin-content-repository';
 import { HeroSlideEditModal } from '../components/HeroSlideEditModal';
 import { WholesaleBenefitModal } from '../components/WholesaleBenefitModal';
+import { AdminNavigationTab } from '@/admin/navigation/components/AdminNavigationTab';
 import { COMMERCIAL_BENEFIT_ICONS } from '@/site/components/home/commercial-benefit-icons';
 import type { AdminHeroSlide, AdminWholesaleBenefit } from '../types';
 
 export function AdminContentPage() {
   const { success, error: toastError } = useToast();
 
-  const [activeTab, setActiveTab] = useState<'hero' | 'benefits'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'benefits' | 'navigation'>('hero');
   const [heroSlides, setHeroSlides] = useState<AdminHeroSlide[]>([]);
   const [benefits, setBenefits] = useState<AdminWholesaleBenefit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -122,43 +124,45 @@ export function AdminContentPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="İçerik & Vitrin Yönetimi (CMS)"
-        description="Ana sayfa Split Hero vitrinleri ve ticari avantajlar (Wholesale Benefits) yönetimi."
+        description="Ana sayfa Split Hero vitrinleri, ticari avantajlar ve gezinme menüleri yönetimi."
         actions={
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={loadData}
-              className="p-2 rounded border border-border-default bg-surface-primary text-text-secondary hover:text-text-primary transition-colors"
-              title="Yenile"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            {activeTab === 'hero' ? (
+          activeTab !== 'navigation' ? (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setEditingHeroSlide(null);
-                  setIsHeroModalOpen(true);
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle"
+                onClick={loadData}
+                className="p-2 rounded border border-border-default bg-surface-primary text-text-secondary hover:text-text-primary transition-colors"
+                title="Yenile"
               >
-                <Plus className="w-4 h-4" />
-                <span>Yeni Hero Ekle</span>
+                <RefreshCw className="w-4 h-4" />
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingBenefit(null);
-                  setIsBenefitModalOpen(true);
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Yeni Avantaj Ekle</span>
-              </button>
-            )}
-          </div>
+              {activeTab === 'hero' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingHeroSlide(null);
+                    setIsHeroModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Yeni Hero Ekle</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingBenefit(null);
+                    setIsBenefitModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Yeni Avantaj Ekle</span>
+                </button>
+              )}
+            </div>
+          ) : null
         }
       />
 
@@ -187,12 +191,26 @@ export function AdminContentPage() {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Ticari Avantajlar (Wholesale Benefits)</span>
+            <span>Ticari Avantajlar</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('navigation')}
+            className={`pb-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${
+              activeTab === 'navigation'
+                ? 'border-accent-primary text-accent-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            <MenuIcon className="w-3.5 h-3.5" />
+            <span>Gezinme Menüleri</span>
           </button>
         </nav>
       </div>
 
-      {isLoading ? (
+      {activeTab === 'navigation' ? (
+        <AdminNavigationTab />
+      ) : isLoading ? (
         <div className="p-12 text-center text-xs text-text-muted">
           İçerikler yükleniyor...
         </div>
