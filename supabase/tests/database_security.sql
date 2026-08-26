@@ -218,11 +218,12 @@ SELECT throws_ok(
     'Anonymous execution of parameterized get_admin_role(UUID) is revoked (enumeration blocked)'
 );
 
--- Parameterless get_admin_role() returns NULL for anon
-SELECT is(
-    public.get_admin_role(),
-    NULL::text,
-    'Parameterless public.get_admin_role() returns NULL for anonymous visitor'
+-- Parameterless get_admin_role() is also revoked for anon
+SELECT throws_ok(
+    $$ SELECT public.get_admin_role() $$,
+    '42501',
+    NULL,
+    'Anonymous execution of public.get_admin_role() is revoked'
 );
 
 -- Direct execution of internal check by non-admin returns false without leaking presence
