@@ -84,12 +84,12 @@ This document records the foundational architectural decisions for the **Vazo E-
 
 ## ADR-007: Backend, Database, and Payment Provider Selection Deferred
 
-- **Status**: Superseded by ADR-009 (for Database & Backend Platform)
-- **Date**: 2026-08-21 (Superseded 2026-08-21)
+- **Status**: Superseded by ADR-009 (for Database & Backend Platform) and ADR-010 (for Payment Provider)
+- **Date**: 2026-08-21 (Superseded 2026-08-21, 2026-08-28)
 - **Context**: The backend infrastructure was initially deferred during Phase 0 foundation.
-- **Decision**: Replaced by ADR-009 which selects Supabase. Payment provider remains undecided.
+- **Decision**: Replaced by ADR-009 which selects Supabase, and ADR-010 which selects PayTR.
 - **Consequences**: Retained in ADR log for complete historical traceability.
-- **Verification**: Cross-referenced with ADR-009.
+- **Verification**: Cross-referenced with ADR-009 and ADR-010.
 
 ---
 
@@ -108,7 +108,7 @@ This document records the foundational architectural decisions for the **Vazo E-
 
 ## ADR-009: Supabase Platform Selection (Database, Data API, Auth, Storage, Edge Functions)
 
-- **Status**: Approved
+- **Status**: Approved (Payment Gateway component superseded by ADR-010)
 - **Date**: 2026-08-21
 - **Context**: The storefront requires a robust PostgreSQL database, client Data API, and future Auth/Storage infrastructure without spinning up custom Node backend servers in early phases.
 - **Decision**: Select **Supabase** as the primary platform:
@@ -117,8 +117,69 @@ This document records the foundational architectural decisions for the **Vazo E-
   3. Mandatory Row Level Security (RLS) on all exposed tables with strict anonymous read-only access for published records.
   4. Repository / data adapter abstraction (`src/entities/*/api/`) so presentation components never invoke raw `supabase.from(...)`.
   5. Service-role secrets (`sb_secret_*`) are strictly forbidden in client-side code.
-  6. Payment gateway selection (Stripe, iyzico, PayTR) remains deferred as a pending architectural decision.
+  6. Payment gateway selection is resolved in ADR-010 (PayTR).
 - **Consequences**:
   - Positive: Fast relational queries, out-of-the-box RLS, declarative migrations, seamless future Auth integration.
   - Negative: Requires disciplined query adapter boundary and strict RLS policy auditing.
 - **Verification**: Verified via `supabase/migrations/`, `src/shared/lib/supabase.ts`, and `docs/SECURITY.md`.
+
+---
+
+## ADR-010: PayTR Selected as Primary Payment Gateway
+
+- **Status**: Approved
+- **Date**: 2026-08-28
+- **Context**: E-commerce storefront checkout requires a secure, localized, and reliable payment solution in Turkey with future multi-currency readiness. Installment complexity is not required for V1 artisanal ceramics.
+- **Decision**: Select **PayTR** as the primary payment gateway using inline iFrame integration (`no_installment = 1`). Hosted redirect is reserved only as documented emergency fallback. The integration uses server-side Supabase Edge Functions for token initialization and HMAC webhook signature verification.
+- **Consequences**:
+  - Positive: Seamless inline checkout UX (customer stays on `https://shop.monocactus.com`), zero PAN/CVV handling on client, robust server-side fraud prevention.
+  - Negative: Requires secure Edge Function secrets (`merchant_id`, `merchant_key`, `merchant_salt`) and dedicated webhook callback endpoint returning exact string `OK`.
+- **Verification**: Verified via `docs/PAYMENTS.md` and automated callback verification test suites.
+
+---
+
+## ADR-011: Authenticated Customer Checkout via Supabase Auth & Google OAuth
+
+- **Status**: Approved
+- **Date**: 2026-08-28
+- **Context**: High-value designer ceramic orders require verified customer identities, contact traceability, and order history tracking. Guest checkout creates orphaned orders and complicates customer support.
+- **Decision**: Disable guest checkout. Require all customers to authenticate via Supabase Auth using **Google OAuth** before completing checkout. The customer cart is preserved in local storage across the OAuth redirect cycle. Customer authentication is strictly isolated from Admin RBAC (`admin_users`).
+- **Consequences**:
+  - Positive: Clean customer identification, zero duplicate fake guest accounts, seamless one-click Google login, customer/admin separation.
+  - Negative: Users without Google accounts or who refuse sign-in cannot purchase (accepted product decision for V1).
+  - Verification: Verified via `docs/CUSTOMER_AUTH.md` and storefront authentication route guards.
+
+---
+
+## ADR-012: KDV-Inclusive Canonical Pricing and Currency-Ready Money Architecture
+
+- **Status**: Approved
+- **Date**: 2026-08-28
+- **Context**: Turkish consumer law and luxury retail UX mandate that displayed prices reflect the total price paid by the customer. Adding +20% VAT at checkout causes cart abandonment. In addition, floating-point arithmetic in JavaScript leads to rounding discrepancies.
+- **Decision**:
+  1. All catalog retail and wholesale prices are canonical **KDV-inclusive consumer prices** (`tax_included = true`). No tax surcharge is added at checkout.
+  2. Model monetary amounts using integer minor units (kuruş/cents) at provider boundaries and PostgreSQL `NUMERIC(12,2)` in persistence.
+  3. Enable **TRY** as active V1 currency, while architecting schemas and domain models to be future-ready for **USD**, **EUR**, and **GBP**.
+  4. Implement currency mapping as a provider boundary adapter (e.g. App `TRY` -> PayTR `TL`).
+- **Consequences**:
+  - Positive: Transparent checkout pricing, zero float rounding errors, legally compliant consumer pricing, future multi-currency readiness.
+  - Negative: Tax breakdowns for accounting/invoices must be extracted backwards from the gross price (`price - (price / 1.20)`).
+- **Verification**: Verified via `src/entities/order/` and checkout mathematical test suites.
+
+---
+
+## ADR-013: Server-Authoritative Payment/Callback Boundary and Zero Client Trust
+
+- **Status**: Approved
+- **Date**: 2026-08-28
+- **Context**: Client-side checkout payloads can be tampered with by malicious actors to forge product prices, shipping fees, wholesale tier eligibility, or payment status.
+- **Decision**:
+  1. Never trust browser prices, totals, or payment tokens. All order amounts and wholesale MOQ rules are recalculated server-side in Supabase Edge Functions directly from the database.
+  2. Client redirect URLs (`merchant_ok_url`, `merchant_fail_url`) are strictly **display-only** and have zero authority to mark orders as paid.
+  3. The PayTR server-to-server webhook callback is the **sole authority** for payment confirmation.
+  4. Callbacks must verify HMAC signatures, enforce `merchant_oid` uniqueness, execute idempotently, and return exact plaintext `"OK"`.
+  5. Full and partial refunds are initiated strictly from authenticated admin backend functions.
+- **Consequences**:
+  - Positive: Complete protection against price tampering, replay attacks, and forged payments.
+  - Negative: Requires public Edge Function availability and webhook endpoint reachability.
+- **Verification**: Verified via `docs/SECURITY.md`, `docs/PAYMENTS.md`, and automated security tests.

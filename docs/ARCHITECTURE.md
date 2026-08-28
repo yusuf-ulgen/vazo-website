@@ -110,13 +110,13 @@ The platform serves both individual retail buyers and commercial wholesale partn
 
 ## 5. Backend & Data Layer Abstraction
 
-Following [`ADR.md`](file:///D:/freelance/vazo-website/docs/ADR.md#adr-009), **Supabase** is selected as the primary backend platform (PostgreSQL, Data API, Auth, Storage, Edge Functions). Payment gateway selection remains pending.
+Following [ADR-009](ADR.md#adr-009) and [ADR-010](ADR.md#adr-010), **Supabase** is selected as the primary backend platform (PostgreSQL, Data API, Auth, Storage, Edge Functions) and **PayTR** is selected as the primary payment gateway provider.
 
 ### Data Access Rules
 1. **Repository / Query Adapter Layer**: All database access is channeled through typed repository functions in `src/entities/*/api/` or `src/shared/api/`.
 2. **No Raw DB Calls in UI**: UI components must **never** invoke `supabase.from(...)` directly.
 3. **Public Publishable Key**: Browser code uses exclusively `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`). Service-role secrets are forbidden.
-4. **Mandatory Row Level Security (RLS)**: Public anonymous users can only query active/published records.
+4. **Mandatory Row Level Security (RLS)**: Public anonymous users can only query active/published records. Customer access is restricted to own records via `auth.uid()`.
 5. **Deterministic Mock Fallback**: When `VITE_ENABLE_MOCK_DATA="true"` or when Supabase is unconfigured, the application runs against isolated mock adapters in `src/shared/mocks/`. Real mode failure triggers clear error handling rather than silent fallback.
 
 ---
@@ -151,4 +151,58 @@ Following [`ADR.md`](file:///D:/freelance/vazo-website/docs/ADR.md#adr-009), **S
 - **Admin Repositories**: Encapsulate typed queries for Inventory, Products, Categories, Collections, Pricing, Navigation, Structured Content, Settings, and Submissions.
 - **Edge Function Boundary**: Public contact, trade applications, and newsletter subscriptions ingest via serverless Edge Functions, preventing direct table exposure.
 - **Audit Logging Subsystem**: Automatically captures admin user ID, email, action type, before/after JSON snapshots, and enforces immutability via DB triggers.
+
+---
+
+## 7. Phase 3 Commerce & PayTR Payment Gateway Architecture
+
+Phase 3 introduces authenticated customer checkout, server-authoritative order calculation, PayTR inline iFrame integration, and idempotent webhook reconciliation.
+
+### 7.1 Customer Authentication vs. Admin RBAC Separation
+- **Customer Authentication**: Handled via Supabase Auth (Google OAuth). Authenticated customers have `auth.users` identities with default `customer` role and zero administrative privileges.
+- **Admin RBAC**: Governed strictly by the `public.admin_users` table and `public.is_admin()` database function. Customer sign-in cannot escalate to admin authority.
+- **Account-Required Checkout**: Guest checkout is disabled. The checkout button prompts unauthenticated users to authenticate via Google OAuth and seamlessly redirects back to `/checkout` with cart contents preserved in local storage.
+
+### 7.2 PayTR iFrame Checkout Flow (Client Token Generation)
+
+```
+Customer Browser                 Supabase Edge Function                PayTR Token API
+     │                                    │                                  │
+     │ 1. POST /checkout/init             │                                  │
+     │    (Cart items, Address, Channel)  │                                  │
+     ├───────────────────────────────────►│                                  │
+     │                                    │ 2. Recompute authoritative totals│
+     │                                    │    (Prices, MOQ, KDV, Shipping)  │
+     │                                    │ 3. Create Draft Order (Postgres) │
+     │                                    │ 4. Request Token with HMAC Hash  │
+     │                                    ├─────────────────────────────────►│
+     │                                    │◄─────────────────────────────────┤
+     │                                    │ 5. Return iframe_token           │
+     │ 6. Render PayTR Inline iFrame      │                                  │
+     │◄───────────────────────────────────┤                                  │
+     │                                                                       │
+```
+
+### 7.3 Server-to-Server Callback & Webhook Verification (Authoritative Payment Settlement)
+
+```
+PayTR Server                     Supabase Edge Function               PostgreSQL Database
+     │                                    │                                    │
+     │ 1. POST /functions/v1/paytr-callback                                    │
+     │    (merchant_oid, status, hash, ..)│                                    │
+     ├───────────────────────────────────►│                                    │
+     │                                    │ 2. Verify HMAC Signature           │
+     │                                    │    (merchant_key + merchant_salt)  │
+     │                                    │ 3. Check merchant_oid & Idempotency│
+     │                                    │ 4. Transition Order to 'paid'      │
+     │                                    ├───────────────────────────────────►│
+     │                                    │◄───────────────────────────────────┤
+     │ 5. Response: "OK" (Exact Plaintext)│                                    │
+     │◄───────────────────────────────────┤                                    │
+```
+
+### 7.4 Non-Authoritative Client Redirect Rule
+- `merchant_ok_url` and `merchant_fail_url` redirect customer browser to storefront status pages (`https://shop.monocactus.com/checkout/success` or `/checkout/fail`).
+- **Critical Rule**: Client redirect URLs are **DISPLAY-ONLY**. They must **NEVER** mark an order as paid or execute fulfillment actions.
+- Only the verified server-to-server PayTR callback executing in Supabase Edge Functions holds payment finalization authority.
 

@@ -38,10 +38,55 @@ This document outlines the state architecture, persistence models, and payment p
 
 ---
 
-## 4. Checkout & Payment Gateway Strategy
+## 4. Checkout & Payment Gateway Strategy (Phase 3 Contract)
 
-- **Architectural Principle**: **Zero Fake Payment Processing**.
-- **Pending Gateway Integration**:
-  - Production checkout requires a verified Turkish or international payment aggregator (e.g. **Iyzico API 3D Secure**, **PayTR iFrame**, or **Stripe Checkout**).
-  - The UI explicitly informs the user that checkout infrastructure is pending live merchant credentials.
-  - Under no circumstance are credit card numbers collected or stored on client-side state.
+- **Architectural Principle**: **Zero Fake Payment Processing & Zero Client Trust**.
+- **Payment Provider Selection**: **PayTR** is selected as the primary payment gateway ([ADR-010](ADR.md#adr-010)).
+- **Integration Mode**: **PayTR inline iFrame** embedded directly inside the storefront checkout page (`https://shop.monocactus.com/checkout`). The customer does not leave the storefront under normal operation.
+- **Installments**: Disabled (`no_installment = 1`). No installment selection UI is exposed.
+
+---
+
+## 5. Target Checkout Journey
+
+```
+Cart (/cart)
+    │
+    ▼ (Click "Siparişi Tamamla")
+Customer Authenticated?
+    ├── NO  ──► Prompt Google OAuth via Supabase Auth
+    │           (Cart preserved in localStorage across redirect)
+    │           └── Auto-redirect to /checkout on successful login
+    └── YES ──► Proceed to /checkout
+                    │
+                    ▼
+           1. Delivery Address Selection / Entry
+                    │
+                    ▼
+           2. Shipping Zone & Rate Selection
+                    │
+                    ▼
+           3. Legal Policy Acceptance (Mesafeli Satış Sözleşmesi & Ön Bilgilendirme)
+                    │
+                    ▼
+           4. Server-Authoritative Total Calculation (Supabase Edge Function)
+                    │
+                    ▼
+           5. PayTR Inline iFrame Rendered (Token retrieved securely from Edge Function)
+                    │
+                    ▼
+           6. Customer Completes Card Submission Inside PayTR iFrame
+                    │
+                    ▼
+           7. Server-to-Server HMAC Callback Finalizes Order (PostgreSQL 'paid' state)
+                    │
+                    ▼
+           8. Non-Authoritative Client Redirect to /checkout/success
+```
+
+### 5.1 Non-Authoritative Redirect URLs
+- `merchant_ok_url` and `merchant_fail_url` are client-facing informational endpoints only.
+- **Rule**: `merchant_ok_url != payment authority`.
+- **Rule**: `merchant_fail_url != payment authority`.
+- Only the verified server-to-server webhook callback from PayTR to the Supabase Edge Function marks an order as paid and triggers fulfillment.
+

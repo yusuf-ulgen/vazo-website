@@ -16,8 +16,8 @@ The **Vazo E-Commerce Platform** is a monolithic React application hosting both 
   - Dedicated B2B & Trade Portal (`/wholesale`, `/wholesale/products`, `/wholesale/how-it-works`, `/wholesale/apply`).
   - Search modal (CMD+K / keyboard accessible), reactive Wishlist (`/wishlist`), and Slide-over Cart (`/cart`) with free shipping progress meter.
   - Supporting public pages (`/about`, `/contact`, `/faq`, `/policies/*`, `/404`).
-- **Admin Panel (`src/admin/`) — [Phase 2 Scheduled]**:
-  - Back-office control interface routed under `/admin/*` for managing products, categories, collections, wholesale trade applications, inventory, pricing, CMS content, and site settings.
+- **Admin Panel (`src/admin/`) — [Phase 2 Complete]**:
+  - Back-office control interface routed under `/admin/*` with database-enforced RBAC, full CRUD for products, variants, categories, collections, inventory stock adjustments, retail/wholesale pricing, structured CMS, site settings, submissions review, and an append-only immutable audit trail.
 - **Shared Catalog Architecture**:
   - Single unified product identity with shared specifications and media, dynamically supporting retail pricing and volume-tiered wholesale terms (MOQ, tier discounts).
 - **Centralized Design Tokens (`design-tokens/`)**:
@@ -125,9 +125,12 @@ This executes:
 
 ## 6. Development Status & Roadmap
 
-- **Phase 1 (Storefront & Data Foundations)**: 🔄 **Implementation Complete — Hardening and Pre-Test Audit in Progress**
-- **Phase 2 (Admin Panel & Store Management)**: ⏳ **NEXT**
-  - Full Admin CRUD for Products, Categories, Collections, Inventory, Pricing, and Content.
-  - Supabase Auth integration (Admin role & B2B customer accounts).
-  - Trade Application Review & Approval Workflow.
-  - Production Payment Gateway Integration (Iyzico / Stripe / PayTR).
+- **Phase 1 (Storefront & Data Foundations)**: 🟢 **Completed & Verified**
+- **Phase 2 (Admin Panel & Store Management)**: 🟢 **Completed & Verified (Green Gate Remote CI Run #30 - Success)**
+- **Phase 3 (Customer Auth, PayTR Commerce, Orders & Logistics)**: 🔄 **IN PROGRESS (Active)**
+  - Authenticated customer checkout via Supabase Auth + Google OAuth (guest checkout disabled).
+  - PayTR inline iFrame checkout (`no_installment = 1`, server-authoritative token creation & HMAC callback).
+  - Server-authoritative order creation, KDV-inclusive pricing, and immutable purchase snapshots.
+  - Admin-managed global-ready shipping zones, rates, and thresholds (`/admin/shipping`).
+  - Admin Order & Payment lifecycle management with server-side full and partial refunds (`/admin/orders`, `/admin/payments`).
+  - Transactional email infrastructure for order and payment lifecycles.

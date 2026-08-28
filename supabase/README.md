@@ -20,7 +20,7 @@ All database schema definitions and security policies are version-controlled ins
 
 ## 2. Row Level Security (RLS) Policy Baseline
 
-In accordance with [`docs/SECURITY.md`](file:///d:/freelance/vazo-website/docs/SECURITY.md):
+In accordance with [`docs/SECURITY.md`](../docs/SECURITY.md):
 - **All tables have RLS enabled.**
 - **Public Anonymous Read**: Anonymous visitors (`anon`) and authenticated customers (`authenticated`) can only execute `SELECT` on records where `active = true` or `status = 'published'`.
 - **Public Write Prohibition**: Public users have zero direct `INSERT`, `UPDATE`, or `DELETE` permissions on catalog, content, settings, or audit tables.

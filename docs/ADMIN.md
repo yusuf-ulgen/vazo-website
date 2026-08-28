@@ -21,27 +21,30 @@ When backend integration is completed, **CRUD** requires:
 
 ---
 
-## 2. Implemented Module Architecture
+## 2. Module Architecture
 
 ```
 /admin
-├── /admin/dashboard         # Real operational metrics, low stock alerts, pending submissions, quick action hub
-├── /admin/products          # Product catalog CRUD, variant matrices, dimensions, media upload/remove
-├── /admin/categories        # Category hierarchy CRUD & sorting
-├── /admin/collections       # Editorial collection curation & banner management
-├── /admin/inventory         # Stock tracking, low-stock threshold alerts, instant adjustment modal
-├── /admin/pricing           # Retail pricing rules, bulk percentage & fixed updates
-├── /admin/wholesale         # Wholesale tiers, MOQ management, commercial discounts
-├── /admin/submissions       # Trade applications, contact messages, newsletter subscriptions
-├── /admin/navigation        # Mega-menu group & link hierarchy builder (Retail & Wholesale)
-├── /admin/content           # Structured CMS (About, Wholesale Landing/How It Works, Policies, FAQ)
-├── /admin/settings          # Public studio info, business hours, commerce/shipping policies, social links
-└── /admin/audit             # Immutable audit log with entity diff viewer & trigger-enforced immutability
+├── /admin/dashboard         # [PHASE 2] Operational metrics, low stock alerts, pending submissions, quick actions
+├── /admin/products          # [PHASE 2] Product catalog CRUD, variant matrices, dimensions, media upload/remove
+├── /admin/categories        # [PHASE 2] Category hierarchy CRUD & sorting
+├── /admin/collections       # [PHASE 2] Editorial collection curation & banner management
+├── /admin/inventory         # [PHASE 2] Stock tracking, low-stock threshold alerts, instant adjustment modal
+├── /admin/pricing           # [PHASE 2] Retail pricing rules, bulk percentage & fixed updates
+├── /admin/wholesale         # [PHASE 2] Wholesale tiers, MOQ management, commercial discounts
+├── /admin/submissions       # [PHASE 2] Trade applications, contact messages, newsletter subscriptions
+├── /admin/navigation        # [PHASE 2] Mega-menu group & link hierarchy builder (Retail & Wholesale)
+├── /admin/content           # [PHASE 2] Structured CMS (About, Wholesale Landing, Policies, FAQ)
+├── /admin/settings          # [PHASE 2] Public studio info, business hours, commerce policies, social links
+├── /admin/audit             # [PHASE 2] Immutable audit log with entity diff viewer & trigger enforcement
+├── /admin/orders            # [PHASE 3 TARGET] Order lifecycle, customer details, tracking, status transitions
+├── /admin/payments          # [PHASE 3 TARGET] PayTR payment audit, full/partial refund actions & reconciliation
+└── /admin/shipping          # [PHASE 3 TARGET] Global shipping zones, country rates, free-shipping thresholds
 ```
 
 ---
 
-## 3. Module Specifications & Operational Workflows
+## 3. Implemented Module Specifications (Phase 2 Baseline)
 
 ### 3.1 Executive Dashboard (`/admin/dashboard`)
 - **Real Metrics Only**: Product counts (Total, Published, Draft, Archived), variant stock health (In Stock, Low Stock, Out of Stock), active taxonomies, and pending submissions.
@@ -84,7 +87,50 @@ When backend integration is completed, **CRUD** requires:
 
 ---
 
-## 4. Admin Security & Authentication Contract
+## 4. Phase 3 Target Modules (Commerce, Payments & Logistics)
+
+> [!NOTE]
+> The following modules represent planned Phase 3 deliverables. Until their backend and Edge Functions are implemented, any UI buttons in preview will strictly follow the **Explicitly Disabled** contract.
+
+### 4.1 Order Management (`/admin/orders`) [PHASE 3 TARGET]
+- **Order Lifecycle Grid**: Paginated, filterable by status (`pending_payment`, `paid`, `processing`, `shipped`, `delivered`, `cancelled`, `refunded`, `partially_refunded`) and channel (`retail`, `wholesale`).
+- **Order Detail Drawer / View**:
+  - Customer profile, email, phone, and channel badge.
+  - Immutable item snapshots (SKU, title, variant, unit price, quantity, tax portion, line total).
+  - Financial summary: Gross subtotal, shipping fee, tax breakdown, and authoritative total.
+  - Snapshot shipping and billing addresses.
+  - Associated PayTR transaction reference and payment status.
+- **Fulfillment Actions**:
+  - Transition order status to `processing` or `shipped`.
+  - Enter shipping carrier (e.g. "Yurtiçi Kargo", "MNG", "DHL") and tracking number/URL.
+  - Trigger transactional shipment notification email.
+- **Cancellation Workflow**: Cancel unpaid or unfulfilled orders with recorded cancellation reason.
+
+### 4.2 Payments & Refunds Management (`/admin/payments`) [PHASE 3 TARGET]
+- **Payment Ledger**: Real-time PayTR transaction log with `merchant_oid`, transaction amount, currency (`TRY`), payment status, and timestamp.
+- **Server-Side Refund Actions**:
+  - **Full Refund**: Refunds full captured amount via PayTR Refund API through Supabase Edge Function.
+  - **Partial Refund**: Validates that refund amount $\le$ remaining refundable balance.
+  - **Zero Client Trust**: Admin UI dispatches request to authenticated Supabase Edge Function; merchant secret keys are never exposed in browser.
+  - **Audit Reconciliation**: Logs `admin_id`, refunded amount, reason, and PayTR refund reference into `admin_audit_logs`.
+
+### 4.3 Shipping & Logistics Management (`/admin/shipping`) [PHASE 3 TARGET]
+- **Shipping Zones**: Manage administrative shipping regions (e.g., "Türkiye İçi", "Avrupa", "Kuzey Amerika", "Dünya Geneli").
+- **Country Membership**: Assign countries to zones with active/inactive toggles.
+- **Rate Rules**:
+  - Flat shipping fees per zone.
+  - Free shipping thresholds (e.g. Free shipping for orders $\ge$ 5.000 TRY).
+  - Channel applicability (Retail vs. Wholesale).
+  - Estimated delivery timeframe text.
+
+### 4.4 Invoices & E-Archive Scaffolding [PHASE 3 TARGET]
+- **Readiness Scaffolding**: Order records maintain `invoice_status` (`not_requested`, `pending`, `issued`, `failed`, `cancelled`), `invoice_number`, `invoice_provider`, and legal snapshots.
+- **No Fake Invoices**: Zero mock PDF generators or fabricated GIB submissions. Status remains `not_requested` or `pending` until a real e-Archive provider is connected.
+
+
+---
+
+## 5. Admin Security & Authentication Contract
 
 1. **Supabase Auth & RBAC**: Admin access requires an authenticated session validated server-side against `admin_users` table via `public.is_admin()`.
 2. **Zero Client Trust**: No `localStorage` flags, no hardcoded credentials (`ADMIN_CREDENTIALS`), and no email regex heuristics grant admin privileges.
