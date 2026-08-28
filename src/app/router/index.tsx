@@ -19,6 +19,9 @@ import { FaqPage } from '@/site/pages/FaqPage';
 import { ShippingReturnsPolicyPage } from '@/site/pages/policies/ShippingReturnsPolicyPage';
 import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPage';
 import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
+import { AuthCallbackPage } from '@/site/pages/AuthCallbackPage';
+import { AccountOverviewPage } from '@/site/pages/AccountOverviewPage';
+import { AccountAddressesPage } from '@/site/pages/AccountAddressesPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 
 // Admin Code Splitting (Lazy-loaded to keep public initial bundle clean)
@@ -138,6 +141,18 @@ export const router = createBrowserRouter([
       {
         path: 'wholesale/apply',
         element: <WholesaleApplyPage />,
+      },
+      {
+        path: 'auth/callback',
+        element: <AuthCallbackPage />,
+      },
+      {
+        path: 'account',
+        element: <AccountOverviewPage />,
+      },
+      {
+        path: 'account/addresses',
+        element: <AccountAddressesPage />,
       },
       {
         path: 'about',

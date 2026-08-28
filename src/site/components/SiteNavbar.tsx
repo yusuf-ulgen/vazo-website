@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useCart } from '@/shared/stores/cart-store';
-import { useAuth } from '@/shared/stores/auth-store';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 import { PerakendeMegaMenu } from './PerakendeMegaMenu';
 import { ToptanMegaMenu } from './ToptanMegaMenu';
@@ -29,7 +29,7 @@ export function SiteNavbar() {
 
   const { count: wishlistCount } = useWishlist();
   const { totalItems: cartCount } = useCart();
-  const { user, isAdmin } = useAuth();
+  const { user, displayName, isAuthenticated } = useCustomerAuth();
   const { settings } = useSiteSettings();
 
   const handleMouseEnter = (menu: 'perakende' | 'toptan') => {
@@ -174,14 +174,14 @@ export function SiteNavbar() {
               {/* Account / Login Trigger */}
               <button
                 onClick={() => setAuthModalOpen(true)}
-                aria-label={user ? (isAdmin ? 'Yönetici Hesabı' : 'Kullanıcı Hesabı') : 'Giriş Yap'}
-                title={user ? `${user.email} (${isAdmin ? 'Admin' : 'Müşteri'})` : 'Giriş Yap / Hesap'}
+                aria-label={isAuthenticated ? 'Hesabım' : 'Giriş Yap'}
+                title={isAuthenticated ? `${displayName} (${user?.email})` : 'Giriş Yap / Hesap'}
                 className="p-2 text-text-primary hover:text-text-secondary transition-colors relative hidden sm:inline-flex items-center"
               >
-                {isAdmin ? (
+                {isAuthenticated ? (
                   <div className="relative">
                     <User className="w-5 h-5 text-text-primary" />
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-neutral-900 border-2 border-surface-primary rounded-full" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-feedback-success border-2 border-surface-primary rounded-full" />
                   </div>
                 ) : (
                   <User className="w-5 h-5" />

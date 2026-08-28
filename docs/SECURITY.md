@@ -67,8 +67,8 @@ This document establishes the security standards and operational policies for th
 | `order_items` [PHASE 3] | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
 | `payment_transactions` [PHASE 3] | DENIED (0 access) | DENIED (0 access) | ALL (`is_admin()`) |
 | `shipping_zones` & `rates` [PHASE 3] | SELECT (`active = true`) | SELECT (`active = true`) | ALL (`is_admin()`) |
-| `customer_profiles` [PHASE 3] | DENIED (0 access) | SELECT, UPDATE (`id = auth.uid()`) | ALL (`is_admin()`) |
-| `customer_addresses` [PHASE 3] | DENIED (0 access) | SELECT, INSERT, UPDATE, DELETE (`customer_id = auth.uid()`) | ALL (`is_admin()`) |
+| `customer_profiles` [PHASE 3] | DENIED (0 access) | SELECT, UPDATE (`user_id = auth.uid()`, privileged columns protected by trigger) | ALL (`is_admin()`) |
+| `customer_addresses` [PHASE 3] | DENIED (0 access) | SELECT, INSERT, UPDATE, DELETE (`user_id = auth.uid()`) | ALL (`is_admin()`) |
 
 ---
 

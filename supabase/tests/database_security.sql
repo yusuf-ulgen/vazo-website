@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(49);
+SELECT plan(59);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -21,6 +21,8 @@ SELECT has_table('public', 'contact_messages', 'Table public.contact_messages sh
 SELECT has_table('public', 'newsletter_subscriptions', 'Table public.newsletter_subscriptions should exist');
 SELECT has_table('public', 'admin_users', 'Table public.admin_users should exist');
 SELECT has_table('public', 'admin_audit_logs', 'Table public.admin_audit_logs should exist');
+SELECT has_table('public', 'customer_profiles', 'Table public.customer_profiles should exist');
+SELECT has_table('public', 'customer_addresses', 'Table public.customer_addresses should exist');
 
 -- ------------------------------------------------------------------------------
 -- 2. Row Level Security (RLS) Enabled Checks
@@ -35,6 +37,8 @@ SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.contact_messa
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.newsletter_subscriptions'::regclass), 'RLS should be active on newsletter_subscriptions');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.admin_users'::regclass), 'RLS should be active on admin_users');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.admin_audit_logs'::regclass), 'RLS should be active on admin_audit_logs');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.customer_profiles'::regclass), 'RLS should be active on customer_profiles');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.customer_addresses'::regclass), 'RLS should be active on customer_addresses');
 
 -- ------------------------------------------------------------------------------
 -- 3. Anonymous Role (Storefront Public Visitor) Isolation Tests
@@ -121,6 +125,23 @@ SELECT is(
     (SELECT count(*) FROM public.newsletter_subscriptions),
     0::bigint,
     'Anonymous user cannot read newsletter subscriber list (zero leakage)'
+);
+
+-- 3.12 Direct Public Browser Mutation Denial: Customer Profiles
+SELECT throws_ok(
+    $$ INSERT INTO public.customer_profiles (user_id, customer_type) VALUES ('00000000-0000-0000-0000-000000000001', 'retail') $$,
+    '42501',
+    NULL,
+    'Direct anonymous INSERT into customer_profiles must fail'
+);
+
+-- 3.13 Direct Public Browser Mutation Denial: Customer Addresses
+SELECT throws_ok(
+    $$ INSERT INTO public.customer_addresses (user_id, recipient_name, phone, address_line1, city, postal_code, country_code, country_name)
+       VALUES ('00000000-0000-0000-0000-000000000001', 'Test', '555', 'Test Mah.', 'Istanbul', '34000', 'TR', 'Turkiye') $$,
+    '42501',
+    NULL,
+    'Direct anonymous INSERT into customer_addresses must fail'
 );
 
 -- ------------------------------------------------------------------------------
@@ -352,6 +373,68 @@ SELECT is(
     (SELECT file_size_limit FROM storage.buckets WHERE id = 'public-media'),
     5242880::bigint,
     'Storage bucket public-media file size limit is canonical 5 MB (5242880 bytes)'
+);
+
+-- ------------------------------------------------------------------------------
+-- 9. Phase 3 Customer Profile & Address Privilege Verification
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+DO $$
+DECLARE
+    v_cust_a UUID := 'c1000000-0000-0000-0000-000000000001';
+    v_cust_b UUID := 'c2000000-0000-0000-0000-000000000002';
+BEGIN
+    INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES 
+        (v_cust_a, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'customer.a@vazostudio.com', 'hash', now(), '{"provider":"google","providers":["google"]}', '{"full_name":"Ahmet Yilmaz"}', now(), now()),
+        (v_cust_b, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'customer.b@vazostudio.com', 'hash', now(), '{"provider":"google","providers":["google"]}', '{"full_name":"Mehmet Demir"}', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.customer_profiles (user_id, first_name, last_name, customer_type)
+    VALUES 
+        (v_cust_a, 'Ahmet', 'Yilmaz', 'retail'),
+        (v_cust_b, 'Mehmet', 'Demir', 'retail')
+    ON CONFLICT (user_id) DO NOTHING;
+
+    INSERT INTO public.customer_addresses (id, user_id, recipient_name, phone, address_line1, city, postal_code, country_code, country_name, is_default_shipping)
+    VALUES 
+        ('d1000000-0000-0000-0000-000000000001', v_cust_a, 'Ahmet Yilmaz', '05551112233', 'Moda Cad. No:1', 'Istanbul', '34710', 'TR', 'Turkiye', true),
+        ('d2000000-0000-0000-0000-000000000002', v_cust_b, 'Mehmet Demir', '05554445566', 'Kordon Boyu No:2', 'Izmir', '35000', 'TR', 'Turkiye', true)
+    ON CONFLICT (id) DO NOTHING;
+END $$;
+
+-- Switch to Customer A context
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+-- 9.1 Customer A can read own profile
+SELECT is(
+    (SELECT count(*) FROM public.customer_profiles WHERE user_id = 'c1000000-0000-0000-0000-000000000001'),
+    1::bigint,
+    'Customer A can read own profile'
+);
+
+-- 9.2 Customer A receives 0 rows for Customer B profile (isolation)
+SELECT is(
+    (SELECT count(*) FROM public.customer_profiles WHERE user_id = 'c2000000-0000-0000-0000-000000000002'),
+    0::bigint,
+    'Customer A cannot read Customer B profile (RLS isolation)'
+);
+
+-- 9.3 Customer A cannot self-promote to wholesale
+SELECT throws_ok(
+    $$ UPDATE public.customer_profiles SET customer_type = 'wholesale' WHERE user_id = 'c1000000-0000-0000-0000-000000000001' $$,
+    '42501',
+    NULL,
+    'Customer cannot promote customer_type to wholesale (privilege protection trigger)'
+);
+
+-- 9.4 Customer A can only see own addresses
+SELECT is(
+    (SELECT count(*) FROM public.customer_addresses),
+    1::bigint,
+    'Customer A can query only own addresses (Customer B addresses isolated)'
 );
 
 RESET ROLE;

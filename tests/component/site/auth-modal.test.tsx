@@ -1,90 +1,149 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { AuthModal } from '@/site/components/AuthModal';
 import { renderWithRouter } from 'tests/utils/render-utils';
-import { authStore } from '@/shared/stores/auth-store';
+import * as customerAuthModule from '@/shared/stores/customer-auth-store';
 
-describe('AuthModal Component (Customer Storefront UX)', () => {
+describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
+  const mockSignInWithGoogle = vi.fn();
+  const mockSignOut = vi.fn();
+
   beforeEach(() => {
-    localStorage.clear();
-    authStore.logout();
     vi.restoreAllMocks();
   });
 
-  it('renders sign in form with email, password, and Google login button', () => {
+  it('renders Google sign in button and modal branding when unauthenticated', () => {
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: false,
+      displayName: 'Müşteri',
+      email: null,
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
     expect(screen.getByRole('dialog', { name: 'Kullanıcı Girişi ve Profil' })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('ornek@vazostudio.com')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
-    expect(screen.getByText('Google ile Devam Et')).toBeInTheDocument();
+    expect(screen.getByText('Müşteri Girişi')).toBeInTheDocument();
+    expect(screen.getByText('Google ile Giriş Yap')).toBeInTheDocument();
   });
 
-  it('handles Google sign-in click', () => {
+  it('handles Google sign-in click and initiates OAuth flow', () => {
     const handleClose = vi.fn();
-    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
+    mockSignInWithGoogle.mockResolvedValue(undefined);
 
-    const googleBtn = screen.getByText('Google ile Devam Et');
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: false,
+      displayName: 'Müşteri',
+      email: null,
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} returnUrl="/checkout" />);
+
+    const googleBtn = screen.getByText('Google ile Giriş Yap');
     fireEvent.click(googleBtn);
 
-    expect(authStore.getUser()).not.toBeNull();
-    expect(authStore.getUser()?.role).toBe('customer');
+    expect(mockSignInWithGoogle).toHaveBeenCalledWith('/checkout');
   });
 
-  it('validates short password input on form submission', () => {
-    renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
-
-    const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
-    const passwordInput = screen.getByPlaceholderText('••••••••');
-    const form = emailInput.closest('form')!;
-
-    fireEvent.change(emailInput, { target: { value: 'user@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: '12' } });
-    fireEvent.submit(form);
-
-    expect(screen.getByText('Şifreniz en az 4 karakter olmalıdır.')).toBeInTheDocument();
-  });
-
-  it('submits valid customer login and updates user state', async () => {
-    const handleClose = vi.fn();
-    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
-
-    const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
-    const passwordInput = screen.getByPlaceholderText('••••••••');
-    const form = emailInput.closest('form')!;
-
-    fireEvent.change(emailInput, { target: { value: 'musteri@gmail.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'CustomerPass123' } });
-    fireEvent.submit(form);
-
-    expect(screen.getByText('musteri@gmail.com')).toBeInTheDocument();
-    expect(authStore.getUser()?.email).toBe('musteri@gmail.com');
-    expect(authStore.getUser()?.role).toBe('customer');
-
-    await waitFor(() => {
-      expect(handleClose).toHaveBeenCalled();
-    }, { timeout: 1000 });
-  });
-
-  it('renders logged in user profile with customer links and logout', () => {
-    authStore.login('musteri@gmail.com', 'Pass123', 'Merve');
+  it('renders logged in customer menu with account links and logout button', () => {
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: { id: 'u1', email: 'merve@example.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
+      profile: {
+        user_id: 'u1',
+        first_name: 'Merve',
+        last_name: 'Aydın',
+        phone: null,
+        customer_type: 'retail',
+        wholesale_approved_at: null,
+        created_at: '2026-08-28T00:00:00Z',
+        updated_at: '2026-08-28T00:00:00Z',
+      },
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: true,
+      displayName: 'Merve Aydın',
+      email: 'merve@example.com',
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
-    expect(screen.getByText('Merve')).toBeInTheDocument();
-    expect(screen.getByText('Üye')).toBeInTheDocument();
-    expect(screen.getByText('Favorilerim')).toBeInTheDocument();
+    expect(screen.getByText('Merve Aydın')).toBeInTheDocument();
+    expect(screen.getByText('Bireysel')).toBeInTheDocument();
+    expect(screen.getByText('Hesap Bilgilerim')).toBeInTheDocument();
+    expect(screen.getByText('Kayıtlı Adreslerim')).toBeInTheDocument();
     expect(screen.getByText('Alışveriş Sepetim')).toBeInTheDocument();
+    expect(screen.getByText('Favorilerim')).toBeInTheDocument();
     expect(screen.getByText('Toptan Satış Başvurusu')).toBeInTheDocument();
 
     const logoutBtn = screen.getByRole('button', { name: /Oturumu Kapat/i });
     fireEvent.click(logoutBtn);
 
-    expect(authStore.getUser()).toBeNull();
+    expect(mockSignOut).toHaveBeenCalled();
   });
 
   it('closes on Escape key press or close button click', () => {
     const handleClose = vi.fn();
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: false,
+      displayName: 'Müşteri',
+      email: null,
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
     renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
 
     fireEvent.keyDown(window, { key: 'Escape' });
@@ -93,5 +152,84 @@ describe('AuthModal Component (Customer Storefront UX)', () => {
     const closeBtn = screen.getByRole('button', { name: 'Kapat' });
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns null when isOpen is false', () => {
+    const { container } = renderWithRouter(<AuthModal isOpen={false} onClose={vi.fn()} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders wholesale customer badge and handles sign in failure', async () => {
+    mockSignInWithGoogle.mockRejectedValueOnce(new Error('Google Girişi Başarısız'));
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: false,
+      displayName: 'Müşteri',
+      email: null,
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
+
+    const googleBtn = screen.getByText('Google ile Giriş Yap');
+    fireEvent.click(googleBtn);
+
+    expect(await screen.findByText('Google Girişi Başarısız')).toBeInTheDocument();
+  });
+
+  it('renders Kurumsal badge for wholesale accounts and handles navigation click', () => {
+    const handleClose = vi.fn();
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: { id: 'u2', email: 'b2b@example.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
+      profile: {
+        user_id: 'u2',
+        first_name: 'Ahmet',
+        last_name: 'Toptan',
+        phone: null,
+        customer_type: 'wholesale',
+        wholesale_approved_at: '2026-08-28T00:00:00Z',
+        created_at: '2026-08-28T00:00:00Z',
+        updated_at: '2026-08-28T00:00:00Z',
+      },
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: true,
+      displayName: 'Ahmet Toptan',
+      email: 'b2b@example.com',
+      customerType: 'wholesale',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
+
+    expect(screen.getByText('Toptan Müşteri')).toBeInTheDocument();
+
+    const accountLink = screen.getByText('Hesap Bilgilerim');
+    fireEvent.click(accountLink);
+    expect(handleClose).toHaveBeenCalled();
   });
 });

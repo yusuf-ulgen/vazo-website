@@ -36,7 +36,7 @@ This document defines the complete roadmap, sub-phase specifications, dependency
 
 ---
 
-### Phase 3.0: Documentation & Baseline Reconciliation (CURRENT)
+### Phase 3.0: Documentation & Baseline Reconciliation (COMPLETED)
 - **Objective**: Align all canonical architectural documents, ADRs, operational guides, and Phase 2 closure reports with finalized Phase 3 product decisions.
 - **Scope**:
   - Reconcile `docs/ARCHITECTURE.md`, `docs/ADR.md`, `docs/ECOMMERCE.md`, `docs/ADMIN.md`, `docs/SECURITY.md`, `docs/STOREFRONT_COMMERCE_CONTRACT.md`.
@@ -49,13 +49,14 @@ This document defines the complete roadmap, sub-phase specifications, dependency
 
 ---
 
-### Phase 3.1: Customer Authentication & Profile Subsystem
+### Phase 3.1: Customer Authentication & Profile Subsystem (COMPLETED)
 - **Objective**: Implement customer authentication using Supabase Auth with Google OAuth, guest checkout blocking, and profile/address management.
 - **Scope**:
-  - Add migrations for `customer_profiles` and `customer_addresses` with strict customer RLS.
-  - Build `CustomerAuthModal` and `/auth/callback` handler.
-  - Implement cart persistence across Google OAuth redirect cycle.
-  - Isolate customer auth state from Admin RBAC (`admin_users`).
+  - Add migration `20260828010000_phase3_customer_auth.sql` for `customer_profiles` and `customer_addresses` with strict RLS & privilege protection triggers.
+  - Implement `customerAuthStore`, `useCustomerAuth`, `CustomerAuthGuard`, `/auth/callback`, `/account`, and `/account/addresses`.
+  - Build `ProfileEditModal`, `AddressFormModal`, and updated `AuthModal`.
+  - Enforce open-redirect attack prevention and verify cart persistence across Google OAuth cycle.
+  - pgTAP and Vitest test coverage for profiles, addresses, and safe redirects.
 - **Out of Scope**: Payment processing, order placement.
 - **Dependencies**: Phase 3.0.
 - **Manual Checkpoint**: Google Cloud Console OAuth client configuration.

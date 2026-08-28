@@ -5,12 +5,14 @@ on:
     branches:
       - main
       - phase-2
+      - phase-3
       - 'feat/**'
       - 'fix/**'
   pull_request:
     branches:
       - main
       - phase-2
+      - phase-3
   workflow_dispatch:
 
 jobs:

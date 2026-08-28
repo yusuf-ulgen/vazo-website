@@ -52,20 +52,19 @@ Customer browses Storefront & adds items to Cart
 
 ---
 
-## 3. Customer Profile & Address Schema (Phase 3 Target)
+## 3. Implemented Customer Profile & Address Schema
+
+Migration file: [`supabase/migrations/20260828010000_phase3_customer_auth.sql`](../supabase/migrations/20260828010000_phase3_customer_auth.sql)
 
 ```sql
 -- Customer Profiles
 CREATE TABLE public.customer_profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT NOT NULL,
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     first_name TEXT,
     last_name TEXT,
     phone TEXT,
     customer_type TEXT NOT NULL DEFAULT 'retail' CHECK (customer_type IN ('retail', 'wholesale')),
-    is_trade_approved BOOLEAN NOT NULL DEFAULT false,
-    default_shipping_address_id UUID,
-    default_billing_address_id UUID,
+    wholesale_approved_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
 );
@@ -73,19 +72,18 @@ CREATE TABLE public.customer_profiles (
 -- Customer Saved Addresses
 CREATE TABLE public.customer_addresses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL DEFAULT 'Ev',
-    full_name TEXT NOT NULL,
-    company_name TEXT,
-    tax_number TEXT,
-    tax_office TEXT,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT 'Ev',
+    recipient_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
     address_line1 TEXT NOT NULL,
     address_line2 TEXT,
+    district TEXT,
     city TEXT NOT NULL,
     state_province TEXT,
     postal_code TEXT NOT NULL,
-    country_code TEXT NOT NULL DEFAULT 'TR',
-    phone TEXT NOT NULL,
+    country_code TEXT NOT NULL CHECK (length(country_code) = 2 AND country_code = upper(country_code)),
+    country_name TEXT NOT NULL,
     is_default_shipping BOOLEAN NOT NULL DEFAULT false,
     is_default_billing BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
@@ -97,20 +95,47 @@ ALTER TABLE public.customer_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.customer_addresses ENABLE ROW LEVEL SECURITY;
 
 -- Customers can only read and update their own profile and addresses
-CREATE POLICY "Customers can manage own profile"
-    ON public.customer_profiles
-    FOR ALL
-    TO authenticated
-    USING (id = auth.uid())
-    WITH CHECK (id = auth.uid());
+CREATE POLICY "Customers can select own profile"
+    ON public.customer_profiles FOR SELECT TO authenticated
+    USING (user_id = auth.uid());
 
-CREATE POLICY "Customers can manage own addresses"
-    ON public.customer_addresses
-    FOR ALL
-    TO authenticated
-    USING (customer_id = auth.uid())
-    WITH CHECK (customer_id = auth.uid());
+CREATE POLICY "Customers can update own profile"
+    ON public.customer_profiles FOR UPDATE TO authenticated
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Customers can select own addresses"
+    ON public.customer_addresses FOR SELECT TO authenticated
+    USING (user_id = auth.uid());
+
+CREATE POLICY "Customers can insert own addresses"
+    ON public.customer_addresses FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Customers can update own addresses"
+    ON public.customer_addresses FOR UPDATE TO authenticated
+    USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Customers can delete own addresses"
+    ON public.customer_addresses FOR DELETE TO authenticated
+    USING (user_id = auth.uid());
 ```
+
+---
+
+## 4. Automatic Profile Creation & Privileged Column Protection
+
+1. **`handle_new_customer_user()` Trigger**:
+   - Executes `AFTER INSERT ON auth.users` with `SECURITY DEFINER`.
+   - Safely parses Google metadata (`given_name`, `family_name`, `full_name`, `name`, `phone`).
+   - Inserts a new row in `public.customer_profiles` with `customer_type = 'retail'`.
+
+2. **`protect_customer_profile_privileged_fields()` Trigger**:
+   - Executes `BEFORE UPDATE ON public.customer_profiles` with `SECURITY DEFINER`.
+   - Checks if `customer_type`, `wholesale_approved_at`, `user_id`, or `created_at` are being changed.
+   - If not executed by an authorized administrator (`public.is_admin()`), raises SQL exception `42501`.
+
+3. **`handle_default_customer_address()` Trigger**:
+   - Ensures that when a customer designates an address as default shipping or billing, any existing default address for the same user is automatically unset.
 
 ---
 

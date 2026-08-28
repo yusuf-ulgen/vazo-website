@@ -9,11 +9,13 @@ import {
   ShieldCheck,
   Search,
   Heart,
+  User,
 } from 'lucide-react';
 import { contentRepository } from '@/entities/content/api/content-repository';
 import { MegaMenuData, perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 
@@ -29,6 +31,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
   const [retailMenu, setRetailMenu] = useState<MegaMenuData>(perakendeMegaMenuData);
   const [wholesaleMenu, setWholesaleMenu] = useState<MegaMenuData>(toptanMegaMenuData);
   const { count: wishlistCount } = useWishlist();
+  const { isAuthenticated } = useCustomerAuth();
   const { settings } = useSiteSettings();
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
@@ -180,6 +183,18 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
             >
               <span>Koleksiyonlar</span>
+              <ChevronRight className="w-4 h-4 text-text-muted" />
+            </Link>
+
+            <Link
+              to="/account"
+              onClick={onClose}
+              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
+            >
+              <span className="flex items-center gap-2">
+                <User className="w-4 h-4 text-text-secondary" />
+                <span>{isAuthenticated ? 'Hesabım' : 'Giriş Yap / Kayıt Ol'}</span>
+              </span>
               <ChevronRight className="w-4 h-4 text-text-muted" />
             </Link>
 

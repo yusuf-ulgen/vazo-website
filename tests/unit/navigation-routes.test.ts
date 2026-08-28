@@ -3,35 +3,36 @@ import { router } from '@/app/router';
 import { perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 
 describe('Navigation Route Resolution', () => {
-  // Extract all valid route paths from router
-  const registeredPaths: string[] = [];
+  const getRegisteredPaths = () => {
+    const registeredPaths: string[] = [];
+    const extractPaths = (routes: typeof router.routes, prefix = '') => {
+      for (const route of routes) {
+        let currentPath = prefix;
+        if (route.path !== undefined) {
+          if (route.path.startsWith('/')) {
+            currentPath = route.path;
+          } else if (prefix === '' || prefix === '/') {
+            currentPath = `/${route.path}`;
+          } else {
+            currentPath = `${prefix}/${route.path}`;
+          }
+        }
 
-  const extractPaths = (routes: typeof router.routes, prefix = '') => {
-    for (const route of routes) {
-      let currentPath = prefix;
-      if (route.path !== undefined) {
-        if (route.path.startsWith('/')) {
-          currentPath = route.path;
-        } else if (prefix === '' || prefix === '/') {
-          currentPath = `/${route.path}`;
-        } else {
-          currentPath = `${prefix}/${route.path}`;
+        if (currentPath) {
+          registeredPaths.push(currentPath);
+        }
+
+        if (route.children) {
+          extractPaths(route.children, currentPath);
         }
       }
-
-      if (currentPath) {
-        registeredPaths.push(currentPath);
-      }
-
-      if (route.children) {
-        extractPaths(route.children, currentPath);
-      }
-    }
+    };
+    extractPaths(router.routes);
+    return registeredPaths;
   };
 
-  extractPaths(router.routes);
-
   it('contains all canonical storefront routes', () => {
+    const registeredPaths = getRegisteredPaths();
     const canonicalRoutes = [
       '/',
       'products',
