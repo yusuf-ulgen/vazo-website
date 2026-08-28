@@ -10,7 +10,7 @@ This directory contains the immutable, chronological sub-phase execution reports
 | :--- | :--- | :--- | :--- | :---: |
 | [`PHASE_3_0_BASELINE.md`](PHASE_3_0_BASELINE.md) | Documentation & Architecture Baseline Reconciliation | `f3ea6cd17bebf2b0d05dda8e85a298b37b62b095` | `2997d566967337e9ca06388644525e5fc5ae2231` | 🟢 100% VERIFIED |
 | [`PHASE_3_1_CUSTOMER_AUTH.md`](PHASE_3_1_CUSTOMER_AUTH.md) | Real Customer Accounts, Google OAuth & Account UI | `2997d566967337e9ca06388644525e5fc5ae2231` | `59d114fd840a1bfa82946cff87739509df6fa24d` | 🟢 100% VERIFIED |
-| [`PHASE_3_2_ORDER_PAYMENT_SCHEMA.md`](PHASE_3_2_ORDER_PAYMENT_SCHEMA.md) | Order, Payment, Refund, Reservation & Invoice Domain | `4bbb7deea1e090699ee0fd25a102365839f7c716` | In Commit | 🟢 100% VERIFIED |
+| [`PHASE_3_2_ORDER_PAYMENT_SCHEMA.md`](PHASE_3_2_ORDER_PAYMENT_SCHEMA.md) | Order, Payment, Refund, Reservation & Invoice Domain | `4bbb7deea1e090699ee0fd25a102365839f7c716` | `58208de3bae418e14a08145b8e26a03d7a33fdef` | 🟢 100% VERIFIED |
 | `PHASE_3_3_SHIPPING_ADMIN.md` | Global Shipping Architecture & Admin Logistics | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_4_SERVER_PRICING_ENGINE.md` | Server-Authoritative Pricing & Cart Checkout Engine | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_5_PAYTR_TOKEN_IFRAME.md` | PayTR Payment Integration — Token API & Inline iFrame | Planned | Planned | ⏳ PENDING |
