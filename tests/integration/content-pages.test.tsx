@@ -113,34 +113,19 @@ describe('Content & Policy Pages Integration Tests', () => {
     expect(wishlistStore.getItems().length).toBe(0);
   });
 
-  it('renders CartPage with items, free shipping threshold warning, threshold congratulations, and removal', () => {
+  it('renders CartPage with items, destination-aware shipping notice, and removal', () => {
     const prod = createProduct({ id: 'p1', name: 'Sepetteki Vazo', retailPrice: 1500 });
     const variant = createVariant({ id: 'v1', name: 'Beyaz', retailPrice: 1500 });
 
     act(() => {
-      cartStore.addItem(prod, variant, 2); // 3000 < 5000
-    });
-
-    const { unmount } = renderWithRouter(<CartPage />);
-
-    expect(screen.getByText('Sipariş Özeti')).toBeInTheDocument();
-    expect(screen.getByText('Sepetteki Vazo')).toBeInTheDocument();
-
-    // Free shipping threshold remaining notice
-    expect(screen.getByText(/Ücretsiz kargo için sepetinize/)).toBeInTheDocument();
-    unmount();
-
-    // Now test with >= 5000
-    act(() => {
-      cartStore.addItem(prod, variant, 2); // 6000 >= 5000
+      cartStore.addItem(prod, variant, 2);
     });
 
     renderWithRouter(<CartPage />);
-    expect(screen.getByText('Tebrikler! Siparişiniz ücretsiz kargo kapsamındadır.')).toBeInTheDocument();
 
-    // Click checkout (triggers alert mock)
-    const checkoutBtn = screen.getByRole('button', { name: /Ödemeye Geç/ });
-    fireEvent.click(checkoutBtn);
+    expect(screen.getByText('Sipariş Özeti')).toBeInTheDocument();
+    expect(screen.getByText('Sepetteki Vazo')).toBeInTheDocument();
+    expect(screen.getByText('Kargo ücreti teslimat ülkesine göre ödeme adımında hesaplanır.')).toBeInTheDocument();
 
     // Remove item
     const removeBtn = screen.getByRole('button', { name: 'Ürünü Kaldır' });

@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(103);
+SELECT plan(120);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -37,6 +37,11 @@ SELECT has_table('public', 'refunds', 'Table public.refunds should exist');
 SELECT has_table('public', 'order_invoices', 'Table public.order_invoices should exist');
 SELECT has_table('public', 'transactional_emails', 'Table public.transactional_emails should exist');
 
+-- Phase 3.3 Shipping Tables
+SELECT has_table('public', 'shipping_zones', 'Table public.shipping_zones should exist');
+SELECT has_table('public', 'shipping_zone_countries', 'Table public.shipping_zone_countries should exist');
+SELECT has_table('public', 'shipping_rates', 'Table public.shipping_rates should exist');
+
 -- ------------------------------------------------------------------------------
 -- 2. Row Level Security (RLS) Enabled Checks
 -- ------------------------------------------------------------------------------
@@ -65,6 +70,11 @@ SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_legal_a
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.refunds'::regclass), 'RLS should be active on refunds');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_invoices'::regclass), 'RLS should be active on order_invoices');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.transactional_emails'::regclass), 'RLS should be active on transactional_emails');
+
+-- Phase 3.3 Shipping Tables RLS
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.shipping_zones'::regclass), 'RLS should be active on shipping_zones');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.shipping_zone_countries'::regclass), 'RLS should be active on shipping_zone_countries');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.shipping_rates'::regclass), 'RLS should be active on shipping_rates');
 
 -- ------------------------------------------------------------------------------
 -- 3. Anonymous Role (Storefront Public Visitor) Isolation Tests
@@ -219,6 +229,30 @@ SELECT is(
     (SELECT count(*) FROM public.transactional_emails),
     0::bigint,
     'Anonymous user receives 0 rows for transactional_emails table (zero leakage)'
+);
+
+-- 3.21 Anon CANNOT mutate shipping zones
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_zones (name) VALUES ('Hacked Zone') $$,
+    '42501',
+    NULL,
+    'Anonymous user cannot insert shipping zones'
+);
+
+-- 3.22 Anon CANNOT mutate shipping countries
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_zone_countries (zone_id, country_code, country_name) VALUES ('70000000-0000-0000-0000-000000000001', 'XX', 'Hacked Country') $$,
+    '42501',
+    NULL,
+    'Anonymous user cannot insert shipping countries'
+);
+
+-- 3.23 Anon CANNOT mutate shipping rates
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_rates (zone_id, name, flat_amount_minor) VALUES ('70000000-0000-0000-0000-000000000001', 'Free Shipping Hacked', 0) $$,
+    '42501',
+    NULL,
+    'Anonymous user cannot insert shipping rates'
 );
 
 -- ------------------------------------------------------------------------------
@@ -728,6 +762,73 @@ SELECT is(
     (SELECT status FROM public.order_invoices WHERE order_id = 'e1000000-0000-0000-0000-000000000001'),
     'not_requested',
     'Order invoice scaffold default status is not_requested'
+);
+
+-- ------------------------------------------------------------------------------
+-- 12. Phase 3.3 Shipping Engine & Resolution Tests
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- 12.1 resolve_shipping_rate returns supported for active Turkey
+SELECT ok(
+    (SELECT supported FROM public.resolve_shipping_rate('TR', 'retail', 10000, 'TRY')),
+    'resolve_shipping_rate resolves active Turkey standard shipping'
+);
+
+-- 12.2 resolve_shipping_rate applies free shipping over threshold
+SELECT ok(
+    (SELECT free_shipping_applied FROM public.resolve_shipping_rate('TR', 'retail', 500000, 'TRY')),
+    'resolve_shipping_rate applies free shipping when subtotal >= 5000.00 TRY threshold'
+);
+
+-- 12.3 resolve_shipping_rate rejects unsupported country
+SELECT is(
+    (SELECT supported FROM public.resolve_shipping_rate('JP', 'retail', 10000, 'TRY')),
+    false,
+    'resolve_shipping_rate returns supported = false for unconfigured country'
+);
+
+-- 12.4 resolve_shipping_rate rejects empty country
+SELECT is(
+    (SELECT supported FROM public.resolve_shipping_rate('', 'retail', 10000, 'TRY')),
+    false,
+    'resolve_shipping_rate returns supported = false for empty country code'
+);
+
+-- 12.5 shipping_zone_countries check constraint rejects lowercase country code
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_zone_countries (zone_id, country_code, country_name) VALUES ('70000000-0000-0000-0000-000000000001', 'de', 'Germany') $$,
+    '23514',
+    NULL,
+    'Shipping zone countries check constraint rejects non-uppercase country codes'
+);
+
+-- 12.6 shipping_rates check constraint rejects maximum < minimum order bounds
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_rates (zone_id, name, flat_amount_minor, minimum_order_minor, maximum_order_minor)
+       VALUES ('70000000-0000-0000-0000-000000000001', 'Bad Bounds Rate', 1000, 5000, 2000) $$,
+    '23514',
+    NULL,
+    'Shipping rates check constraint rejects maximum order bound lower than minimum order bound'
+);
+
+-- 12.7 Authenticated customer CANNOT mutate shipping zones
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_zones (name) VALUES ('Customer Injected Zone') $$,
+    '42501',
+    NULL,
+    'Authenticated customer cannot insert shipping zones'
+);
+
+-- 12.8 Authenticated customer CANNOT mutate shipping rates
+SELECT throws_ok(
+    $$ INSERT INTO public.shipping_rates (zone_id, name, flat_amount_minor) VALUES ('70000000-0000-0000-0000-000000000001', 'Customer Rate', 0) $$,
+    '42501',
+    NULL,
+    'Authenticated customer cannot insert shipping rates'
 );
 
 RESET ROLE;

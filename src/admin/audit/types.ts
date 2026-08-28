@@ -17,7 +17,10 @@ export type AuditEntityType =
   | 'site_settings'
   | 'trade_application'
   | 'contact_message'
-  | 'newsletter_subscription';
+  | 'newsletter_subscription'
+  | 'shipping_zone'
+  | 'shipping_zone_country'
+  | 'shipping_rate';
 
 export interface AdminAuditLog {
   id: string;

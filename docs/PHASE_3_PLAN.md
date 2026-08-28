@@ -77,15 +77,17 @@ This document defines the complete roadmap, sub-phase specifications, dependency
 
 ---
 
-### Phase 3.3: Global Shipping Architecture & Admin Management
-- **Objective**: Build the `/admin/shipping` management module and storefront shipping fee calculation adapter.
+### Phase 3.3: Global Shipping Architecture & Admin Management (COMPLETED)
+- **Objective**: Build the `/admin/shipping` management module, shipping database schema, and authoritative shipping rate resolution engine.
 - **Scope**:
-  - Admin UI for Shipping Zones, Country activation, Rate rules, and Free shipping thresholds.
-  - Admin Shipping Repository (`admin-shipping-repository.ts`).
-  - Storefront shipping fee calculation helper respecting active zones and free-shipping thresholds.
+  - Additive migration `20260828030000_phase3_shipping_schema.sql` for `shipping_zones`, `shipping_zone_countries`, `shipping_rates`, and `resolve_shipping_rate` function.
+  - Admin UI for Shipping Zones, Country activation, Rate rules, and Free shipping thresholds at `/admin/shipping`.
+  - Admin Shipping Repository (`admin-shipping-repository.ts`) with full CRUD and audit logging.
+  - Storefront deterministic shipping resolver (`resolveShippingLocally`) and destination-aware cart notice.
+  - 120 pgTAP assertions verified in static test scanner.
 - **Out of Scope**: Live payment tokens.
 - **Dependencies**: Phase 3.2.
-- **Green Gate Criteria**: Admin CRUD tests for shipping zones/rates, a11y audit on shipping modals.
+- **Green Gate Criteria**: Admin CRUD tests for shipping zones/rates, a11y audit on shipping modals, full vitest and static db validation pass.
 
 ---
 

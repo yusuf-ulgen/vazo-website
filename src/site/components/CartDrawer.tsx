@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { useSiteSettings } from '@/shared/stores/settings-store';
@@ -17,9 +17,6 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
     items,
     totalItems,
     subtotal,
-    freeShippingThreshold,
-    isFreeShipping,
-    freeShippingRemaining,
     updateQuantity,
     removeItem,
   } = useCart();
@@ -67,28 +64,12 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           </button>
         </div>
 
-        {/* Free Shipping Progress */}
+        {/* Destination-Aware Shipping Notice */}
         <div className="bg-surface-secondary px-5 py-3 border-b border-border-subtle text-xs">
-          {isFreeShipping ? (
-            <div className="flex items-center gap-1.5 text-feedback-success font-medium">
-              <Sparkles className="w-4 h-4" />
-              <span>Tebrikler! Siparişiniz için kargo ücretsiz.</span>
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              <p className="text-text-secondary">
-                Ücretsiz kargo için <span className="font-semibold text-text-primary">{formatCurrency(freeShippingRemaining)}</span> daha ekleyin.
-              </p>
-              <div className="w-full bg-border-default h-1.5 overflow-hidden">
-                <div
-                  className="bg-action-primary h-full transition-all duration-300"
-                  style={{
-                    width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          <div className="flex items-center gap-2 text-text-secondary">
+            <Truck className="w-3.5 h-3.5 shrink-0 text-text-muted" />
+            <span>Kargo ücreti teslimat ülkesine göre ödeme adımında hesaplanır.</span>
+          </div>
         </div>
 
         {/* Items list */}
@@ -181,7 +162,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               <div className="flex justify-between text-text-secondary">
                 <span>Tahmini Kargo</span>
                 <span className="text-text-primary">
-                  {isFreeShipping ? 'Ücretsiz' : settings.commerce.shippingEstimateText}
+                  {settings.commerce.shippingEstimateText || 'Ödeme adımında hesaplanır'}
                 </span>
               </div>
               <div className="flex justify-between text-sm font-semibold text-text-primary pt-2 border-t border-border-subtle">

@@ -114,14 +114,15 @@ When backend integration is completed, **CRUD** requires:
   - **Zero Client Trust**: Admin UI dispatches request to authenticated Supabase Edge Function; merchant secret keys are never exposed in browser.
   - **Audit Reconciliation**: Logs `admin_id`, refunded amount, reason, and PayTR refund reference into `admin_audit_logs`.
 
-### 4.3 Shipping & Logistics Management (`/admin/shipping`) [PHASE 3 TARGET]
-- **Shipping Zones**: Manage administrative shipping regions (e.g., "Türkiye İçi", "Avrupa", "Kuzey Amerika", "Dünya Geneli").
-- **Country Membership**: Assign countries to zones with active/inactive toggles.
+### 4.3 Shipping & Logistics Management (`/admin/shipping`) [PHASE 3.3 IMPLEMENTED]
+- **Shipping Zones**: Manage administrative shipping regions (e.g., "Türkiye İçi", "Avrupa", "Kuzey Amerika").
+- **Country Membership**: Assign ISO-2 countries to zones with active/inactive toggles.
 - **Rate Rules**:
-  - Flat shipping fees per zone.
+  - Flat shipping fees per zone in integer minor units.
   - Free shipping thresholds (e.g. Free shipping for orders $\ge$ 5.000 TRY).
   - Channel applicability (Retail vs. Wholesale).
   - Estimated delivery timeframe text.
+  - Full CRUD with `admin_audit_logs` tracking and `ConfirmDialog` confirmation.
 
 ### 4.4 Invoices & E-Archive Scaffolding [PHASE 3 TARGET]
 - **Readiness Scaffolding**: Order records maintain `invoice_status` (`not_requested`, `pending`, `issued`, `failed`, `cancelled`), `invoice_number`, `invoice_provider`, and legal snapshots.

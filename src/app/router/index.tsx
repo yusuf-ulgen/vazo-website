@@ -69,6 +69,9 @@ const AdminAuditPage = React.lazy(() =>
 const AdminSettingsPage = React.lazy(() =>
   import('@/admin/settings/pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage }))
 );
+const AdminShippingPage = React.lazy(() =>
+  import('@/admin/shipping/pages/AdminShippingPage').then((m) => ({ default: m.AdminShippingPage }))
+);
 
 const adminFallback = (
   <div className="min-h-screen bg-canvas-default flex items-center justify-center p-8 text-xs font-sans text-text-secondary">
@@ -300,6 +303,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={adminFallback}>
             <AdminContentPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'shipping',
+        element: (
+          <Suspense fallback={adminFallback}>
+            <AdminShippingPage />
           </Suspense>
         ),
       },

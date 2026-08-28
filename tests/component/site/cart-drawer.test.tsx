@@ -37,7 +37,7 @@ describe('CartDrawer Component', () => {
 
     expect(screen.getByText('Mat Zemin Vazosu')).toBeInTheDocument();
     expect(screen.getByText('2 Ürün')).toBeInTheDocument();
-    expect(screen.getByText('Tebrikler! Siparişiniz için kargo ücretsiz.')).toBeInTheDocument();
+    expect(screen.getByText('Kargo ücreti teslimat ülkesine göre ödeme adımında hesaplanır.')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Mat Zemin Vazosu' })).toBeInTheDocument();
 
     // Click checkout link

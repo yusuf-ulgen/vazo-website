@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, AlertCircle, Truck } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { Container } from '@/shared/ui/Container';
@@ -10,12 +10,8 @@ export function CartPage() {
     items,
     totalItems,
     subtotal,
-    freeShippingThreshold,
-    isFreeShipping,
-    freeShippingRemaining,
     updateQuantity,
     removeItem,
-    clear,
   } = useCart();
 
   return (
@@ -29,49 +25,34 @@ export function CartPage() {
             <span className="text-text-primary font-medium">Alışveriş Sepeti</span>
           </nav>
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light text-text-primary">
-                Alışveriş Sepetim
-              </h1>
-              <p className="text-xs sm:text-sm text-text-secondary mt-1 font-sans">
-                {totalItems > 0
-                  ? `Sepetinizde ${totalItems} adet ürün bulunmaktadır.`
-                  : 'Sepetinizde henüz ürün bulunmamaktadır.'}
-              </p>
-            </div>
-
-            {items.length > 0 && (
-              <button
-                type="button"
-                onClick={clear}
-                className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-feedback-danger transition-colors self-start sm:self-auto"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Sepeti Boşalt</span>
-              </button>
-            )}
+          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+            <h1 className="font-display text-2xl md:text-3xl text-text-primary tracking-tight">
+              Alışveriş Sepeti
+            </h1>
+            <p className="text-xs text-text-muted">
+              {totalItems > 0 ? `Sepetinizde ${totalItems} ürün bulunmaktadır` : 'Sepetiniz henüz boş'}
+            </p>
           </div>
         </div>
 
         {items.length === 0 ? (
           /* Empty State */
           <div className="py-20 text-center space-y-4 max-w-md mx-auto">
-            <div className="w-16 h-16 bg-surface-muted mx-auto flex items-center justify-center text-text-muted">
+            <div className="w-16 h-16 bg-surface-muted flex items-center justify-center text-text-muted mx-auto">
               <ShoppingBag className="w-8 h-8" />
             </div>
             <div className="space-y-1">
-              <h2 className="font-display text-2xl text-text-primary">Sepetiniz Boş</h2>
-              <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                Stüdyomuzun el işçiliği seramik koleksiyonlarını inceleyerek evinize veya projenize uygun parçaları seçebilirsiniz.
+              <h2 className="font-display text-xl text-text-primary">Sepetiniz Boş</h2>
+              <p className="text-xs text-text-secondary">
+                Koleksiyonumuzdaki el yapımı heykelsi vazo tasarımlarını inceleyerek hemen alışverişe başlayabilirsiniz.
               </p>
             </div>
             <div className="pt-2">
               <Link
                 to="/products"
-                className="inline-flex items-center gap-2 bg-action-primary text-action-primary-text px-8 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-action-primary text-action-primary-text text-xs uppercase tracking-wider font-medium hover:bg-neutral-800 transition-colors"
               >
-                <span>Kataloğu İncele</span>
+                Ürünleri Keşfet
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -80,28 +61,12 @@ export function CartPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start text-left">
             {/* Items Column (8 cols) */}
             <div className="lg:col-span-8 space-y-6">
-              {/* Free shipping banner */}
+              {/* Shipping Notice banner */}
               <div className="p-4 bg-surface-secondary border border-border-subtle text-xs">
-                {isFreeShipping ? (
-                  <div className="flex items-center gap-2 text-feedback-success font-medium">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Tebrikler! Siparişiniz ücretsiz kargo kapsamındadır.</span>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <p className="text-text-secondary">
-                      Ücretsiz kargo için sepetinize <strong className="text-text-primary">{formatCurrency(freeShippingRemaining)}</strong> tutarında ürün daha ekleyin.
-                    </p>
-                    <div className="w-full bg-border-default h-1.5 overflow-hidden">
-                      <div
-                        className="bg-action-primary h-full transition-all duration-300"
-                        style={{
-                          width: `${Math.min(100, (subtotal / freeShippingThreshold) * 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-text-secondary">
+                  <Truck className="w-4 h-4 shrink-0 text-text-muted" />
+                  <span>Kargo ücreti teslimat ülkesine göre ödeme adımında hesaplanır.</span>
+                </div>
               </div>
 
               {/* Items Table */}
@@ -179,7 +144,7 @@ export function CartPage() {
                 <div className="flex justify-between text-text-secondary">
                   <span>Tahmini Kargo</span>
                   <span className="text-text-primary font-medium">
-                    {isFreeShipping ? 'Ücretsiz' : '₺120 (Ödeme adımında)'}
+                    Ödeme adımında hesaplanır
                   </span>
                 </div>
 
