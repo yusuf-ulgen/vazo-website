@@ -9,7 +9,7 @@ This directory contains the immutable, chronological sub-phase execution reports
 | Report | Sub-Phase Title | Base SHA | Target / Closing SHA | Quality Status |
 | :--- | :--- | :--- | :--- | :---: |
 | [`PHASE_3_0_BASELINE.md`](PHASE_3_0_BASELINE.md) | Documentation & Architecture Baseline Reconciliation | `f3ea6cd17bebf2b0d05dda8e85a298b37b62b095` | `2997d566967337e9ca06388644525e5fc5ae2231` | 🟢 100% VERIFIED |
-| [`PHASE_3_1_CUSTOMER_AUTH.md`](PHASE_3_1_CUSTOMER_AUTH.md) | Real Customer Accounts, Google OAuth & Account UI | `2997d566967337e9ca06388644525e5fc5ae2231` | `af893ae126067d2c8a8fc74deaa3646c2e062037` | 🟢 100% VERIFIED |
+| [`PHASE_3_1_CUSTOMER_AUTH.md`](PHASE_3_1_CUSTOMER_AUTH.md) | Real Customer Accounts, Google OAuth & Account UI | `2997d566967337e9ca06388644525e5fc5ae2231` | `59d114fd840a1bfa82946cff87739509df6fa24d` | 🟢 100% VERIFIED |
 | `PHASE_3_2_COMMERCE_LOGISTICS_SCHEMA.md` | Database Schema for Orders, Payments & Shipping | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_3_SHIPPING_ADMIN.md` | Global Shipping Architecture & Admin Logistics | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_4_SERVER_PRICING_ENGINE.md` | Server-Authoritative Pricing & Cart Checkout Engine | Planned | Planned | ⏳ PENDING |
