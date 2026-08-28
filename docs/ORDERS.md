@@ -9,7 +9,9 @@ This document governs the database schema, snapshot persistence, state machines,
 1. **Mandatory Authenticated Customer**: Guest checkout is disabled. Every order strictly references an authenticated Supabase customer (`customer_id UUID REFERENCES auth.users(id)`).
 2. **Immutable Point-in-Time Snapshots**: Product titles, variant descriptions, dimensions, materials, SKUs, and unit prices are snapshotted at the moment of order creation. Future catalog edits never alter historical order lines.
 3. **KDV-Inclusive Financial Truth**: All product and shipping amounts are KDV-inclusive consumer prices (`tax_included = true`). Tax breakdowns are extracted for accounting snapshots without adding extra fees.
-4. **Channel-Aware Processing**: Orders record their channel (`retail` vs `wholesale`). Wholesale pricing and MOQ rules are verified server-side.
+4. **Integer Minor Units**: All monetary amounts are recorded in integer minor units (kuruş/cents) to prevent floating-point precision issues.
+5. **Channel-Aware Processing**: Orders record their channel (`retail` vs `wholesale`). Wholesale pricing and MOQ rules are verified server-side.
+6. **Separation of Concerns**: Human order numbers (`VZ-YYYYMMDD-XXXXX`) are strictly separated from payment provider transaction IDs (PayTR `merchant_oid`).
 
 ---
 
@@ -46,14 +48,16 @@ This document governs the database schema, snapshot persistence, state machines,
 ```
 
 ### Exception & Terminal States
-- **`cancelled`**: Can be triggered before shipment for unfulfilled or failed orders.
-- **`partially_refunded`**: Recorded when a portion of the paid amount is refunded via PayTR.
+- **`cancelled`**: Triggered before shipment for unfulfilled or failed orders.
+- **`partially_refunded`**: Recorded when a portion of the paid amount is refunded.
 - **`refunded`**: Recorded when 100% of the paid order amount is returned.
+- **`payment_failed`**: Recorded when a payment attempt fails.
+- **`payment_review`**: Flagged for manual merchant review.
 
 | State | Allowed Transitions | Stock Impact | Customer Notification |
 | :--- | :--- | :--- | :--- |
-| `pending_payment` | `paid`, `cancelled` | Stock reserved (timeout 30 min) | None |
-| `paid` | `processing`, `cancelled`, `refunded` | Stock decremented | "Siparişiniz Alındı & Ödeme Onaylandı" |
+| `pending_payment` | `paid`, `payment_failed`, `cancelled` | Stock reserved (timeout 40 min) | None |
+| `paid` | `processing`, `cancelled`, `refunded`, `partially_refunded` | Stock decremented | "Siparişiniz Alındı & Ödeme Onaylandı" |
 | `processing` | `shipped`, `cancelled`, `refunded` | Stock decremented | Internal queue |
 | `shipped` | `delivered`, `refunded` | Stock decremented | "Siparişiniz Kargoya Verildi" (with tracking) |
 | `delivered` | `refunded`, `partially_refunded` | Finalized | "Siparişiniz Teslim Edildi" |
@@ -62,126 +66,102 @@ This document governs the database schema, snapshot persistence, state machines,
 
 ---
 
-## 3. Order Numbering & Collision Resistance
+## 3. Order Numbering vs PayTR Merchant OID
 
-- **Format**: `VZ-YYYYMMDD-XXXXX` (e.g. `VZ-20260828-74912`).
-- **Generation Rule**: Formatted using date prefix and a cryptographically secure random alphanumeric suffix or database sequence.
-- **Uniqueness**: Enforced by `UNIQUE` index in PostgreSQL.
-- **PayTR Mapping**: The order number maps 1:1 with the PayTR `merchant_oid`.
+- **Order Number (`order_number`)**: `VZ-YYYYMMDD-XXXXX` (e.g. `VZ-20260828-74912`).
+- **PayTR Merchant OID (`merchant_oid`)**: Formatted as a strictly alphanumeric unique identifier (<= 64 chars) stored on the `payments` attempt table (e.g. `VZ2026082874912PAY1`).
+- **Collision Resistance**: Generated via database function `public.generate_order_number()` with retry loop.
 
 ---
 
-## 4. Database Schema Specification (Phase 3 Target)
+## 4. Implemented Database Schema (Phase 3.2)
 
+### 4.1 Orders Master Table (`public.orders`)
 ```sql
--- Orders Master Table
 CREATE TABLE public.orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_number TEXT NOT NULL UNIQUE,
     customer_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
     channel TEXT NOT NULL CHECK (channel IN ('retail', 'wholesale')),
     status TEXT NOT NULL DEFAULT 'pending_payment' CHECK (
-        status IN ('pending_payment', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'partially_refunded')
+        status IN (
+            'pending_payment', 'payment_failed', 'paid', 'processing',
+            'shipped', 'delivered', 'cancelled', 'partially_refunded',
+            'refunded', 'payment_review'
+        )
     ),
     currency TEXT NOT NULL DEFAULT 'TRY' CHECK (currency IN ('TRY', 'USD', 'EUR', 'GBP')),
-    subtotal_amount NUMERIC(12, 2) NOT NULL CHECK (subtotal_amount >= 0),
-    shipping_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (shipping_amount >= 0),
     tax_included BOOLEAN NOT NULL DEFAULT true,
-    tax_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (tax_amount >= 0),
-    total_amount NUMERIC(12, 2) NOT NULL CHECK (total_amount >= 0),
-    
-    -- Address Snapshots (Immutable JSONB)
+
+    subtotal_minor BIGINT NOT NULL CHECK (subtotal_minor >= 0),
+    shipping_minor BIGINT NOT NULL DEFAULT 0 CHECK (shipping_minor >= 0),
+    discount_minor BIGINT NOT NULL DEFAULT 0 CHECK (discount_minor >= 0),
+    tax_included_minor BIGINT DEFAULT 0 CHECK (tax_included_minor >= 0),
+    total_minor BIGINT NOT NULL CHECK (total_minor >= 0),
+
     shipping_address JSONB NOT NULL,
     billing_address JSONB NOT NULL,
-    
-    -- Fulfillment Details
+    seller_legal_snapshot JSONB,
+    customer_legal_snapshot JSONB,
+
     shipping_carrier TEXT,
     shipping_tracking_number TEXT,
     shipping_tracking_url TEXT,
-    shipped_at TIMESTAMPTZ,
-    delivered_at TIMESTAMPTZ,
-    
-    -- Cancellation / Notes
+
     cancellation_reason TEXT,
     admin_notes TEXT,
-    
-    -- Invoice / E-Archive Scaffolding
-    invoice_status TEXT NOT NULL DEFAULT 'not_requested' CHECK (
-        invoice_status IN ('not_requested', 'pending', 'issued', 'failed', 'cancelled')
-    ),
-    invoice_number TEXT,
-    invoice_provider TEXT,
-    invoice_issued_at TIMESTAMPTZ,
-    invoice_error TEXT,
-    
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
-);
 
--- Order Items Snapshot Table
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+    paid_at TIMESTAMPTZ,
+    cancelled_at TIMESTAMPTZ,
+    shipped_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+
+    CONSTRAINT chk_orders_total_integrity CHECK (
+        total_minor = (subtotal_minor + shipping_minor - discount_minor)
+    )
+);
+```
+
+### 4.2 Order Items Snapshot Table (`public.order_items`)
+```sql
 CREATE TABLE public.order_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
     product_id UUID REFERENCES public.products(id) ON DELETE SET NULL,
     variant_id UUID REFERENCES public.product_variants(id) ON DELETE SET NULL,
-    
-    -- Immutable Item Snapshots
-    product_name TEXT NOT NULL,
-    variant_name TEXT NOT NULL,
-    sku TEXT NOT NULL,
-    color_name TEXT,
-    material TEXT,
-    image_url TEXT,
-    
+
+    sku_snapshot TEXT NOT NULL,
+    product_name_snapshot TEXT NOT NULL,
+    variant_name_snapshot TEXT NOT NULL,
+    image_url_snapshot TEXT,
+
+    unit_price_minor BIGINT NOT NULL CHECK (unit_price_minor >= 0),
     quantity INTEGER NOT NULL CHECK (quantity > 0),
-    unit_price NUMERIC(12, 2) NOT NULL CHECK (unit_price >= 0),
-    tax_rate NUMERIC(4, 2) NOT NULL DEFAULT 0.20,
-    tax_amount NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
-    total_price NUMERIC(12, 2) NOT NULL CHECK (total_price >= 0),
-    
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now())
+    line_total_minor BIGINT NOT NULL CHECK (line_total_minor >= 0),
+    currency TEXT NOT NULL DEFAULT 'TRY' CHECK (currency IN ('TRY', 'USD', 'EUR', 'GBP')),
+    channel TEXT NOT NULL CHECK (channel IN ('retail', 'wholesale')),
+
+    metadata_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+
+    CONSTRAINT chk_order_items_line_total CHECK (
+        line_total_minor = (unit_price_minor * quantity)
+    )
 );
 ```
 
 ---
 
-## 5. Address Snapshot Structure
+## 5. Supporting Commerce Tables
 
-Address records are persisted as complete JSON snapshots to ensure that future address updates by the customer do not alter historical order records:
-
-```json
-{
-  "full_name": "Ayşe Yılmaz",
-  "company_name": "Studio Yılmaz Tasarım",
-  "tax_number": "1234567890",
-  "tax_office": "Kadıköy VD",
-  "address_line1": "Bağdat Caddesi No: 124 D: 6",
-  "address_line2": "Erenköy",
-  "city": "İstanbul",
-  "state_province": "Kadıköy",
-  "postal_code": "34728",
-  "country_code": "TR",
-  "country_name": "Türkiye",
-  "phone": "+90 532 123 4567"
-}
-```
-
----
-
-## 6. Invoice & E-Archive Scaffolding Contract
-
-While real GIB / e-Archive integration is scheduled for a later milestone, the order schema is architecturally prepared:
-
-- `invoice_status`: Default `'not_requested'` for standard retail; `'pending'` when corporate invoice details are provided.
-- **Allowed Statuses**: `not_requested`, `pending`, `issued`, `failed`, `cancelled`.
-- **Zero Fake Invoices**: The system will not generate fake PDF invoices or pretend that documents have been transmitted to GIB.
-
----
-
-## 7. Row Level Security (RLS) Policy Contract
-
-1. **Customers**:
-   - `SELECT`: Allowed only for orders where `orders.customer_id = auth.uid()`.
-   - `INSERT / UPDATE / DELETE`: Blocked for customers. Order creation and mutation happens exclusively via server-side Edge Functions.
-2. **Administrators**:
-   - `ALL` operations allowed subject to `public.is_admin()` check.
+1. **`payments`**: Payment attempts with unique alphanumeric `merchant_oid`, `expected_amount_minor`, and timeout timestamps.
+2. **`payment_events`**: Append-only log of callback processing events with `event_fingerprint` deduplication.
+3. **`inventory_reservations`**: Temporary 40-minute reservations protecting cart checkout from overselling.
+4. **`inventory_movements`**: Immutable stock movement ledger (`sale`, `refund_restock`, `order_cancellation_release`).
+5. **`order_status_history`**: Append-only history of status changes with actor attribution.
+6. **`order_legal_acceptances`**: Customer acceptance records for Distance Sales Agreements and Preliminary Information Forms.
+7. **`refunds`**: Full and partial refund requests with unique `reference_no` and minor unit amounts.
+8. **`order_invoices`**: Invoice status tracking scaffolding (`not_requested`, `pending`, `issued`).
+9. **`transactional_emails`**: Outbox queue for order confirmations and shipping notices.

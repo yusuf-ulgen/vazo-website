@@ -40,9 +40,8 @@ All domain models are provider-neutral TypeScript interfaces designed to support
 export type CurrencyCode = 'TRY' | 'USD' | 'EUR' | 'GBP';
 
 export interface Money {
-  amount: number;       // Minor units (e.g., 300000 = 3,000.00 TRY) or decimal number
+  amountMinor: number; // Minor units integer (e.g. 300000 = 3,000.00 TRY)
   currency: CurrencyCode;
-  formatted?: string;   // e.g. "3.000,00 ₺"
 }
 ```
 

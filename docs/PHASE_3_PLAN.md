@@ -64,14 +64,14 @@ This document defines the complete roadmap, sub-phase specifications, dependency
 
 ---
 
-### Phase 3.2: Database Schema for Commerce & Logistics
-- **Objective**: Deploy relational PostgreSQL schema for orders, order items, payment transactions, refunds, shipping zones, and shipping rates.
+### Phase 3.2: Database Schema for Commerce & Logistics (COMPLETED)
+- **Objective**: Deploy relational PostgreSQL schema for orders, order items, payment attempts, payment events, inventory reservations, inventory movements, status history, legal acceptances, refunds, invoices, and transactional email outbox.
 - **Scope**:
-  - Migration for `orders` and `order_items` with immutable snapshots and JSONB addresses.
-  - Migration for `payment_transactions` and `refund_records`.
-  - Migration for `shipping_zones`, `shipping_countries`, and `shipping_rates`.
-  - Database triggers for `updated_at` timestamps and RLS policies.
-- **Out of Scope**: Frontend UI wiring, Edge Functions.
+  - Migration `20260828020000_phase3_commerce_schema.sql` with minor units arithmetic, KDV-inclusive invariants, and strict RLS policies.
+  - TypeScript domain models (`Money`, `Order`, `OrderItem`, `Payment`, `Refund`, `InventoryReservation`, `Invoice`, etc.).
+  - Database functions `generate_order_number()`, `get_variant_available_stock()`, `cleanup_expired_inventory_reservations()`.
+  - 103 pgTAP security assertions verified via `npm run test:db:static`.
+- **Out of Scope**: Frontend checkout/admin UI wiring, live PayTR API calls.
 - **Dependencies**: Phase 3.1.
 - **Green Gate Criteria**: Static DB preflight scanner pass, valid hexadecimal UUIDs, pgTAP assertions for new tables and RLS.
 

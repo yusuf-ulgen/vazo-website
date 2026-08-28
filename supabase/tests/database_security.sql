@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(59);
+SELECT plan(103);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -24,6 +24,19 @@ SELECT has_table('public', 'admin_audit_logs', 'Table public.admin_audit_logs sh
 SELECT has_table('public', 'customer_profiles', 'Table public.customer_profiles should exist');
 SELECT has_table('public', 'customer_addresses', 'Table public.customer_addresses should exist');
 
+-- Phase 3.2 Commerce Master Tables
+SELECT has_table('public', 'orders', 'Table public.orders should exist');
+SELECT has_table('public', 'order_items', 'Table public.order_items should exist');
+SELECT has_table('public', 'payments', 'Table public.payments should exist');
+SELECT has_table('public', 'payment_events', 'Table public.payment_events should exist');
+SELECT has_table('public', 'inventory_reservations', 'Table public.inventory_reservations should exist');
+SELECT has_table('public', 'inventory_movements', 'Table public.inventory_movements should exist');
+SELECT has_table('public', 'order_status_history', 'Table public.order_status_history should exist');
+SELECT has_table('public', 'order_legal_acceptances', 'Table public.order_legal_acceptances should exist');
+SELECT has_table('public', 'refunds', 'Table public.refunds should exist');
+SELECT has_table('public', 'order_invoices', 'Table public.order_invoices should exist');
+SELECT has_table('public', 'transactional_emails', 'Table public.transactional_emails should exist');
+
 -- ------------------------------------------------------------------------------
 -- 2. Row Level Security (RLS) Enabled Checks
 -- ------------------------------------------------------------------------------
@@ -39,6 +52,19 @@ SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.admin_users':
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.admin_audit_logs'::regclass), 'RLS should be active on admin_audit_logs');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.customer_profiles'::regclass), 'RLS should be active on customer_profiles');
 SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.customer_addresses'::regclass), 'RLS should be active on customer_addresses');
+
+-- Phase 3.2 Commerce Tables RLS
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.orders'::regclass), 'RLS should be active on orders');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_items'::regclass), 'RLS should be active on order_items');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.payments'::regclass), 'RLS should be active on payments');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.payment_events'::regclass), 'RLS should be active on payment_events');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.inventory_reservations'::regclass), 'RLS should be active on inventory_reservations');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.inventory_movements'::regclass), 'RLS should be active on inventory_movements');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_status_history'::regclass), 'RLS should be active on order_status_history');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_legal_acceptances'::regclass), 'RLS should be active on order_legal_acceptances');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.refunds'::regclass), 'RLS should be active on refunds');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.order_invoices'::regclass), 'RLS should be active on order_invoices');
+SELECT ok((SELECT relrowsecurity FROM pg_class WHERE oid = 'public.transactional_emails'::regclass), 'RLS should be active on transactional_emails');
 
 -- ------------------------------------------------------------------------------
 -- 3. Anonymous Role (Storefront Public Visitor) Isolation Tests
@@ -142,6 +168,57 @@ SELECT throws_ok(
     '42501',
     NULL,
     'Direct anonymous INSERT into customer_addresses must fail'
+);
+
+-- 3.14 Direct Public Browser Mutation Denial: Orders
+SELECT throws_ok(
+    $$ INSERT INTO public.orders (order_number, customer_id, channel, subtotal_minor, total_minor, shipping_address, billing_address)
+       VALUES ('VZ-TEST-0001', 'c1000000-0000-0000-0000-000000000001', 'retail', 10000, 10000, '{}'::jsonb, '{}'::jsonb) $$,
+    '42501',
+    NULL,
+    'Direct anonymous INSERT into orders must fail'
+);
+
+-- 3.15 Anon CANNOT read back orders
+SELECT is(
+    (SELECT count(*) FROM public.orders),
+    0::bigint,
+    'Anonymous user receives 0 rows for orders table (zero leakage)'
+);
+
+-- 3.16 Anon CANNOT read payments
+SELECT is(
+    (SELECT count(*) FROM public.payments),
+    0::bigint,
+    'Anonymous user receives 0 rows for payments table (zero leakage)'
+);
+
+-- 3.17 Anon CANNOT read payment events
+SELECT is(
+    (SELECT count(*) FROM public.payment_events),
+    0::bigint,
+    'Anonymous user receives 0 rows for payment_events table (zero leakage)'
+);
+
+-- 3.18 Anon CANNOT read inventory reservations
+SELECT is(
+    (SELECT count(*) FROM public.inventory_reservations),
+    0::bigint,
+    'Anonymous user receives 0 rows for inventory_reservations (zero leakage)'
+);
+
+-- 3.19 Anon CANNOT read refunds
+SELECT is(
+    (SELECT count(*) FROM public.refunds),
+    0::bigint,
+    'Anonymous user receives 0 rows for refunds table (zero leakage)'
+);
+
+-- 3.20 Anon CANNOT read transactional emails
+SELECT is(
+    (SELECT count(*) FROM public.transactional_emails),
+    0::bigint,
+    'Anonymous user receives 0 rows for transactional_emails table (zero leakage)'
 );
 
 -- ------------------------------------------------------------------------------
@@ -435,6 +512,222 @@ SELECT is(
     (SELECT count(*) FROM public.customer_addresses),
     1::bigint,
     'Customer A can query only own addresses (Customer B addresses isolated)'
+);
+
+-- ------------------------------------------------------------------------------
+-- 10. Phase 3.2 Commerce RLS, Customer Isolation & Operational Tests
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- Setup test orders, order_items, payments, reservations, invoices
+DO $$
+DECLARE
+    v_cust_a UUID := 'c1000000-0000-0000-0000-000000000001';
+    v_cust_b UUID := 'c2000000-0000-0000-0000-000000000002';
+    v_ord_a  UUID := 'e1000000-0000-0000-0000-000000000001';
+    v_ord_b  UUID := 'e2000000-0000-0000-0000-000000000002';
+    v_pay_a  UUID := 'b1000000-0000-0000-0000-000000000001';
+    v_var_id UUID := 'f1000000-0000-0000-0000-000000000001';
+    v_prod_id UUID := 'f0000000-0000-0000-0000-000000000001';
+BEGIN
+    -- Product & Variant setup for commerce calculations
+    INSERT INTO public.products (id, slug, name, short_description, description, material, finish, status, retail_price)
+    VALUES (v_prod_id, 'commerce-vase', 'Commerce Vazo', 'Kısa açıklama', 'Açıklama', 'Seramik', 'Mat', 'published', 250.00)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.product_variants (id, product_id, sku, variant_name, color_name, retail_price, stock_quantity)
+    VALUES (v_var_id, v_prod_id, 'VAZ-COMMERCE-01', 'Beyaz', 250.00, 10)
+    ON CONFLICT (sku) DO NOTHING;
+
+    -- Order A for Customer A
+    INSERT INTO public.orders (
+        id, order_number, customer_id, channel, status, currency, tax_included,
+        subtotal_minor, shipping_minor, discount_minor, tax_included_minor, total_minor,
+        shipping_address, billing_address
+    ) VALUES (
+        v_ord_a, 'VZ-20260828-AAAA1', v_cust_a, 'retail', 'pending_payment', 'TRY', true,
+        25000, 5000, 0, 4167, 30000,
+        '{"city": "Istanbul"}'::jsonb, '{"city": "Istanbul"}'::jsonb
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Order B for Customer B
+    INSERT INTO public.orders (
+        id, order_number, customer_id, channel, status, currency, tax_included,
+        subtotal_minor, shipping_minor, discount_minor, tax_included_minor, total_minor,
+        shipping_address, billing_address
+    ) VALUES (
+        v_ord_b, 'VZ-20260828-BBBB2', v_cust_b, 'retail', 'pending_payment', 'TRY', true,
+        50000, 0, 0, 8333, 50000,
+        '{"city": "Izmir"}'::jsonb, '{"city": "Izmir"}'::jsonb
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Items for Order A
+    INSERT INTO public.order_items (
+        id, order_id, product_id, variant_id, sku_snapshot, product_name_snapshot,
+        variant_name_snapshot, unit_price_minor, quantity, line_total_minor, currency, channel
+    ) VALUES (
+        'a1100000-0000-0000-0000-000000000001', v_ord_a, v_prod_id, v_var_id,
+        'VAZ-COMMERCE-01', 'Commerce Vazo', 'Beyaz', 25000, 1, 25000, 'TRY', 'retail'
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Items for Order B
+    INSERT INTO public.order_items (
+        id, order_id, product_id, variant_id, sku_snapshot, product_name_snapshot,
+        variant_name_snapshot, unit_price_minor, quantity, line_total_minor, currency, channel
+    ) VALUES (
+        'a2200000-0000-0000-0000-000000000002', v_ord_b, v_prod_id, v_var_id,
+        'VAZ-COMMERCE-01', 'Commerce Vazo', 'Beyaz', 25000, 2, 50000, 'TRY', 'retail'
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Payment for Order A
+    INSERT INTO public.payments (
+        id, order_id, provider, merchant_oid, status, expected_amount_minor,
+        currency, test_mode, initiated_at, expires_at
+    ) VALUES (
+        v_pay_a, v_ord_a, 'paytr', 'VZ20260828AAAA1PAY1', 'initiated', 30000,
+        'TRY', true, now(), now() + interval '30 minutes'
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Active unexpired reservation for Order A (2 units)
+    INSERT INTO public.inventory_reservations (
+        id, order_id, variant_id, quantity, status, reserved_at, expires_at
+    ) VALUES (
+        'e3000000-0000-0000-0000-000000000001', v_ord_a, v_var_id, 2, 'reserved',
+        now(), now() + interval '40 minutes'
+    ) ON CONFLICT (id) DO NOTHING;
+
+    -- Invoice record for Order A
+    INSERT INTO public.order_invoices (
+        id, order_id, status
+    ) VALUES (
+        'e4000000-0000-0000-0000-000000000001', v_ord_a, 'not_requested'
+    ) ON CONFLICT (id) DO NOTHING;
+END $$;
+
+-- Switch to Customer A context
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+-- 10.1 Customer A can read own order
+SELECT is(
+    (SELECT count(*) FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000001'),
+    1::bigint,
+    'Customer A can read own orders'
+);
+
+-- 10.2 Customer A receives 0 rows for Customer B order
+SELECT is(
+    (SELECT count(*) FROM public.orders WHERE customer_id = 'c2000000-0000-0000-0000-000000000002'),
+    0::bigint,
+    'Customer A cannot read Customer B orders (RLS isolation)'
+);
+
+-- 10.3 Customer A can read own order items
+SELECT is(
+    (SELECT count(*) FROM public.order_items oi JOIN public.orders o ON o.id = oi.order_id WHERE o.customer_id = 'c1000000-0000-0000-0000-000000000001'),
+    1::bigint,
+    'Customer A can read own order items'
+);
+
+-- 10.4 Customer A receives 0 rows for Customer B order items
+SELECT is(
+    (SELECT count(*) FROM public.order_items oi JOIN public.orders o ON o.id = oi.order_id WHERE o.customer_id = 'c2000000-0000-0000-0000-000000000002'),
+    0::bigint,
+    'Customer A cannot read Customer B order items (RLS isolation)'
+);
+
+-- 10.5 Customer A CANNOT insert orders directly from browser
+SELECT throws_ok(
+    $$ INSERT INTO public.orders (order_number, customer_id, channel, subtotal_minor, total_minor, shipping_address, billing_address)
+       VALUES ('VZ-HACK-0001', 'c1000000-0000-0000-0000-000000000001', 'retail', 10000, 10000, '{}'::jsonb, '{}'::jsonb) $$,
+    '42501',
+    NULL,
+    'Customer cannot insert orders directly from browser'
+);
+
+-- 10.6 Customer A CANNOT update order status or totals directly
+SELECT throws_ok(
+    $$ UPDATE public.orders SET status = 'paid' WHERE customer_id = 'c1000000-0000-0000-0000-000000000001' $$,
+    '42501',
+    NULL,
+    'Customer cannot update order status or totals directly'
+);
+
+-- 10.7 Customer A CANNOT insert payment events
+SELECT throws_ok(
+    $$ INSERT INTO public.payment_events (payment_id, order_id, merchant_oid, event_type, event_fingerprint)
+       VALUES ('b1000000-0000-0000-0000-000000000001', 'e1000000-0000-0000-0000-000000000001', 'MERCH123', 'callback', 'fp123') $$,
+    '42501',
+    NULL,
+    'Customer cannot insert payment_events'
+);
+
+-- 10.8 Customer A can view invoices for own orders
+SELECT is(
+    (SELECT count(*) FROM public.order_invoices),
+    1::bigint,
+    'Customer A can read invoice record for own order'
+);
+
+-- ------------------------------------------------------------------------------
+-- 11. Commerce Domain Functions & Constraints Validation
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- 11.1 generate_order_number() returns VZ-YYYYMMDD-XXXXX pattern
+SELECT ok(
+    public.generate_order_number() ~ '^VZ-[0-9]{8}-[A-Z0-9]{5}$',
+    'generate_order_number() generates valid collision-resistant VZ-YYYYMMDD-XXXXX format'
+);
+
+-- 11.2 get_variant_available_stock computes physical minus active reservations
+SELECT is(
+    public.get_variant_available_stock('f1000000-0000-0000-0000-000000000001'),
+    8,
+    'get_variant_available_stock calculates 10 physical minus 2 active unexpired reservations = 8'
+);
+
+-- 11.3 orders total integrity check throws on mismatch
+SELECT throws_ok(
+    $$ INSERT INTO public.orders (order_number, customer_id, channel, subtotal_minor, shipping_minor, discount_minor, total_minor, shipping_address, billing_address)
+       VALUES ('VZ-TEST-BADTOTAL', 'c1000000-0000-0000-0000-000000000001', 'retail', 10000, 2000, 0, 99999, '{}'::jsonb, '{}'::jsonb) $$,
+    '23514',
+    NULL,
+    'Orders total integrity constraint rejects total mismatch (subtotal + shipping - discount)'
+);
+
+-- 11.4 order_items line total integrity check throws on mismatch
+SELECT throws_ok(
+    $$ INSERT INTO public.order_items (order_id, sku_snapshot, product_name_snapshot, variant_name_snapshot, unit_price_minor, quantity, line_total_minor, currency, channel)
+       VALUES ('e1000000-0000-0000-0000-000000000001', 'SKU-01', 'Vazo', 'Beyaz', 5000, 2, 99999, 'TRY', 'retail') $$,
+    '23514',
+    NULL,
+    'Order items line total integrity constraint rejects mismatch (unit_price * quantity)'
+);
+
+-- 11.5 payments merchant_oid rejects non-alphanumeric (e.g. contains hyphens or special chars)
+SELECT throws_ok(
+    $$ INSERT INTO public.payments (order_id, merchant_oid, expected_amount_minor, expires_at)
+       VALUES ('e1000000-0000-0000-0000-000000000001', 'VZ-INVALID-OID-WITH-HYPHENS', 10000, now() + interval '30 minutes') $$,
+    '23514',
+    NULL,
+    'Payments merchant_oid check constraint rejects non-alphanumeric identifiers'
+);
+
+-- 11.6 refunds amount_minor rejects non-positive (e.g. 0 or negative)
+SELECT throws_ok(
+    $$ INSERT INTO public.refunds (order_id, payment_id, request_id, reference_no, amount_minor)
+       VALUES ('e1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', 'req-01', 'REF01', 0) $$,
+    '23514',
+    NULL,
+    'Refunds amount_minor check constraint rejects zero or negative refund amounts'
+);
+
+-- 11.7 order_invoices default status is 'not_requested'
+SELECT is(
+    (SELECT status FROM public.order_invoices WHERE order_id = 'e1000000-0000-0000-0000-000000000001'),
+    'not_requested',
+    'Order invoice scaffold default status is not_requested'
 );
 
 RESET ROLE;

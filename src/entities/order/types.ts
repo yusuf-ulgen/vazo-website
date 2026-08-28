@@ -1,44 +1,221 @@
-import { Address } from '../customer/types';
+import { CustomerAddress } from '../customer/types';
+import { CurrencyCode, Money } from '@/shared/lib/money';
+
+export type { CurrencyCode, Money };
+
+export type OrderChannel = 'retail' | 'wholesale';
 
 export type OrderStatus =
   | 'pending_payment'
+  | 'payment_failed'
   | 'paid'
   | 'processing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'partially_refunded'
+  | 'refunded'
+  | 'payment_review';
 
 export interface OrderItem {
   id: string;
-  productId: string;
-  productName: string;
-  variantId: string;
-  variantName: string;
-  sku: string;
-  channel: 'retail' | 'wholesale';
-  unitPrice: number;
+  order_id: string;
+  product_id: string | null;
+  variant_id: string | null;
+  sku_snapshot: string;
+  product_name_snapshot: string;
+  variant_name_snapshot: string;
+  image_url_snapshot: string | null;
+  unit_price_minor: number;
   quantity: number;
-  totalPrice: number;
-  imageUrl?: string;
+  line_total_minor: number;
+  currency: CurrencyCode;
+  channel: OrderChannel;
+  metadata_snapshot: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface Order {
   id: string;
-  orderNumber: string;
-  channel: 'retail' | 'wholesale';
-  customerId: string;
-  customerName: string;
-  customerEmail: string;
-  items: OrderItem[];
-  subtotal: number;
-  discountTotal: number;
-  shippingFee: number;
-  taxAmount: number;
-  totalAmount: number;
+  order_number: string;
+  customer_id: string;
+  channel: OrderChannel;
   status: OrderStatus;
-  shippingAddress: Address;
-  billingAddress: Address;
-  trackingNumber?: string;
-  createdAt: string;
-  updatedAt: string;
+  currency: CurrencyCode;
+  tax_included: boolean;
+  subtotal_minor: number;
+  shipping_minor: number;
+  discount_minor: number;
+  tax_included_minor: number;
+  total_minor: number;
+  shipping_address: CustomerAddress;
+  billing_address: CustomerAddress;
+  seller_legal_snapshot?: Record<string, unknown> | null;
+  customer_legal_snapshot?: Record<string, unknown> | null;
+  shipping_carrier?: string | null;
+  shipping_tracking_number?: string | null;
+  shipping_tracking_url?: string | null;
+  cancellation_reason?: string | null;
+  admin_notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  paid_at?: string | null;
+  cancelled_at?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
+  items?: OrderItem[];
+}
+
+export type PaymentStatus =
+  | 'initiated'
+  | 'pending'
+  | 'paid'
+  | 'failed'
+  | 'partially_refunded'
+  | 'refunded'
+  | 'manual_review';
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  provider: 'paytr';
+  merchant_oid: string;
+  status: PaymentStatus;
+  expected_amount_minor: number;
+  provider_total_amount_minor?: number | null;
+  currency: CurrencyCode;
+  test_mode: boolean;
+  failure_code?: string | null;
+  failure_message_safe?: string | null;
+  initiated_at: string;
+  expires_at: string;
+  paid_at?: string | null;
+  failed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentEvent {
+  id: string;
+  payment_id: string;
+  order_id: string;
+  merchant_oid: string;
+  event_type: string;
+  event_fingerprint: string;
+  safe_metadata: Record<string, unknown>;
+  received_at: string;
+}
+
+export type InventoryReservationStatus = 'reserved' | 'converted' | 'released' | 'expired';
+
+export interface InventoryReservation {
+  id: string;
+  order_id: string;
+  variant_id: string;
+  quantity: number;
+  status: InventoryReservationStatus;
+  reserved_at: string;
+  expires_at: string;
+  converted_at?: string | null;
+  released_at?: string | null;
+  created_at: string;
+}
+
+export type InventoryMovementType =
+  | 'sale'
+  | 'refund_restock'
+  | 'order_cancellation_release'
+  | 'manual_adjustment_reference'
+  | 'initial_stock'
+  | 'scrap_loss';
+
+export interface InventoryMovement {
+  id: string;
+  variant_id: string;
+  order_id?: string | null;
+  quantity_delta: number;
+  movement_type: InventoryMovementType;
+  safe_reason: string;
+  actor_type: 'system' | 'customer' | 'admin';
+  actor_id?: string | null;
+  created_at: string;
+}
+
+export interface OrderStatusHistory {
+  id: string;
+  order_id: string;
+  from_status?: string | null;
+  to_status: OrderStatus;
+  actor_type: 'system' | 'customer' | 'admin';
+  actor_id?: string | null;
+  note?: string | null;
+  created_at: string;
+}
+
+export type LegalDocumentKey =
+  | 'distance_sales_agreement'
+  | 'preliminary_information_form'
+  | 'terms_of_service'
+  | 'privacy_policy';
+
+export interface OrderLegalAcceptance {
+  id: string;
+  order_id: string;
+  document_key: LegalDocumentKey;
+  document_version: string;
+  content_snapshot: Record<string, unknown>;
+  accepted_at: string;
+}
+
+export type RefundStatus = 'pending' | 'succeeded' | 'failed' | 'cancelled';
+
+export interface Refund {
+  id: string;
+  order_id: string;
+  payment_id: string;
+  request_id: string;
+  reference_no: string;
+  amount_minor: number;
+  currency: CurrencyCode;
+  status: RefundStatus;
+  requested_by?: string | null;
+  safe_reason?: string | null;
+  provider_error_code?: string | null;
+  provider_error_message?: string | null;
+  requested_at: string;
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InvoiceStatus = 'not_requested' | 'pending' | 'issued' | 'failed' | 'cancelled';
+
+export interface OrderInvoice {
+  id: string;
+  order_id: string;
+  status: InvoiceStatus;
+  provider?: string | null;
+  invoice_number?: string | null;
+  issued_at?: string | null;
+  error_message_safe?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EmailStatus = 'pending' | 'processing' | 'sent' | 'failed';
+
+export interface TransactionalEmail {
+  id: string;
+  order_id?: string | null;
+  customer_id?: string | null;
+  recipient_email: string;
+  template_key: string;
+  payload_safe: Record<string, unknown>;
+  status: EmailStatus;
+  attempt_count: number;
+  available_at: string;
+  sent_at?: string | null;
+  last_error_safe?: string | null;
+  created_at: string;
+  updated_at: string;
 }

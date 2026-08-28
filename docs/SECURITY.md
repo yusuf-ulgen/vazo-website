@@ -63,12 +63,19 @@ This document establishes the security standards and operational policies for th
 | `contact_messages` | DENIED (Ingested via Edge Function) | DENIED (Ingested via Edge Function) | ALL (`is_admin()`) |
 | `newsletter_subscriptions` | DENIED (Ingested via Edge Function) | DENIED (Ingested via Edge Function) | ALL (`is_admin()`) |
 | `admin_audit_logs` | DENIED (0 access) | DENIED (0 access) | SELECT & INSERT (`is_admin()`); UPDATE & DELETE BLOCKED BY TRIGGER |
-| `orders` [PHASE 3] | DENIED (0 access) | SELECT (`customer_id = auth.uid()`) | ALL (`is_admin()`) |
-| `order_items` [PHASE 3] | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
-| `payment_transactions` [PHASE 3] | DENIED (0 access) | DENIED (0 access) | ALL (`is_admin()`) |
-| `shipping_zones` & `rates` [PHASE 3] | SELECT (`active = true`) | SELECT (`active = true`) | ALL (`is_admin()`) |
-| `customer_profiles` [PHASE 3] | DENIED (0 access) | SELECT, UPDATE (`user_id = auth.uid()`, privileged columns protected by trigger) | ALL (`is_admin()`) |
-| `customer_addresses` [PHASE 3] | DENIED (0 access) | SELECT, INSERT, UPDATE, DELETE (`user_id = auth.uid()`) | ALL (`is_admin()`) |
+| `customer_profiles` | DENIED (0 access) | SELECT, UPDATE (`user_id = auth.uid()`, privileged columns protected by trigger) | ALL (`is_admin()`) |
+| `customer_addresses` | DENIED (0 access) | SELECT, INSERT, UPDATE, DELETE (`user_id = auth.uid()`) | ALL (`is_admin()`) |
+| `orders` | DENIED (0 access) | SELECT (`customer_id = auth.uid()`), mutations blocked | ALL (`is_admin()`) |
+| `order_items` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
+| `payments` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
+| `payment_events` | DENIED (0 access) | DENIED (0 access) | SELECT (`is_admin()`) |
+| `inventory_reservations` | DENIED (0 access) | DENIED (0 access) | SELECT (`is_admin()`) |
+| `inventory_movements` | DENIED (0 access) | DENIED (0 access) | SELECT (`is_admin()`) |
+| `order_status_history` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | SELECT (`is_admin()`) |
+| `order_legal_acceptances` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | SELECT (`is_admin()`) |
+| `refunds` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
+| `order_invoices` | DENIED (0 access) | SELECT (via parent order `customer_id = auth.uid()`) | ALL (`is_admin()`) |
+| `transactional_emails` | DENIED (0 access) | DENIED (0 access) | SELECT (`is_admin()`) |
 
 ---
 

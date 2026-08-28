@@ -13,6 +13,8 @@ Following [ADR-010](ADR.md#adr-010), **PayTR** is selected as the primary paymen
 - **Hosted Redirect Fallback**: Maintained purely as a documented emergency/fallback recovery strategy if PayTR iFrame rendering fails on unsupported legacy user agents.
 - **Installment Policy**: Disabled in Phase 3 V1 (`no_installment = 1`). No installment selection UI is displayed.
 - **Active Currency**: `TRY` (Turkish Lira). Future-ready for `USD`, `EUR`, and `GBP`.
+- **Payment Attempts Schema**: Multiple payment attempts per order are supported via `public.payments` (`merchant_oid` unique, alphanumeric <= 64 chars).
+- **Payment Event Audit**: Callback processing history is safely captured in `public.payment_events` with `event_fingerprint` deduplication and zero secret storage.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────────────────┐
