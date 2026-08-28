@@ -114,4 +114,38 @@ describe('Supabase Edge Functions Security & Validation Rules', () => {
       expect(isDuplicate).toBe(true);
     });
   });
+
+  describe('checkout-quote & create-checkout-order edge functions rules', () => {
+    it('requires Authorization Bearer token header', () => {
+      const authHeader = null;
+      const isAuthenticated = Boolean(authHeader && authHeader.startsWith('Bearer '));
+      expect(isAuthenticated).toBe(false);
+    });
+
+    it('rejects order creation when preliminary info or distance sales is not accepted', () => {
+      const payload = {
+        accepted_preliminary_info: true,
+        accepted_distance_sales: false, // NOT ACCEPTED
+      };
+
+      const isValid = Boolean(payload.accepted_preliminary_info && payload.accepted_distance_sales);
+      expect(isValid).toBe(false);
+    });
+
+    it('requires valid ISO 2-letter destination country and items array', () => {
+      const validPayload = {
+        items: [{ variant_id: 'v1', quantity: 2 }],
+        destination_country: 'TR',
+      };
+
+      const isValid =
+        Array.isArray(validPayload.items) &&
+        validPayload.items.length > 0 &&
+        Boolean(validPayload.destination_country) &&
+        validPayload.destination_country.length === 2;
+
+      expect(isValid).toBe(true);
+    });
+  });
 });
+

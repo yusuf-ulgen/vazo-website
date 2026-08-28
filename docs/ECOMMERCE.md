@@ -307,3 +307,87 @@ export interface InvoiceScaffolding {
 }
 ```
 
+---
+
+## 6. Server-Authoritative Checkout Contracts (Phase 3.4)
+
+The checkout pipeline enforces server-side pricing through two Edge Functions backed by PostgreSQL RPCs.
+
+### 6.1 Checkout Quote Request
+
+```typescript
+export interface CheckoutQuoteItemInput {
+  variant_id: string;
+  quantity: number;
+}
+
+export interface CheckoutQuoteRequest {
+  items: CheckoutQuoteItemInput[];
+  destination_country?: string;
+  channel?: 'retail' | 'wholesale';
+  currency?: string;
+}
+```
+
+### 6.2 Checkout Quote Response
+
+```typescript
+export interface CheckoutQuoteResponse {
+  supported: boolean;                 // false if destination country has no active shipping zone
+  channel: 'retail' | 'wholesale';
+  currency: string;
+  destination_country: string;
+  items: CheckoutQuoteItem[];
+  subtotal_minor: number;
+  shipping_minor: number;
+  free_shipping_applied: boolean;
+  estimated_delivery_text: string | null;
+  discount_minor: number;
+  tax_included: boolean;              // Always true — KDV dahildir
+  tax_rate: number;                   // e.g. 20 for %20 KDV
+  tax_included_minor: number;         // Extracted tax portion for display
+  total_minor: number;
+}
+```
+
+### 6.3 Create Order Request
+
+```typescript
+export interface CreateOrderRequest {
+  items: CheckoutQuoteItemInput[];
+  shipping_address: CustomerAddress;
+  billing_address?: CustomerAddress;
+  channel?: 'retail' | 'wholesale';
+  currency?: string;
+  coupon_code?: string;
+  accepted_preliminary_info: boolean; // Must be true
+  accepted_distance_sales: boolean;   // Must be true
+}
+```
+
+### 6.4 Create Order Response
+
+```typescript
+export interface CreateOrderResponse {
+  order_id: string;
+  order_number: string;              // VZ-YYYYMMDD-XXXXX
+  channel: 'retail' | 'wholesale';
+  status: 'pending_payment';         // Always pending_payment at creation
+  currency: string;
+  total_minor: number;
+  tax_included: boolean;
+  expires_at: string;                // ISO timestamp, 40 minutes from creation
+  reservation_timeout_minutes: number; // 40
+  payment_timeout_minutes: number;     // 30
+}
+```
+
+### 6.5 Checkout Security Rules
+
+| Rule | Enforcement |
+|---|---|
+| Browser cannot set unit_price | Server resolves from `product_variants.retail_price_minor` |
+| Browser cannot claim wholesale | `customer_profile.wholesale_approved` verified server-side |
+| Browser cannot set shipping | Resolved by `shipping_resolver` via Phase 3.3 engine |
+| Browser cannot bypass stock | `physical_quantity - active_unexpired_reservations` enforced atomically |
+| Legal must be accepted | `accepted_preliminary_info AND accepted_distance_sales` required |

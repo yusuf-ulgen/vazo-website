@@ -165,3 +165,34 @@ CREATE TABLE public.order_items (
 7. **`refunds`**: Full and partial refund requests with unique `reference_no` and minor unit amounts.
 8. **`order_invoices`**: Invoice status tracking scaffolding (`not_requested`, `pending`, `issued`).
 9. **`transactional_emails`**: Outbox queue for order confirmations and shipping notices.
+
+---
+
+## 6. Checkout Quote & Order Creation RPCs (Phase 3.4)
+
+### `public.calculate_checkout_quote(...)`
+
+A STABLE SECURITY DEFINER function that:
+
+1. Validates product/variant availability and retail/wholesale pricing.
+2. Evaluates physical stock minus active unexpired reservations.
+3. Resolves dynamic shipping rate via Phase 3.3 shipping engine.
+4. Returns all amounts as integer minor units (kuruş/cents), with `tax_included = true`.
+
+Called by the `checkout-quote` Edge Function. Browser sends only `variant_id + quantity + destination_country + channel`. All prices are resolved server-side.
+
+### `public.create_checkout_order(...)`
+
+A SECURITY DEFINER atomic transaction RPC that:
+
+1. Validates customer JWT and channel eligibility.
+2. Locks variant rows with `SELECT ... FOR UPDATE` (sorted by `id` to prevent deadlocks).
+3. Validates stock availability (physical stock minus active reservations).
+4. Creates the order record, order_items with immutable snapshots, inventory_reservations (40 min TTL), address snapshots, and `order_legal_acceptances` entries.
+5. Enforces total integrity: `total_minor = subtotal_minor + shipping_minor - discount_minor`.
+
+**Reservation TTL**: 40 minutes. **PayTR timeout**: 30 minutes (reservation always outlasts payment window).
+
+### Legal Acceptance Snapshot
+
+Both *Ön Bilgilendirme Formu* (`preliminary_info`) and *Mesafeli Satış Sözleşmesi* (`distance_sales`) must be explicitly accepted before order creation. The full text is captured in `order_legal_acceptances` at the moment of acceptance and is immutable thereafter.

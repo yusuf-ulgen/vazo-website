@@ -49,6 +49,8 @@ export function formatMinorMoney(
   }).format(decimalAmount);
 }
 
+export const formatMoneyMinor = formatMinorMoney;
+
 /**
  * Calculates VAT/KDV extracted from a KDV-inclusive gross total in minor units.
  * Formula: Tax = Gross - (Gross / (1 + taxRate))

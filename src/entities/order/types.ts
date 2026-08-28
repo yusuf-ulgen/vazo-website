@@ -219,3 +219,69 @@ export interface TransactionalEmail {
   created_at: string;
   updated_at: string;
 }
+
+export interface CheckoutQuoteItemInput {
+  variant_id: string;
+  quantity: number;
+}
+
+export interface CheckoutQuoteItem {
+  variant_id: string;
+  product_id: string;
+  product_name: string;
+  variant_name: string;
+  sku: string;
+  image_url: string | null;
+  unit_price_minor: number;
+  quantity: number;
+  line_total_minor: number;
+}
+
+export interface CheckoutQuoteRequest {
+  items: CheckoutQuoteItemInput[];
+  channel?: OrderChannel;
+  currency?: CurrencyCode;
+  destination_country?: string;
+}
+
+export interface CheckoutQuoteResponse {
+  supported: boolean;
+  channel: OrderChannel;
+  currency: CurrencyCode;
+  destination_country: string;
+  items: CheckoutQuoteItem[];
+  subtotal_minor: number;
+  shipping_minor: number;
+  free_shipping_applied: boolean;
+  estimated_delivery_text: string | null;
+  discount_minor: number;
+  tax_included: boolean;
+  tax_rate: number;
+  tax_included_minor: number;
+  total_minor: number;
+  message?: string;
+}
+
+export interface CreateOrderRequest {
+  items: CheckoutQuoteItemInput[];
+  channel?: OrderChannel;
+  currency?: CurrencyCode;
+  destination_country?: string;
+  shipping_address: CustomerAddress;
+  billing_address?: CustomerAddress;
+  accepted_preliminary_info: boolean;
+  accepted_distance_sales: boolean;
+}
+
+export interface CreateOrderResponse {
+  order_id: string;
+  order_number: string;
+  status: OrderStatus;
+  subtotal_minor: number;
+  shipping_minor: number;
+  total_minor: number;
+  currency: CurrencyCode;
+  expires_at: string;
+  payment_timeout_minutes: number;
+  reservation_timeout_minutes: number;
+}

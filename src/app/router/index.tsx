@@ -13,15 +13,20 @@ import { WholesaleHowItWorksPage } from '@/site/pages/wholesale/WholesaleHowItWo
 import { WholesaleApplyPage } from '@/site/pages/wholesale/WholesaleApplyPage';
 import { WishlistPage } from '@/site/pages/WishlistPage';
 import { CartPage } from '@/site/pages/CartPage';
+import { CheckoutPage } from '@/site/pages/CheckoutPage';
 import { AboutPage } from '@/site/pages/AboutPage';
 import { ContactPage } from '@/site/pages/ContactPage';
 import { FaqPage } from '@/site/pages/FaqPage';
 import { ShippingReturnsPolicyPage } from '@/site/pages/policies/ShippingReturnsPolicyPage';
 import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPage';
 import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
+import { PreliminaryInfoPolicyPage } from '@/site/pages/policies/PreliminaryInfoPolicyPage';
+import { DistanceSalesPolicyPage } from '@/site/pages/policies/DistanceSalesPolicyPage';
 import { AuthCallbackPage } from '@/site/pages/AuthCallbackPage';
 import { AccountOverviewPage } from '@/site/pages/AccountOverviewPage';
 import { AccountAddressesPage } from '@/site/pages/AccountAddressesPage';
+import { AccountOrdersPage } from '@/site/pages/AccountOrdersPage';
+import { AccountOrderDetailPage } from '@/site/pages/AccountOrderDetailPage';
 import { NotFoundPage } from '@/site/pages/NotFoundPage';
 
 // Admin Code Splitting (Lazy-loaded to keep public initial bundle clean)
@@ -130,6 +135,10 @@ export const router = createBrowserRouter([
         element: <CartPage />,
       },
       {
+        path: 'checkout',
+        element: <CheckoutPage />,
+      },
+      {
         path: 'wholesale',
         element: <WholesaleLandingPage />,
       },
@@ -158,6 +167,14 @@ export const router = createBrowserRouter([
         element: <AccountAddressesPage />,
       },
       {
+        path: 'account/orders',
+        element: <AccountOrdersPage />,
+      },
+      {
+        path: 'account/orders/:orderId',
+        element: <AccountOrderDetailPage />,
+      },
+      {
         path: 'about',
         element: <AboutPage />,
       },
@@ -180,6 +197,14 @@ export const router = createBrowserRouter([
       {
         path: 'policies/terms',
         element: <TermsOfServicePage />,
+      },
+      {
+        path: 'policies/preliminary-info',
+        element: <PreliminaryInfoPolicyPage />,
+      },
+      {
+        path: 'policies/distance-sales',
+        element: <DistanceSalesPolicyPage />,
       },
       {
         path: 'privacy',

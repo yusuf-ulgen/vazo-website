@@ -161,16 +161,13 @@ export function CartPage() {
 
               {/* Explicit Checkout Notice & Button */}
               <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    alert('Ödeme sağlayıcı entegrasyonu (Iyzico / Stripe / PayTR) onay sürecindedir. Sepetiniz ve sipariş kalemleriniz güvenle korunmaktadır.');
-                  }}
+                <Link
+                  to="/checkout"
                   className="w-full bg-action-primary text-action-primary-text py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
                 >
                   <span>Ödemeye Geç</span>
                   <ArrowRight className="w-4 h-4" />
-                </button>
+                </Link>
 
                 <div className="p-3 bg-surface-primary border border-border-subtle space-y-1 text-[11px] text-text-muted">
                   <div className="flex items-center gap-1.5 text-text-secondary font-medium">

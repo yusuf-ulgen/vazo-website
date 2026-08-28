@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(120);
+SELECT plan(135);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -829,6 +829,199 @@ SELECT throws_ok(
     '42501',
     NULL,
     'Authenticated customer cannot insert shipping rates'
+);
+
+RESET ROLE;
+
+-- ------------------------------------------------------------------------------
+-- 13. Phase 3.4 Checkout Quote, Order Creation RPC & Concurrency Assertions
+-- ------------------------------------------------------------------------------
+
+-- 13.1 calculate_checkout_quote and create_checkout_order functions exist
+SELECT is(
+    (SELECT count(*)::INTEGER FROM pg_proc WHERE proname = 'calculate_checkout_quote'),
+    1,
+    'Function public.calculate_checkout_quote should exist'
+);
+SELECT is(
+    (SELECT count(*)::INTEGER FROM pg_proc WHERE proname = 'create_checkout_order'),
+    1,
+    'Function public.create_checkout_order should exist'
+);
+
+-- 13.2 calculate_checkout_quote rejects invalid channel
+SELECT throws_ok(
+    $$ SELECT public.calculate_checkout_quote(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'invalid_channel',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB
+    ) $$,
+    NULL,
+    'Geçersiz kanal: invalid_channel',
+    'calculate_checkout_quote rejects invalid channel'
+);
+
+-- 13.3 calculate_checkout_quote rejects wholesale if customer profile is not approved
+SELECT throws_ok(
+    $$ SELECT public.calculate_checkout_quote(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'wholesale',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB
+    ) $$,
+    NULL,
+    'Toptan kanal için onaylı kurumsal hesap gereklidir.',
+    'calculate_checkout_quote rejects wholesale channel for non-approved customer'
+);
+
+-- 13.4 calculate_checkout_quote rejects empty items array
+SELECT throws_ok(
+    $$ SELECT public.calculate_checkout_quote(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'retail',
+        'TRY',
+        'TR',
+        '[]'::JSONB
+    ) $$,
+    NULL,
+    'Sepetinizde ürün bulunmamaktadır.',
+    'calculate_checkout_quote rejects empty items'
+);
+
+-- 13.5 create_checkout_order rejects missing legal acceptance
+SELECT throws_ok(
+    $$ SELECT public.create_checkout_order(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'retail',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
+        false,
+        true
+    ) $$,
+    NULL,
+    'Sipariş oluşturmak için Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi onaylanmalıdır.',
+    'create_checkout_order requires both legal acceptance checkboxes'
+);
+
+-- 13.6 create_checkout_order rejects missing destination address
+SELECT throws_ok(
+    $$ SELECT public.create_checkout_order(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'retail',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB,
+        NULL,
+        NULL,
+        true,
+        true
+    ) $$,
+    NULL,
+    'Geçerli bir teslimat adresi zorunludur.',
+    'create_checkout_order rejects null shipping address'
+);
+
+-- 13.7 Seed Test Fixtures for Successful Checkout
+DO $$
+BEGIN
+    INSERT INTO auth.users (id, email)
+    VALUES ('c1000000-0000-0000-0000-000000000099', 'checkout-test@example.com')
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.products (id, slug, name, description, material, status, retail_price)
+    VALUES ('a2000000-0000-0000-0000-000000000099', 'checkout-vazo', 'Checkout Vazo', 'Desc', 'Seramik', 'published', 2500.00)
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO public.product_variants (id, product_id, sku, title, stock_quantity, active)
+    VALUES ('b2000000-0000-0000-0000-000000000099', 'a2000000-0000-0000-0000-000000000099', 'VZ-CHK-01', 'Beyaz', 5, true)
+    ON CONFLICT (id) DO UPDATE SET stock_quantity = 5, active = true;
+END $$;
+
+-- 13.8 create_checkout_order successfully creates order and reserves stock
+SELECT lives_ok(
+    $$ SELECT public.create_checkout_order(
+        'c1000000-0000-0000-0000-000000000099'::UUID,
+        'retail',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000099", "quantity": 2}]'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
+        true,
+        true
+    ) $$,
+    'create_checkout_order executes atomic transaction with row locking, reservation and order generation'
+);
+
+-- 13.9 Verify Created Order Properties
+SELECT is(
+    (SELECT status FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1),
+    'pending_payment',
+    'Created order has initial status pending_payment'
+);
+
+-- 13.10 Verify Inventory Reservation was Created with Quantity 2
+SELECT is(
+    (SELECT quantity FROM public.inventory_reservations WHERE variant_id = 'b2000000-0000-0000-0000-000000000099' AND status = 'reserved' ORDER BY created_at DESC LIMIT 1),
+    2,
+    'Inventory reservation created with exact requested quantity'
+);
+
+-- 13.11 Verify Available Stock is now 3 (5 physical - 2 reserved)
+SELECT is(
+    public.get_variant_available_stock('b2000000-0000-0000-0000-000000000099'::UUID),
+    3,
+    'Available stock accurately reflects active unexpired reservations under concurrency'
+);
+
+-- 13.12 Verify Legal Acceptances Recorded 2 Documents
+SELECT is(
+    (SELECT count(*)::INTEGER FROM public.order_legal_acceptances WHERE order_id = (SELECT id FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1)),
+    2,
+    'Two legal documents (preliminary_info & distance_sales) immutably snapshotted'
+);
+
+-- 13.13 Concurrency Check: Attempting to reserve more than available (4 > 3 remaining) must fail
+SELECT throws_ok(
+    $$ SELECT public.create_checkout_order(
+        'c1000000-0000-0000-0000-000000000099'::UUID,
+        'retail',
+        'TRY',
+        'TR',
+        '[{"variant_id": "b2000000-0000-0000-0000-000000000099", "quantity": 4}]'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
+        true,
+        true
+    ) $$,
+    NULL,
+    'Yetersiz stok: "Checkout Vazo - Beyaz". Kalan stok: 3, Talep edilen: 4',
+    'create_checkout_order prevents overselling remaining stock'
+);
+
+-- 13.14 Orders RLS: Customer cannot view another customer order
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+
+SELECT is(
+    (SELECT count(*)::INTEGER FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099'),
+    0,
+    'Customer A cannot view Customer B orders via RLS'
+);
+
+-- 13.15 Orders RLS: Anonymous/Customer cannot directly insert orders bypassing RPC
+SELECT throws_ok(
+    $$ INSERT INTO public.orders (order_number, customer_id, channel, status, subtotal_minor, total_minor, shipping_address, billing_address)
+       VALUES ('VZ-FAKE-99999', 'c1000000-0000-0000-0000-000000000001', 'retail', 'pending_payment', 100, 100, '{}', '{}') $$,
+    '42501',
+    NULL,
+    'Customer cannot directly insert orders without server RPC execution'
 );
 
 RESET ROLE;
