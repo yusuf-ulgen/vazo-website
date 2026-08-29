@@ -22,6 +22,8 @@ import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPa
 import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
 import { PreliminaryInfoPolicyPage } from '@/site/pages/policies/PreliminaryInfoPolicyPage';
 import { DistanceSalesPolicyPage } from '@/site/pages/policies/DistanceSalesPolicyPage';
+import { PaymentSuccessPage } from '@/site/pages/payment/PaymentSuccessPage';
+import { PaymentFailurePage } from '@/site/pages/payment/PaymentFailurePage';
 import { AuthCallbackPage } from '@/site/pages/AuthCallbackPage';
 import { AccountOverviewPage } from '@/site/pages/AccountOverviewPage';
 import { AccountAddressesPage } from '@/site/pages/AccountAddressesPage';
@@ -173,6 +175,14 @@ export const router = createBrowserRouter([
       {
         path: 'account/orders/:orderId',
         element: <AccountOrderDetailPage />,
+      },
+      {
+        path: 'payment/success',
+        element: <PaymentSuccessPage />,
+      },
+      {
+        path: 'payment/failure',
+        element: <PaymentFailurePage />,
       },
       {
         path: 'about',

@@ -13,8 +13,8 @@ This directory contains the immutable, chronological sub-phase execution reports
 | [`PHASE_3_2_ORDER_PAYMENT_SCHEMA.md`](PHASE_3_2_ORDER_PAYMENT_SCHEMA.md) | Order, Payment, Refund, Reservation & Invoice Domain | `4bbb7deea1e090699ee0fd25a102365839f7c716` | `58208de3bae418e14a08145b8e26a03d7a33fdef` | 🟢 100% VERIFIED |
 | [`PHASE_3_3_SHIPPING.md`](PHASE_3_3_SHIPPING.md) | Global Shipping Architecture & Admin Logistics | `b7c492bdfa5933a24b77e57476c98d820c611e59` | `2309ae93f9b50de5485fa591b0f70b051431e7e6` | 🟢 100% VERIFIED |
 | [`PHASE_3_4_CHECKOUT.md`](PHASE_3_4_CHECKOUT.md) | Server-Authoritative Checkout & Legal Order Creation | `1f9596c3c46742a1318e31d007a82916900903d5` | `7659a2eb12e662325b9115ee72f7c8d934854dbe` | 🟢 100% VERIFIED |
-| `PHASE_3_5_PAYTR_TOKEN_IFRAME.md` | PayTR Payment Integration — Token API & Inline iFrame | Planned | Planned | ⏳ PENDING |
-| `PHASE_3_6_PAYTR_CALLBACK_WEBHOOK.md` | PayTR Server-to-Server Callback & Webhook Verification | Planned | Planned | ⏳ PENDING |
+| [`PHASE_3_5_PAYTR_IFRAME.md`](PHASE_3_5_PAYTR_IFRAME.md) | PayTR Payment Integration — Token API & Inline iFrame | `093df2d2e51af51f3c256766671df2167cba2458` | Pending close SHA | 🟢 100% VERIFIED |
+| [`PHASE_3_6_PAYTR_CALLBACK.md`](PHASE_3_6_PAYTR_CALLBACK.md) | PayTR Server-to-Server Callback & Webhook Verification | `093df2d2e51af51f3c256766671df2167cba2458` | Pending close SHA | 🟢 100% VERIFIED |
 | `PHASE_3_7_CHECKOUT_FLOW.md` | Storefront Checkout Flow & Order Review Journey | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_8_ADMIN_ORDERS.md` | Admin Orders & Fulfillment Management | Planned | Planned | ⏳ PENDING |
 | `PHASE_3_9_ADMIN_PAYMENTS_REFUNDS.md` | Admin Payments & Server-Side Refunds | Planned | Planned | ⏳ PENDING |

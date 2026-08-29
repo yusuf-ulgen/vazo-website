@@ -285,3 +285,17 @@ export interface CreateOrderResponse {
   payment_timeout_minutes: number;
   reservation_timeout_minutes: number;
 }
+
+export interface PayTRTokenRequest {
+  order_id: string;
+}
+
+export interface PayTRTokenResponse {
+  success: boolean;
+  token: string;
+  iframe_url: string;
+  merchant_oid: string;
+  is_test_mode: boolean;
+  error?: string;
+}
+

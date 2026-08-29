@@ -5,6 +5,7 @@ import {
   CheckoutQuoteResponse,
   CreateOrderRequest,
   CreateOrderResponse,
+  PayTRTokenResponse,
 } from '../types';
 import { shippingRepository } from '@/entities/shipping/api/shipping-repository';
 
@@ -264,4 +265,58 @@ export const orderRepository = {
       reservation_timeout_minutes: 40,
     };
   },
+
+  /**
+   * Generates a PayTR Inline iFrame token for the given order.
+   */
+  async getPayTRToken(orderId: string): Promise<PayTRTokenResponse> {
+    if (!orderId) {
+      throw new Error('Sipariş kimliği (orderId) zorunludur.');
+    }
+
+    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+      return this._simulateLocalPayTRToken(orderId);
+    }
+
+    const client = getSupabase();
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (!session) {
+      throw new Error('Ödeme başlatmak için müşteri oturumu zorunludur.');
+    }
+
+    const { data, error } = await client.functions.invoke('create-paytr-token', {
+      body: { order_id: orderId },
+    });
+
+    if (error) {
+      console.error('[orderRepository.getPayTRToken] Edge function error:', error);
+      throw new Error(`Ödeme başlatılamadı: ${error.message}`);
+    }
+
+    if (!data || !data.token) {
+      throw new Error(data?.error || 'Ödeme oturumu alınamadı.');
+    }
+
+    return data as PayTRTokenResponse;
+  },
+
+  /**
+   * Local deterministic simulator for PayTR token in mock mode.
+   */
+  async _simulateLocalPayTRToken(orderId: string): Promise<PayTRTokenResponse> {
+    const mockToken = `mock_paytr_token_${orderId}_${Date.now().toString(36)}`;
+    const merchantOid = `VZMOCK${Date.now().toString(36).toUpperCase()}`;
+
+    return {
+      success: true,
+      token: mockToken,
+      iframe_url: `https://www.paytr.com/odeme/guvenli/${mockToken}`,
+      merchant_oid: merchantOid,
+      is_test_mode: true,
+    };
+  },
 };
+

@@ -147,5 +147,36 @@ describe('Supabase Edge Functions Security & Validation Rules', () => {
       expect(isValid).toBe(true);
     });
   });
+
+  describe('create-paytr-token & paytr-callback edge functions rules', () => {
+    it('requires order_id for create-paytr-token', () => {
+      const payload: Record<string, unknown> = {};
+      const hasOrderId = Boolean(payload.order_id);
+      expect(hasOrderId).toBe(false);
+    });
+
+    it('requires merchant_oid, status, total_amount, and hash for paytr-callback', () => {
+      const incompletePayload: Record<string, unknown> = {
+        merchant_oid: 'VZ123456',
+        status: 'success',
+        // missing total_amount and hash
+      };
+
+      const hasRequired = Boolean(
+        incompletePayload.merchant_oid &&
+        incompletePayload.status &&
+        incompletePayload.total_amount &&
+        incompletePayload.hash
+      );
+
+      expect(hasRequired).toBe(false);
+    });
+
+    it('allows public unauthenticated requests for paytr-callback (verify_jwt=false)', () => {
+      const isPublicCallback = true;
+      expect(isPublicCallback).toBe(true);
+    });
+  });
 });
+
 

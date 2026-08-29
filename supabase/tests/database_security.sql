@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(135);
+SELECT plan(145);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -1025,5 +1025,114 @@ SELECT throws_ok(
 );
 
 RESET ROLE;
+
+-- ------------------------------------------------------------------------------
+-- 14. PayTR Token Initiation & Atomic Callback Finalization (Phase 3.5 & 3.6)
+-- ------------------------------------------------------------------------------
+
+-- 14.1 initiate_order_payment rejects merchant_oid with hyphens
+SELECT throws_ok(
+    $$ SELECT public.initiate_order_payment(
+        (SELECT id FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1),
+        'VZ-INVALID-OID-WITH-HYPHEN',
+        105000,
+        'TRY',
+        true
+    ) $$,
+    NULL,
+    'Geçersiz merchant_oid: Yalnızca alfanümerik ve en fazla 64 karakter olmalıdır.',
+    'initiate_order_payment rejects merchant_oid containing hyphens'
+);
+
+-- 14.2 initiate_order_payment creates payment attempt for valid order
+SELECT is(
+    (SELECT (public.initiate_order_payment(
+        (SELECT id FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1),
+        'VZTESTPAYTR001',
+        105000,
+        'TRY',
+        true
+    ))->>'success')::BOOLEAN,
+    true,
+    'initiate_order_payment successfully records initial payment attempt'
+);
+
+-- 14.3 Payment record created with status initiated
+SELECT is(
+    (SELECT status FROM public.payments WHERE merchant_oid = 'VZTESTPAYTR001'),
+    'initiated',
+    'Payment record inserted with status initiated'
+);
+
+-- 14.4 finalize_paytr_callback with success finalizes payment and order atomically
+SELECT is(
+    (SELECT (public.finalize_paytr_callback(
+        'VZTESTPAYTR001',
+        'success',
+        105000,
+        NULL,
+        NULL,
+        '{"merchant_oid": "VZTESTPAYTR001", "status": "success", "total_amount": "105000"}'::JSONB
+    ))->>'status'),
+    'paid',
+    'finalize_paytr_callback marks status paid on successful webhook'
+);
+
+-- 14.5 Order status updated to paid
+SELECT is(
+    (SELECT status FROM public.orders WHERE id = (SELECT order_id FROM public.payments WHERE merchant_oid = 'VZTESTPAYTR001')),
+    'paid',
+    'Order status updated to paid upon callback finalization'
+);
+
+-- 14.6 Inventory reservation converted and stock decremented
+SELECT is(
+    (SELECT status FROM public.inventory_reservations WHERE order_id = (SELECT order_id FROM public.payments WHERE merchant_oid = 'VZTESTPAYTR001') LIMIT 1),
+    'converted',
+    'Inventory reservation converted upon successful callback'
+);
+
+-- 14.7 Immutable inventory_movements sale record created
+SELECT ok(
+    EXISTS (SELECT 1 FROM public.inventory_movements WHERE order_id = (SELECT order_id FROM public.payments WHERE merchant_oid = 'VZTESTPAYTR001') AND movement_type = 'sale'),
+    'Immutable inventory movement recorded for order sale'
+);
+
+-- 14.8 Idempotency: Duplicate callback delivery returns already_processed=true
+SELECT is(
+    (SELECT (public.finalize_paytr_callback(
+        'VZTESTPAYTR001',
+        'success',
+        105000,
+        NULL,
+        NULL,
+        '{"merchant_oid": "VZTESTPAYTR001", "status": "success", "total_amount": "105000"}'::JSONB
+    ))->>'already_processed')::BOOLEAN,
+    true,
+    'Duplicate callback delivery is strictly idempotent (already_processed=true)'
+);
+
+-- 14.9 finalize_paytr_callback rejects unknown merchant_oid without modifying state
+SELECT is(
+    (SELECT (public.finalize_paytr_callback(
+        'VZNONEXISTENT999',
+        'success',
+        50000,
+        NULL,
+        NULL,
+        '{}'::JSONB
+    ))->>'success')::BOOLEAN,
+    false,
+    'finalize_paytr_callback rejects unknown merchant_oid'
+);
+
+-- 14.10 Payment events table captures deduplicated callback fingerprint
+SELECT is(
+    (SELECT count(*)::INTEGER FROM public.payment_events WHERE merchant_oid = 'VZTESTPAYTR001'),
+    1,
+    'Payment event logged with deduplication fingerprint'
+);
+
 SELECT * FROM finish();
 ROLLBACK;
+

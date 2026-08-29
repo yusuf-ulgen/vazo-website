@@ -175,10 +175,11 @@ describe('Checkout Subcomponents', () => {
   });
 
   describe('PaymentBoundaryStep', () => {
-    it('renders created order number and total minor correctly', () => {
+    it('renders created order number, timer, and PayTR frame correctly', async () => {
       renderWithRouter(<PaymentBoundaryStep orderResponse={mockOrderResponse} />);
-      expect(screen.getByText('VZ-20260828-99999')).toBeInTheDocument();
+      expect(await screen.findByText('VZ-20260828-99999')).toBeInTheDocument();
       expect(screen.getByText(/40 dakika/)).toBeInTheDocument();
+      expect(await screen.findByTitle('Güvenli PayTR ödeme formu')).toBeInTheDocument();
     });
   });
 });

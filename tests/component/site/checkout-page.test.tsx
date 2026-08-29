@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import { CheckoutPage } from '@/site/pages/CheckoutPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { cartStore } from '@/shared/stores/cart-store';
@@ -7,7 +7,6 @@ import { customerAuthStore, useCustomerAuth } from '@/shared/stores/customer-aut
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { CustomerProfile, CustomerAddress } from '@/entities/customer/types';
 import { User } from '@supabase/supabase-js';
-import { orderRepository } from '@/entities/order/api/order-repository';
 
 // Mock customer auth store
 vi.mock('@/shared/stores/customer-auth-store', async () => {
@@ -212,9 +211,9 @@ describe('CheckoutPage Component', () => {
     expect(submitBtn).not.toBeDisabled();
     fireEvent.click(submitBtn);
 
-    // Step 5: Payment Boundary Reached
+    // Step 5: Payment Boundary Reached with PayTR iFrame
     expect(await screen.findByText('Sipariş Kaydı Oluşturuldu')).toBeInTheDocument();
-    expect(screen.getByText(/Güvenli Ödeme Altyapısı/)).toBeInTheDocument();
+    expect(await screen.findByTitle('Güvenli PayTR ödeme formu')).toBeInTheDocument();
     expect(cartStore.getItems()).toHaveLength(0); // Cart cleared
   });
 });
