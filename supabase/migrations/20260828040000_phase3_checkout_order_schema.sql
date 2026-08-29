@@ -71,7 +71,7 @@ VALUES
         3,
         true
     )
-ON CONFLICT (page_id, section_key) DO UPDATE
+ON CONFLICT (id) DO UPDATE
 SET title = EXCLUDED.title,
     content = EXCLUDED.content,
     sort_order = EXCLUDED.sort_order,
@@ -107,7 +107,7 @@ VALUES
         3,
         true
     )
-ON CONFLICT (page_id, section_key) DO UPDATE
+ON CONFLICT (id) DO UPDATE
 SET title = EXCLUDED.title,
     content = EXCLUDED.content,
     sort_order = EXCLUDED.sort_order,
