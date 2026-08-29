@@ -80,7 +80,7 @@ const mockOrderResponse: CreateOrderResponse = {
 
 describe('Checkout Subcomponents', () => {
   describe('LegalConsentStep', () => {
-    it('opens and closes preliminary info modal and distance sales modal', () => {
+    it('opens and closes preliminary info modal and distance sales modal and toggles checkboxes', () => {
       const onTogglePrelim = vi.fn();
       const onToggleDist = vi.fn();
 
@@ -93,9 +93,18 @@ describe('Checkout Subcomponents', () => {
         />
       );
 
+      // Toggle checkboxes
+      const checkboxes = screen.getAllByRole('checkbox');
+      fireEvent.click(checkboxes[0]!);
+      expect(onTogglePrelim).toHaveBeenCalledWith(true);
+
+      fireEvent.click(checkboxes[1]!);
+      expect(onToggleDist).toHaveBeenCalledWith(true);
+
       // Open preliminary info modal
       fireEvent.click(screen.getByRole('button', { name: /Ön Bilgilendirme Koşulları'nı/ }));
       expect(screen.getByRole('dialog', { name: 'Ön Bilgilendirme Formu' })).toBeInTheDocument();
+      expect(screen.getByText('1. Konu:')).toBeInTheDocument();
 
       // Close modal
       fireEvent.click(screen.getByRole('button', { name: /Kapat & Devam Et/ }));
@@ -104,6 +113,7 @@ describe('Checkout Subcomponents', () => {
       // Open distance sales modal
       fireEvent.click(screen.getByRole('button', { name: /Mesafeli Satış Sözleşmesi'ni/ }));
       expect(screen.getByRole('dialog', { name: 'Mesafeli Satış Sözleşmesi' })).toBeInTheDocument();
+      expect(screen.getByText('Madde 1 — Taraflar:')).toBeInTheDocument();
 
       // Close modal with close icon
       fireEvent.click(screen.getByRole('button', { name: 'Kapat' }));

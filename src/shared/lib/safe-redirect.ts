@@ -1,3 +1,5 @@
+import { CANONICAL_PRODUCTION_ORIGIN } from '@/shared/lib/origin';
+
 const AUTH_REDIRECT_KEY = 'vazo_auth_redirect';
 
 /**
@@ -23,9 +25,9 @@ export function getSafeRedirectUrl(target?: string | null, fallback = '/account'
 
   // Ensure path is URL-parseable relative to an arbitrary base
   try {
-    const parsed = new URL(trimmed, 'https://shop.monocactus.com');
+    const parsed = new URL(trimmed, CANONICAL_PRODUCTION_ORIGIN);
     // Origin must match the base
-    if (parsed.origin !== 'https://shop.monocactus.com') {
+    if (parsed.origin !== CANONICAL_PRODUCTION_ORIGIN) {
       return fallback;
     }
     return parsed.pathname + parsed.search + parsed.hash;

@@ -73,4 +73,28 @@ describe('adminSettingsRepository (Phase 2.9)', () => {
     expect(settings.social.facebook).toBe('https://facebook.com/vazoatelier');
     expect(settings.social.pinterest).toBe('https://pinterest.com/vazoatelier');
   });
+
+  it('gets and updates seller legal identity', async () => {
+    await adminSettingsRepository.updateSellerLegal({
+      business_type: 'Şahıs Şirketi / Gerçek Kişi Tacir',
+      owner_full_name: 'Yusuf Ülgen',
+      legal_trade_title: 'Yusuf Ülgen Monocactus',
+      brand_name: 'Monocactus',
+      tax_office: 'Beyoğlu',
+      tax_number: '1234567890',
+      registered_address: 'Karaköy, İstanbul',
+      kep_address: 'yusuf@hs01.kep.tr',
+      business_email: 'info@monocactus.com',
+      business_phone: '+90 212 555 0192',
+      chamber_name: 'İTO',
+      chamber_registration_number: '123',
+      trade_registry_number: '456',
+      mersis_number: null,
+    });
+
+    const legal = await adminSettingsRepository.getSellerLegal();
+    expect(legal.legal_trade_title).toBe('Yusuf Ülgen Monocactus');
+    expect(legal.tax_number).toBe('1234567890');
+    expect(legal.mersis_number).toBeNull();
+  });
 });

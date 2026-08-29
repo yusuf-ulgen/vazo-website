@@ -4,10 +4,27 @@ import { CheckoutPage } from '@/site/pages/CheckoutPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { cartStore } from '@/shared/stores/cart-store';
 import { customerAuthStore, useCustomerAuth } from '@/shared/stores/customer-auth-store';
+import { useSiteSettings } from '@/shared/stores/settings-store';
+import { DEFAULT_PUBLIC_SITE_SETTINGS } from '@/entities/settings/types';
 import { orderRepository } from '@/entities/order/api/order-repository';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { CustomerProfile, CustomerAddress } from '@/entities/customer/types';
 import { User } from '@supabase/supabase-js';
+
+// Mock settings store
+vi.mock('@/shared/stores/settings-store', () => ({
+  useSiteSettings: vi.fn(() => ({
+    settings: {
+      ...DEFAULT_PUBLIC_SITE_SETTINGS,
+      commerce: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+        checkoutEnabled: true,
+      },
+    },
+    isLoading: false,
+    error: null,
+  })),
+}));
 
 // Mock customer auth store
 vi.mock('@/shared/stores/customer-auth-store', async () => {
@@ -92,6 +109,17 @@ describe('CheckoutPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cartStore.clear();
+    vi.mocked(useSiteSettings).mockReturnValue({
+      settings: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS,
+        commerce: {
+          ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+          checkoutEnabled: true,
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('renders auth gate when customer is not authenticated', () => {
@@ -480,5 +508,41 @@ describe('CheckoutPage Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
 
     expect(await screen.findByText('Ücretsiz')).toBeInTheDocument();
+  });
+
+  it('renders maintenance gate when checkoutEnabled is false', () => {
+    vi.mocked(useSiteSettings).mockReturnValue({
+      settings: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS,
+        commerce: {
+          ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+          checkoutEnabled: false,
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    vi.mocked(useCustomerAuth).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    const product = createProduct({ id: 'p-chk-off', name: 'Vazo Kapalı', retailPrice: 1000 });
+    const variant = createVariant({ id: 'v-chk-off', title: 'Toprak', retailPrice: 1000, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    expect(screen.getByText('Ödeme Altyapısı Hazırlık Aşamasında')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Sepete Dön/ })).toBeInTheDocument();
   });
 });

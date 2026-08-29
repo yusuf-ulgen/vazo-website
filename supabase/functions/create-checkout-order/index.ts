@@ -106,6 +106,21 @@ serve(async (req: Request) => {
 
     const targetCountry = (destination_country || shipping_address.country_code).trim().toUpperCase();
 
+    // Check if checkout is enabled in site settings
+    const { data: commerceSetting } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'commerce')
+      .single();
+
+    const isCheckoutEnabled = Boolean(commerceSetting?.value?.checkout_enabled);
+    if (!isCheckoutEnabled) {
+      return new Response(
+        JSON.stringify({ error: 'Ödeme ve sipariş sistemi şu anda kapalıdır.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Call atomic order creation RPC
     const { data, error } = await supabase.rpc('create_checkout_order', {
       p_customer_id: user.id,

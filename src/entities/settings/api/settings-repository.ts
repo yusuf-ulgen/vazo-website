@@ -6,6 +6,8 @@ import {
   ContactSettings,
   CommerceSettings,
   SocialSettings,
+  SellerLegalSettings,
+  DEFAULT_SELLER_LEGAL,
 } from '../types';
 
 interface SiteSettingRow {
@@ -73,6 +75,7 @@ export const settingsRepository = {
       shippingEstimateText: String(commerceRow.shipping_estimate_text || ''),
       shippingSummary: String(commerceRow.shipping_summary || ''),
       returnsPolicyText: String(commerceRow.returns_policy_text || ''),
+      checkoutEnabled: Boolean(commerceRow.checkout_enabled ?? false),
     };
 
     const social: SocialSettings = {
@@ -91,5 +94,43 @@ export const settingsRepository = {
 
   async getPublicSettings(): Promise<PublicSiteSettings> {
     return this.getPublicSiteSettings();
+  },
+
+  async getSellerLegal(): Promise<SellerLegalSettings> {
+    if (isStorefrontMockEnabled || !isSupabaseConfigured || !supabase) {
+      return { ...DEFAULT_SELLER_LEGAL };
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'seller_legal')
+        .single();
+
+      if (error || !data) {
+        return { ...DEFAULT_SELLER_LEGAL };
+      }
+
+      const v = (data.value as Record<string, unknown>) || {};
+      return {
+        business_type: String(v['business_type'] || ''),
+        owner_full_name: String(v['owner_full_name'] || ''),
+        legal_trade_title: String(v['legal_trade_title'] || ''),
+        brand_name: (v['brand_name'] as string | null) ?? null,
+        tax_office: String(v['tax_office'] || ''),
+        tax_number: String(v['tax_number'] || ''),
+        registered_address: String(v['registered_address'] || ''),
+        kep_address: String(v['kep_address'] || ''),
+        business_email: String(v['business_email'] || ''),
+        business_phone: String(v['business_phone'] || ''),
+        chamber_name: (v['chamber_name'] as string | null) ?? null,
+        chamber_registration_number: (v['chamber_registration_number'] as string | null) ?? null,
+        trade_registry_number: (v['trade_registry_number'] as string | null) ?? null,
+        mersis_number: (v['mersis_number'] as string | null) ?? null,
+      };
+    } catch {
+      return { ...DEFAULT_SELLER_LEGAL };
+    }
   },
 };

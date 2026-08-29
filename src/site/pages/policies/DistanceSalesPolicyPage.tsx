@@ -1,25 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, ShieldCheck } from 'lucide-react';
+import { FileText, ShieldCheck, Building2 } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
 import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
+import { settingsRepository } from '@/entities/settings/api/settings-repository';
+import {
+  SellerLegalSettings,
+  DEFAULT_SELLER_LEGAL,
+  PublicSiteSettings,
+  DEFAULT_PUBLIC_SITE_SETTINGS,
+} from '@/entities/settings/types';
 
 export function DistanceSalesPolicyPage() {
   const [pageData, setPageData] = useState<ContentPageType | null>(null);
+  const [legal, setLegal] = useState<SellerLegalSettings>(DEFAULT_SELLER_LEGAL);
+  const [siteSettings, setSiteSettings] = useState<PublicSiteSettings>(DEFAULT_PUBLIC_SITE_SETTINGS);
 
   useEffect(() => {
     let isMounted = true;
-    contentRepository
-      .getContentPage('distance_sales')
-      .then((data) => {
-        if (isMounted && data) {
-          setPageData(data);
-        }
-      })
-      .catch((err) => {
-        console.error('[DistanceSalesPolicyPage] Error loading policy:', err);
-      });
+    Promise.all([
+      contentRepository.getContentPage('distance_sales').catch(() => null),
+      settingsRepository.getSellerLegal().catch(() => DEFAULT_SELLER_LEGAL),
+      settingsRepository.getPublicSiteSettings().catch(() => DEFAULT_PUBLIC_SITE_SETTINGS),
+    ]).then(([contentData, legalData, siteData]) => {
+      if (isMounted) {
+        if (contentData) setPageData(contentData);
+        if (legalData) setLegal(legalData);
+        if (siteData) setSiteSettings(siteData);
+      }
+    });
     return () => {
       isMounted = false;
     };
@@ -84,12 +94,46 @@ export function DistanceSalesPolicyPage() {
                   <FileText className="w-5 h-5" />
                   <h2>Madde 1 — Taraflar</h2>
                 </div>
-                <p>
-                  <strong>SATICI:</strong> Vazo Studio Tasarım ve Sanat Ürünleri A.Ş.
-                  <br />
-                  <strong>ALICI:</strong> www.vazostudio.com üzerinden sipariş oluşturan ve kimlik
-                  bilgileri sipariş özetinde yer alan tüketici.
-                </p>
+                <div className="p-4 bg-surface-secondary border border-border-subtle rounded space-y-1.5 text-xs leading-relaxed">
+                  <p>
+                    <strong>SATICI:</strong>{' '}
+                    {legal.legal_trade_title || siteSettings.general.brandName || 'Monocactus'}
+                  </p>
+                  <p>
+                    <strong>İşletme Türü:</strong> {legal.business_type || 'Şahıs Şirketi'}
+                  </p>
+                  <p>
+                    <strong>Vergi Dairesi & No:</strong>{' '}
+                    {legal.tax_office && legal.tax_number
+                      ? `${legal.tax_office} V.D. / ${legal.tax_number}`
+                      : '—'}
+                  </p>
+                  <p>
+                    <strong>Adres:</strong>{' '}
+                    {legal.registered_address || siteSettings.contact.address || '—'}
+                  </p>
+                  <p>
+                    <strong>KEP Adresi:</strong> {legal.kep_address || '—'}
+                  </p>
+                  <p>
+                    <strong>İletişim:</strong>{' '}
+                    {legal.business_phone || siteSettings.contact.phone || '—'} •{' '}
+                    {legal.business_email || siteSettings.contact.email || '—'}
+                  </p>
+                  <p>
+                    <strong>ALICI:</strong> Web sitesi üzerinden sipariş oluşturan ve fatura/teslimat
+                    bilgileri sipariş özetinde yer alan tüketici.
+                  </p>
+                  <div className="pt-2">
+                    <Link
+                      to="/seller-information"
+                      className="text-text-primary font-semibold underline hover:text-accent-primary inline-flex items-center gap-1"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Tüm Satıcı & Yasal Bilgileri Görüntüle
+                    </Link>
+                  </div>
+                </div>
               </section>
 
               <section className="space-y-3 pt-6 border-t border-border-subtle">

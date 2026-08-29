@@ -10,8 +10,24 @@ import { TradeApplicationsTab } from '@/admin/submissions/components/TradeApplic
 import { CheckoutPage } from '@/site/pages/CheckoutPage';
 import { cartStore } from '@/shared/stores/cart-store';
 import { ToastProvider } from '@/admin/ui';
+import { DEFAULT_PUBLIC_SITE_SETTINGS } from '@/entities/settings/types';
 import type { AdminTradeApplication } from '@/admin/submissions/types';
 import type { Product, ProductVariant } from '@/entities/product/types';
+
+// Mock settings store
+vi.mock('@/shared/stores/settings-store', () => ({
+  useSiteSettings: vi.fn(() => ({
+    settings: {
+      ...DEFAULT_PUBLIC_SITE_SETTINGS,
+      commerce: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+        checkoutEnabled: true,
+      },
+    },
+    isLoading: false,
+    error: null,
+  })),
+}));
 
 describe('Phase 3.8 Wholesale Identity & PayTR Checkout Flow', () => {
   beforeEach(() => {

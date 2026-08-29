@@ -37,7 +37,7 @@ describe('ProductGallery Component', () => {
     expect(screen.getByRole('img', { name: 'Görsel 2' })).toBeInTheDocument();
   });
 
-  it('opens and closes fullscreen zoom modal with dialog semantics', () => {
+  it('opens and closes fullscreen zoom modal with dialog semantics and backdrop click', () => {
     render(<ProductGallery media={media} productName="Test Vazo" />);
 
     const zoomBtn = screen.getByRole('button', { name: 'Görseli Büyüt' });
@@ -45,7 +45,26 @@ describe('ProductGallery Component', () => {
 
     expect(screen.getByRole('dialog', { name: 'Büyütülmüş Ürün Görseli' })).toBeInTheDocument();
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    const closeBtn = screen.getByRole('button', { name: 'Kapat' });
+    fireEvent.click(closeBtn);
     expect(screen.queryByRole('dialog', { name: 'Büyütülmüş Ürün Görseli' })).not.toBeInTheDocument();
+
+    // Reopen and close with backdrop click
+    fireEvent.click(zoomBtn);
+    const dialog = screen.getByRole('dialog', { name: 'Büyütülmüş Ürün Görseli' });
+    fireEvent.click(dialog);
+    expect(screen.queryByRole('dialog', { name: 'Büyütülmüş Ürün Görseli' })).not.toBeInTheDocument();
+  });
+
+  it('handles single image and image with no alt or id', () => {
+    const singleMedia = [
+      {
+        url: 'https://example.com/single.jpg',
+      },
+    ];
+
+    render(<ProductGallery media={singleMedia} productName="Tekli Vazo" />);
+    expect(screen.queryByRole('button', { name: 'Sonraki Görsel' })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Tekli Vazo' })).toBeInTheDocument();
   });
 });

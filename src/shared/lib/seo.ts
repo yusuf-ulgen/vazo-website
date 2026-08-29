@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { siteConfig } from '@/shared/config/site-config';
+import { getCanonicalUrl } from '@/shared/lib/origin';
 
 export interface SEOProps {
   title?: string;
@@ -63,13 +64,17 @@ export function useSEO({ title, description, canonicalUrl, ogImage }: SEOProps =
     let linkCanonical = document.querySelector('link[rel="canonical"]');
     let createdCanonical = false;
     if (canonicalUrl) {
+      const normalizedCanonical = canonicalUrl.startsWith('http')
+        ? canonicalUrl
+        : getCanonicalUrl(canonicalUrl);
+
       if (!linkCanonical) {
         linkCanonical = document.createElement('link');
         linkCanonical.setAttribute('rel', 'canonical');
         document.head.appendChild(linkCanonical);
         createdCanonical = true;
       }
-      linkCanonical.setAttribute('href', canonicalUrl);
+      linkCanonical.setAttribute('href', normalizedCanonical);
     } else if (linkCanonical) {
       linkCanonical.remove();
     }

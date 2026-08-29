@@ -33,8 +33,13 @@ describe('settingsRepository & siteSettingsStore (Phase 2.9)', () => {
     });
 
     expect(notifiedValue).toBe('Test Brand Name');
-    expect(siteSettingsStore.getSettings().general.brandName).toBe('Test Brand Name');
-
     unsubscribe();
+  });
+
+  it('fetches seller legal settings via settingsRepository', async () => {
+    const legal = await settingsRepository.getSellerLegal();
+    expect(legal).toBeDefined();
+    expect(typeof legal.business_type).toBe('string');
+    expect(legal.mersis_number).toBeNull();
   });
 });

@@ -153,14 +153,28 @@ export function SiteFooter() {
                   Kargo & İade Koşulları
                 </button>
               </li>
+              <li>
+                <Link to="/seller-information" className="hover:text-text-primary transition-colors">
+                  Satıcı & Yasal Bilgiler
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Legal Bar */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-text-muted">
-          <p>© {new Date().getFullYear()} {settings.general.brandName}. Tüm hakları saklıdır.</p>
-          <div className="flex flex-wrap items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left sm:text-center">
+            <p>© {new Date().getFullYear()} {settings.general.brandName}. Tüm hakları saklıdır.</p>
+            <span className="hidden sm:inline text-border-default">•</span>
+            <span className="text-[11px] text-text-secondary">
+              Ödemeler PayTR 256-bit SSL güvencesiyle işlenir. Kart bilgileri saklanmaz.
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            <Link to="/seller-information" className="hover:text-text-primary transition-colors font-medium">
+              Satıcı Bilgileri
+            </Link>
             <button
               type="button"
               onClick={() => openPolicy('privacy')}

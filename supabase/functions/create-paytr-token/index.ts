@@ -96,7 +96,22 @@ serve(async (req: Request) => {
       );
     }
 
-    // 1. Fetch Order and verify ownership
+    // 1. Check if checkout is enabled in site settings
+    const { data: commerceSetting } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'commerce')
+      .single();
+
+    const isCheckoutEnabled = Boolean(commerceSetting?.value?.checkout_enabled);
+    if (!isCheckoutEnabled && testMode !== '1') {
+      return new Response(
+        JSON.stringify({ error: 'Ödeme altyapısı şu anda aktif değildir. Lütfen mağaza yönetimi ile iletişime geçiniz.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Fetch Order and verify ownership
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*, order_items(*), inventory_reservations(*)')
@@ -184,8 +199,12 @@ serve(async (req: Request) => {
     const maxInstallment = '0';
     const currency = order.currency === 'TRY' ? 'TL' : order.currency;
     const timeoutLimit = '30';
-    const merchantOkUrl = `${appOrigin}/payment/success?order_id=${order.id}`;
-    const merchantFailUrl = `${appOrigin}/payment/failure?order_id=${order.id}`;
+    let safeOrigin = appOrigin.trim().replace(/\/+$/, '');
+    if (safeOrigin.startsWith('http://shop.monocactus.com')) {
+      safeOrigin = safeOrigin.replace('http://', 'https://');
+    }
+    const merchantOkUrl = `${safeOrigin}/payment/success?order_id=${order.id}`;
+    const merchantFailUrl = `${safeOrigin}/payment/failure?order_id=${order.id}`;
 
     // 7. Official PayTR HMAC-SHA256 Hash Generation
     const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}${merchantSalt}`;

@@ -12,6 +12,8 @@ import type {
   UpdateProfileInput,
 } from '@/entities/customer/types';
 
+import { getAppOrigin } from '@/shared/lib/origin';
+
 export interface CustomerAuthState {
   user: User | null;
   profile: CustomerProfile | null;
@@ -146,7 +148,7 @@ export const customerAuthStore = {
   async signInWithGoogle(returnUrl = '/account'): Promise<void> {
     saveAuthRedirect(returnUrl);
     const client = getSupabase();
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const redirectTo = `${getAppOrigin()}/auth/callback`;
 
     const { error } = await client.auth.signInWithOAuth({
       provider: 'google',

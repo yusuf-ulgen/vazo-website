@@ -1,6 +1,13 @@
-import { useState } from 'react';
-import { FileText, ExternalLink, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, ExternalLink, X, Scale } from 'lucide-react';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
+import { settingsRepository } from '@/entities/settings/api/settings-repository';
+import {
+  SellerLegalSettings,
+  DEFAULT_SELLER_LEGAL,
+  PublicSiteSettings,
+  DEFAULT_PUBLIC_SITE_SETTINGS,
+} from '@/entities/settings/types';
 
 interface LegalConsentStepProps {
   acceptedPreliminaryInfo: boolean;
@@ -16,11 +23,36 @@ export function LegalConsentStep({
   onToggleDistanceSales,
 }: LegalConsentStepProps) {
   const [activeModalKey, setActiveModalKey] = useState<'preliminary' | 'distance' | null>(null);
+  const [legal, setLegal] = useState<SellerLegalSettings>(DEFAULT_SELLER_LEGAL);
+  const [siteSettings, setSiteSettings] = useState<PublicSiteSettings>(DEFAULT_PUBLIC_SITE_SETTINGS);
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      settingsRepository.getSellerLegal().catch(() => DEFAULT_SELLER_LEGAL),
+      settingsRepository.getPublicSiteSettings().catch(() => DEFAULT_PUBLIC_SITE_SETTINGS),
+    ]).then(([legalData, siteData]) => {
+      if (isMounted) {
+        setLegal(legalData);
+        setSiteSettings(siteData);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
     isOpen: Boolean(activeModalKey),
     onClose: () => setActiveModalKey(null),
   });
+
+  const sellerTitle = legal.legal_trade_title || siteSettings.general.brandName || 'Monocactus';
+  const sellerAddress = legal.registered_address || siteSettings.contact.address || '—';
+  const sellerPhone = legal.business_phone || siteSettings.contact.phone || '—';
+  const sellerEmail = legal.business_email || siteSettings.contact.email || '—';
+  const sellerTax = legal.tax_office && legal.tax_number ? `${legal.tax_office} V.D. / ${legal.tax_number}` : '—';
+  const mersisText = legal.mersis_number ? `MERSİS No: ${legal.mersis_number}` : 'Şahıs firması (MERSİS muafiyeti)';
 
   return (
     <div className="space-y-6 text-left">
@@ -107,44 +139,59 @@ export function LegalConsentStep({
                 type="button"
                 onClick={() => setActiveModalKey(null)}
                 aria-label="Kapat"
-                className="p-1 text-text-muted hover:text-text-primary"
+                className="p-1 text-text-muted hover:text-text-primary cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4 text-xs text-text-secondary leading-relaxed">
+              <div className="p-3.5 bg-surface-secondary border border-border-subtle rounded text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-text-primary">
+                  <Scale className="w-3.5 h-3.5" />
+                  <span>Resmi Satıcı Bilgileri</span>
+                </div>
+                <p>
+                  <strong>Unvan:</strong> {sellerTitle}
+                  <br />
+                  <strong>Adres:</strong> {sellerAddress}
+                  <br />
+                  <strong>Vergi:</strong> {sellerTax}
+                  <br />
+                  <strong>İletişim:</strong> {sellerPhone} • {sellerEmail}
+                  <br />
+                  <strong>Sicil / Kayıt:</strong> {mersisText}
+                </p>
+              </div>
+
               {activeModalKey === 'preliminary' ? (
                 <>
                   <p>
-                    <strong>1. Satıcı:</strong> Vazo Studio Tasarım ve Sanat Ürünleri A.Ş.
-                    <br />
-                    <strong>Adres:</strong> Karaköy Tasarım Bölgesi, Kemankeş Cad. No: 42, Beyoğlu /
-                    İstanbul
+                    <strong>1. Konu:</strong> İşbu Ön Bilgilendirme Formu'nun konusu, ALICI'nın SATICI'ya ait internet sitesinden elektronik ortamda siparişini verdiği ürünlerin satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince bilgilendirilmesidir.
                   </p>
                   <p>
-                    <strong>2. Cayma Hakkı:</strong> Alıcı, hiçbir gerekçe göstermeksizin ve cezai şart
-                    ödemeksizin malı teslim aldığı tarihten itibaren 14 gün içerisinde cayma hakkına
-                    sahiptir.
+                    <strong>2. Cayma Hakkı:</strong> Alıcı, hiçbir gerekçe göstermeksizin ve cezai şart ödemeksizin malı teslim aldığı tarihten itibaren 14 (on dört) gün içerisinde cayma hakkına sahiptir. İade gönderimlerinde anlaşmalı kargo firması kullanılır.
                   </p>
                   <p>
-                    <strong>3. Şikayet ve İtiraz:</strong> Tüketici şikayetleri Ticaret Bakanlığınca
-                    belirlenen parasal sınırlar dahilinde Tüketici Hakem Heyetlerine yapılabilir.
+                    <strong>3. Teslimat & Masraflar:</strong> Kargo ücreti sipariş özeti ekranında belirtildiği şekildedir ve sipariş toplamına eklenir. Ürün, sipariş onayından itibaren yasal 30 günlük süreyi aşmamak kaydıyla kargo firmasına teslim edilir.
+                  </p>
+                  <p>
+                    <strong>4. Şikayet ve İtiraz:</strong> Tüketici şikayetleri ve itirazları, Ticaret Bakanlığınca her yıl ilan edilen parasal sınırlar dahilinde tüketicinin yerleşim yerindeki veya tüketici işleminin yapıldığı yerdeki Tüketici Hakem Heyetlerine veya Tüketici Mahkemelerine yapılabilir.
                   </p>
                 </>
               ) : (
                 <>
                   <p>
-                    <strong>Madde 1 — Taraflar:</strong> İşbu sözleşme, alıcı ile satıcı arasında
-                    elektronik sipariş sürecinde akdedilmiştir.
+                    <strong>Madde 1 — Taraflar:</strong> İşbu Mesafeli Satış Sözleşmesi, alıcı (ALICI) ile yukarıda unvan ve iletişim bilgileri belirtilen satıcı (SATICI) arasında elektronik ortamda akdedilmiştir.
                   </p>
                   <p>
-                    <strong>Madde 2 — Konu:</strong> Sözleşmenin konusu, alıcının satıcıya ait web
-                    sitesinden elektronik ortamda siparişini verdiği ürünün satışı ve teslimidir.
+                    <strong>Madde 2 — Konu:</strong> Sözleşmenin konusu, ALICI'nın SATICI'ya ait web sitesinden siparişini verdiği ürünün satışı, ödemesi ve teslimi ile ilgili hak ve yükümlülüklerin belirlenmesidir.
                   </p>
                   <p>
-                    <strong>Madde 3 — Teslimat:</strong> Ürün, anlaşmalı kargo firması aracılığıyla
-                    alıcının belirlediği teslimat adresine sigortalı olarak sevk edilir.
+                    <strong>Madde 3 — Ödeme & Güvenlik:</strong> Ödemeler PayTR lisanslı ödeme geçidi üzerinden 256-bit SSL şifreleme ve 3D Secure doğrulaması ile tahsil edilir. ALICI'ya ait kart bilgileri SATICI sistemlerinde saklanmaz.
+                  </p>
+                  <p>
+                    <strong>Madde 4 — Teslimat:</strong> Ürün, anlaşmalı kargo firması aracılığıyla ALICI'nın belirlediği teslimat adresine sigortalı ve korumalı ambalaj ile sevk edilir.
                   </p>
                 </>
               )}
@@ -154,7 +201,7 @@ export function LegalConsentStep({
               <button
                 type="button"
                 onClick={() => setActiveModalKey(null)}
-                className="px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90"
+                className="px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 cursor-pointer"
               >
                 Kapat & Devam Et
               </button>
@@ -165,3 +212,4 @@ export function LegalConsentStep({
     </div>
   );
 }
+

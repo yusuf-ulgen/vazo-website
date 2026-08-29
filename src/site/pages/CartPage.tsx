@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, AlertCircle, Truck } from 'lucide-react';
+import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck, Lock } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { Container } from '@/shared/ui/Container';
 import { QuantitySelector } from '@/shared/ui/QuantitySelector';
@@ -13,6 +14,8 @@ export function CartPage() {
     updateQuantity,
     removeItem,
   } = useCart();
+  const { settings } = useSiteSettings();
+  const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
 
   return (
     <div className="w-full bg-canvas-default min-h-screen py-10 md:py-16">
@@ -161,27 +164,43 @@ export function CartPage() {
 
               {/* Explicit Checkout Notice & Button */}
               <div className="space-y-3">
-                <Link
-                  to="/checkout"
-                  className="w-full bg-action-primary text-action-primary-text py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
-                >
-                  <span>Ödemeye Geç</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+                {checkoutEnabled ? (
+                  <Link
+                    to="/checkout"
+                    className="w-full bg-action-primary text-action-primary-text py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <span>Ödemeye Geç</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full bg-surface-muted text-text-muted py-4 px-6 text-xs uppercase font-semibold tracking-wider cursor-not-allowed flex items-center justify-center gap-2 border border-border-default"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Sipariş Sistemi Hazırlık Aşamasında</span>
+                    </button>
+                    <p className="text-[11px] text-text-muted text-center">
+                      Çevrimiçi sipariş ve ödeme altyapımız şu an bakım/yapılandırma aşamasındadır.
+                    </p>
+                  </div>
+                )}
 
                 <div className="p-3 bg-surface-primary border border-border-subtle space-y-1 text-[11px] text-text-muted">
                   <div className="flex items-center gap-1.5 text-text-secondary font-medium">
-                    <AlertCircle className="w-3.5 h-3.5 text-feedback-info shrink-0" />
-                    <span>Ödeme Altyapısı Bilgilendirmesi</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
+                    <span>PayTR Güvenli Ödeme Bildirimi</span>
                   </div>
                   <p>
-                    Ödeme geçidi entegrasyonu sonraki aşamada canlıya alınacaktır. Sahte veya güvencesiz ödeme akışı sunulmamaktadır.
+                    Ödemeler PayTR lisanslı altyapısı üzerinden 256-bit SSL ve 3D Secure güvencesiyle işlenir. Kart bilgileriniz kesinlikle kaydedilmez.
                   </p>
                 </div>
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                  <span>Güvenli Alışveriş & Koruyucu Sevkiyat</span>
+                  <span>Güvenli Alışveriş & Sigortalı Sevkiyat</span>
                 </div>
               </div>
             </div>

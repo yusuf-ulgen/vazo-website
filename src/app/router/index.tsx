@@ -22,6 +22,7 @@ import { PrivacyKvkkPolicyPage } from '@/site/pages/policies/PrivacyKvkkPolicyPa
 import { TermsOfServicePage } from '@/site/pages/policies/TermsOfServicePage';
 import { PreliminaryInfoPolicyPage } from '@/site/pages/policies/PreliminaryInfoPolicyPage';
 import { DistanceSalesPolicyPage } from '@/site/pages/policies/DistanceSalesPolicyPage';
+import { SellerInformationPage } from '@/site/pages/SellerInformationPage';
 import { PaymentSuccessPage } from '@/site/pages/payment/PaymentSuccessPage';
 import { PaymentFailurePage } from '@/site/pages/payment/PaymentFailurePage';
 import { AuthCallbackPage } from '@/site/pages/AuthCallbackPage';
@@ -206,6 +207,14 @@ export const router = createBrowserRouter([
         element: <FaqPage />,
       },
       {
+        path: 'seller-information',
+        element: <SellerInformationPage />,
+      },
+      {
+        path: 'satici-bilgileri',
+        element: <SellerInformationPage />,
+      },
+      {
         path: 'policies/shipping-returns',
         element: <ShippingReturnsPolicyPage />,
       },
@@ -226,7 +235,31 @@ export const router = createBrowserRouter([
         element: <DistanceSalesPolicyPage />,
       },
       {
+        path: 'preliminary-info',
+        element: <PreliminaryInfoPolicyPage />,
+      },
+      {
+        path: 'preliminary-information',
+        element: <PreliminaryInfoPolicyPage />,
+      },
+      {
+        path: 'distance-sales',
+        element: <DistanceSalesPolicyPage />,
+      },
+      {
+        path: 'shipping',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
+        path: 'returns',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
         path: 'privacy',
+        element: <PrivacyKvkkPolicyPage />,
+      },
+      {
+        path: 'kvkk',
         element: <PrivacyKvkkPolicyPage />,
       },
       {

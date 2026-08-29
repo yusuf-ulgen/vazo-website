@@ -84,6 +84,8 @@ supabase secrets set PAYTR_TEST_MODE=1 # Set to 0 in production
 
 ---
 
+---
+
 ## 4. Future E-Archive / E-Invoice Provider (GIB / e-Arsiv)
 
 ### 4.1 Integration Blueprint
@@ -93,3 +95,46 @@ supabase secrets set PAYTR_TEST_MODE=1 # Set to 0 in production
    - Ticaret Sicil No
    - E-İmza / Mali Mühür credentials
 3. Scaffolding columns in `orders` (`invoice_status`, `invoice_number`, `invoice_provider`, `invoice_issued_at`) will receive real provider UUIDs and official GIB ETTN tracking codes upon activation.
+4. **Honesty Contract**: The application never generates fake GİB documents or fake e-Arşiv PDFs. For pending/unconnected states, the admin panel explicitly displays: *"E-Fatura entegrasyonu henüz bağlı değil (Gelecek Entegrasyon)"*.
+
+---
+
+## 5. Server-Side Integration Readiness Protocol (Booleans Only)
+
+To prevent security risks and information leakage, admin readiness queries (`admin-readiness` Edge Function and `get_checkout_readiness` PostgreSQL RPC) strictly return boolean flags:
+
+```typescript
+interface CheckoutReadiness {
+  seller_legal_complete: boolean;   // Evaluates 9 mandatory sole proprietor fields
+  checkout_enabled: boolean;        // Current state in site_settings.commerce
+  has_active_shipping: boolean;     // At least 1 active shipping rate in database
+  paytr_secrets_present: boolean;   // Boolean presence of PayTR credentials
+  gmail_secrets_present: boolean;   // Boolean presence of SMTP/Gmail credentials
+  seller_fields_summary: {
+    business_type: boolean;
+    owner_full_name: boolean;
+    legal_trade_title: boolean;
+    tax_office: boolean;
+    tax_number: boolean;
+    registered_address: boolean;
+    kep_address: boolean;
+    business_email: boolean;
+    business_phone: boolean;
+    mersis_number: boolean;         // Informational flag (optional for sole proprietor)
+  };
+}
+```
+
+> [!SECURITY]
+> Raw secret values, API keys, or password strings are **never** returned by any readiness endpoint.
+
+---
+
+## 6. Seller Legal Profile Contract & Sole Proprietorship
+
+Under Turkish e-commerce law (ETBİS & 6502 sayılı Kanun):
+- **Business Type**: Şahıs firması / sole proprietor.
+- **Mandatory Fields (9)**: `business_type`, `owner_full_name`, `legal_trade_title`, `tax_office`, `tax_number`, `registered_address`, `kep_address`, `business_email`, `business_phone`.
+- **MERSİS Optionality**: MERSİS numbers are not assigned to sole proprietors without chamber registration. MERSİS is strictly **optional** in validation and does not block checkout activation.
+- **Public Profile Page**: Rendered dynamically at `/seller-information` (alias `/satici-bilgileri`) with live data from `site_settings.seller_legal`.
+

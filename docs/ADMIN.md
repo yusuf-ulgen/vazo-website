@@ -128,6 +128,20 @@ When backend integration is completed, **CRUD** requires:
 - **Readiness Scaffolding**: Order records maintain `invoice_status` (`not_requested`, `pending`, `issued`, `failed`, `cancelled`), `invoice_number`, `invoice_provider`, and legal snapshots.
 - **No Fake Invoices**: Zero mock PDF generators or fabricated GIB submissions. Status remains `not_requested` or `pending` until a real e-Archive provider is connected.
 
+### 4.5 System Settings, Seller Legal Profile & Readiness (`/admin/settings`)
+The Settings module is decomposed into modular sub-components conforming to Rule 5 (<350 lines):
+1. **Genel Marka**: Brand name, tagline, editorial descriptions.
+2. **İletişim & Showroom**: Customer support email, wholesale trade email, phone, studio address, business hours.
+3. **Kargo & E-Ticaret**: Free shipping threshold, calculation hints, return policy notes.
+4. **Sosyal Medya**: Instagram, Facebook, Pinterest URLs with format validation.
+5. **Satıcı / Yasal Bilgiler**:
+   - Sole Proprietorship (Şahıs firması) contract.
+   - 9 mandatory fields (`business_type`, `owner_full_name`, `legal_trade_title`, `tax_office`, `tax_number`, `registered_address`, `kep_address`, `business_email`, `business_phone`).
+   - MERSİS is strictly **optional** (exemption disclosure provided).
+   - Real persistence in `site_settings.seller_legal`.
+6. **Entegrasyon Hazırlığı**:
+   - Master `checkout_enabled` toggle with prerequisite validation.
+   - Integration readiness checklist for Google OAuth, PayTR Gateway, PayTR Webhooks, Transactional Email, and E-Invoice scaffolding.
 
 ---
 
@@ -136,3 +150,4 @@ When backend integration is completed, **CRUD** requires:
 1. **Supabase Auth & RBAC**: Admin access requires an authenticated session validated server-side against `admin_users` table via `public.is_admin()`.
 2. **Zero Client Trust**: No `localStorage` flags, no hardcoded credentials (`ADMIN_CREDENTIALS`), and no email regex heuristics grant admin privileges.
 3. **Automatic Session Recovery & Logout**: State synchronizes with Supabase Auth events (`SIGNED_IN`, `SIGNED_OUT`, `TOKEN_REFRESHED`). Unauthenticated access redirects immediately to `/admin/login`.
+

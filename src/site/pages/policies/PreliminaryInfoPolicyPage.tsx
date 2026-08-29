@@ -1,25 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, AlertCircle } from 'lucide-react';
+import { FileText, AlertCircle, Building2 } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
 import { useSEO } from '@/shared/lib/seo';
 import { contentRepository, ContentPage as ContentPageType } from '@/entities/content';
+import { settingsRepository } from '@/entities/settings/api/settings-repository';
+import {
+  SellerLegalSettings,
+  DEFAULT_SELLER_LEGAL,
+  PublicSiteSettings,
+  DEFAULT_PUBLIC_SITE_SETTINGS,
+} from '@/entities/settings/types';
 
 export function PreliminaryInfoPolicyPage() {
   const [pageData, setPageData] = useState<ContentPageType | null>(null);
+  const [legal, setLegal] = useState<SellerLegalSettings>(DEFAULT_SELLER_LEGAL);
+  const [siteSettings, setSiteSettings] = useState<PublicSiteSettings>(DEFAULT_PUBLIC_SITE_SETTINGS);
 
   useEffect(() => {
     let isMounted = true;
-    contentRepository
-      .getContentPage('preliminary_info')
-      .then((data) => {
-        if (isMounted && data) {
-          setPageData(data);
-        }
-      })
-      .catch((err) => {
-        console.error('[PreliminaryInfoPolicyPage] Error loading policy:', err);
-      });
+    Promise.all([
+      contentRepository.getContentPage('preliminary_info').catch(() => null),
+      settingsRepository.getSellerLegal().catch(() => DEFAULT_SELLER_LEGAL),
+      settingsRepository.getPublicSiteSettings().catch(() => DEFAULT_PUBLIC_SITE_SETTINGS),
+    ]).then(([contentData, legalData, siteData]) => {
+      if (isMounted) {
+        if (contentData) setPageData(contentData);
+        if (legalData) setLegal(legalData);
+        if (siteData) setSiteSettings(siteData);
+      }
+    });
     return () => {
       isMounted = false;
     };
@@ -84,17 +94,42 @@ export function PreliminaryInfoPolicyPage() {
                   <FileText className="w-5 h-5" />
                   <h2>1. Satıcı Bilgileri</h2>
                 </div>
-                <p>
-                  <strong>Unvan:</strong> Vazo Studio Tasarım ve Sanat Ürünleri A.Ş. (Yetkili Firma
-                  Ünvanı Konfigüre Edilecek)
-                  <br />
-                  <strong>Adres:</strong> Karaköy Tasarım Bölgesi, Kemankeş Cad. No: 42, Beyoğlu /
-                  İstanbul
-                  <br />
-                  <strong>Telefon:</strong> +90 (212) 555 0192
-                  <br />
-                  <strong>E-posta:</strong> info@vazostudio.com
-                </p>
+                <div className="p-4 bg-surface-secondary border border-border-subtle rounded space-y-1.5 text-xs leading-relaxed">
+                  <p>
+                    <strong>Ticaret Unvanı:</strong>{' '}
+                    {legal.legal_trade_title || siteSettings.general.brandName || 'Monocactus'}
+                  </p>
+                  <p>
+                    <strong>İşletme Türü:</strong> {legal.business_type || 'Şahıs Şirketi'}
+                  </p>
+                  <p>
+                    <strong>Vergi Dairesi & No:</strong>{' '}
+                    {legal.tax_office && legal.tax_number
+                      ? `${legal.tax_office} V.D. / ${legal.tax_number}`
+                      : '—'}
+                  </p>
+                  <p>
+                    <strong>Tebligat Adresi:</strong>{' '}
+                    {legal.registered_address || siteSettings.contact.address || '—'}
+                  </p>
+                  <p>
+                    <strong>KEP Adresi:</strong> {legal.kep_address || '—'}
+                  </p>
+                  <p>
+                    <strong>İletişim:</strong>{' '}
+                    {legal.business_phone || siteSettings.contact.phone || '—'} •{' '}
+                    {legal.business_email || siteSettings.contact.email || '—'}
+                  </p>
+                  <div className="pt-2">
+                    <Link
+                      to="/seller-information"
+                      className="text-text-primary font-semibold underline hover:text-accent-primary inline-flex items-center gap-1"
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      Tüm Satıcı & Yasal Bilgileri Görüntüle
+                    </Link>
+                  </div>
+                </div>
               </section>
 
               <section className="space-y-3 pt-6 border-t border-border-subtle">
@@ -104,7 +139,7 @@ export function PreliminaryInfoPolicyPage() {
                 <p>
                   Sipariş edilen ürünlerin temel özellikleri, adetleri, KDV dahil toplam satış
                   bedeli ve kargo masrafları ödeme adımındaki sipariş özetinde belirtilmiştir.
-                  Fiyatlarımıza tüm vergiler dahildir.
+                  Fiyatlarımıza tüm yasal vergiler dahildir.
                 </p>
               </section>
 

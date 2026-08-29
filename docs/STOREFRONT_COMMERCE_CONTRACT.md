@@ -90,3 +90,24 @@ Customer Authenticated?
 - **Rule**: `merchant_fail_url != payment authority`.
 - Only the verified server-to-server webhook callback from PayTR to the Supabase Edge Function marks an order as paid and triggers fulfillment.
 
+---
+
+## 6. Public Seller Profile, Dynamic Legal Documents & Checkout Gate (Phase 3.10)
+
+### 6.1 Public Seller Information Page
+- Dedicated public route at `/seller-information` (with Turkish alias `/satici-bilgileri`).
+- Displays official business title, tax office, tax number, registered legal address, KEP address, official contact emails/phone, and chamber details.
+- Features transparent disclosure regarding PayTR 256-bit SSL encrypted infrastructure and zero card storage by Monocactus.
+
+### 6.2 Dynamic Legal Documents
+- Preliminary Information Form (`/preliminary-info` / `/policies/preliminary-info`) and Distance Sales Agreement (`/distance-sales` / `/policies/distance-sales`) dynamically resolve the real seller's identity from `site_settings.seller_legal`.
+- Modals on `/checkout` render live seller data without hardcoded company placeholders.
+
+### 6.3 Checkout Enablement Gate (`checkout_enabled`)
+- Controlled from Admin Readiness tab.
+- When disabled:
+  - Cart CTA displays *"Sipariş Sistemi Hazırlık Aşamasında"* and disables navigation.
+  - Checkout page displays a maintenance screen directing customers back to cart or catalog.
+  - Server Edge Functions reject checkout initiation.
+
+

@@ -141,3 +141,21 @@ Direct PostgreSQL `INSERT` by anonymous users is blocked by RLS to prevent datab
   $$\text{Refund Amount} \le \text{Total Paid} - \text{Previously Refunded Amount}$$
 - Direct browser calls to the PayTR Refund API with merchant credentials are strictly blocked.
 
+### 7.6 Production Security Headers & Content Security Policy (CSP)
+- Standardized in `public/_headers` for Cloudflare Pages / production web servers:
+  - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: SAMEORIGIN`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Content-Security-Policy`: Explicitly permits PayTR inline iframe (`frame-src 'self' https://www.paytr.com;`), Supabase backend endpoints (`connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.paytr.com;`), and Google OAuth (`https://accounts.google.com`).
+
+### 7.7 Canonical Production Origin & HTTPS Enforcement
+- Authoritative origin: `https://shop.monocactus.com`.
+- OAuth redirects, canonical link tags, and PayTR callback URLs strictly enforce HTTPS.
+- Insecure HTTP callbacks on production domains are rejected by `getPaytrReturnUrls()`.
+
+### 7.8 Integration Readiness Zero-Secret Leakage Guarantee
+- Admin readiness checks (`get_checkout_readiness` RPC and `admin-readiness` Edge Function) return pure booleans (`paytr_secrets_present`, `gmail_secrets_present`, `seller_legal_complete`, `has_active_shipping`).
+- No raw secrets or partial credentials are ever returned to the browser.
+
+

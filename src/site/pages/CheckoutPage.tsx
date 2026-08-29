@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Container } from '@/shared/ui/Container';
 import { useCustomerAuth, customerAuthStore } from '@/shared/stores/customer-auth-store';
 import { useCart } from '@/shared/stores/cart-store';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 import { orderRepository } from '@/entities/order/api/order-repository';
 import { CustomerAddress } from '@/entities/customer/types';
 import { CheckoutQuoteResponse, CreateOrderResponse } from '@/entities/order/types';
@@ -34,6 +35,8 @@ const CHECKOUT_STEPS: StepItem[] = [
 export function CheckoutPage() {
   const { user, addresses, isLoading: isAuthLoading, isWholesaleApproved } = useCustomerAuth();
   const { items: cartItems, clear: clearCart } = useCart();
+  const { settings } = useSiteSettings();
+  const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingAddress, setShippingAddress] = useState<CustomerAddress | null>(null);
@@ -181,6 +184,43 @@ export function CheckoutPage() {
               <span>Koleksiyonu Keşfet</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
+          </div>
+        </Container>
+      </div>
+    );
+  }
+
+  // Checkout Enabled Gate
+  if (!checkoutEnabled && currentStep !== 5) {
+    return (
+      <div className="w-full bg-canvas-default min-h-screen py-16 text-center">
+        <Container size="sm">
+          <div className="p-8 bg-surface-primary border border-border-default rounded-sm shadow-sm space-y-6">
+            <div className="w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mx-auto text-text-muted">
+              <Lock className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl text-text-primary">Ödeme Altyapısı Hazırlık Aşamasında</h1>
+              <p className="text-xs text-text-secondary max-w-sm mx-auto leading-relaxed">
+                Çevrimiçi sipariş ve ödeme sistemimiz şu anda geçici olarak kapalıdır. Satıcı ve ödeme entegrasyonu tamamlandığında güvenli ödeme açılacaktır.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                to="/cart"
+                className="w-full sm:w-auto px-6 py-2.5 bg-surface-muted text-text-primary text-xs font-semibold rounded-xs hover:bg-surface-secondary transition-colors"
+              >
+                Sepete Dön
+              </Link>
+              <Link
+                to="/products"
+                className="w-full sm:w-auto px-6 py-2.5 bg-action-primary text-action-primary-text text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
+              >
+                Ürünleri İncele
+              </Link>
+            </div>
           </div>
         </Container>
       </div>

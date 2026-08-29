@@ -177,9 +177,35 @@ Admin Browser                     Admin Backend (Edge Function)                 
 
 ---
 
-## 7. Testing Strategy
+## 7. Truthful Payment Security Disclosure & Merchant Readiness (Phase 3.10)
+
+Following Turkish consumer protection regulations (6502 sayılı Kanun) and payment industry standards (PCI-DSS):
+- **Payment Processing Infrastructure**: All card transactions are processed securely through **PayTR Ödeme ve Elektronik Para Kuruluşu A.Ş.** (licensed by the Central Bank of the Republic of Turkey - TCMB).
+- **Zero Card Data Storage**: Monocactus application servers and databases **never receive, process, or store** sensitive credit card numbers, CVV/CVC codes, or expiration dates. All card interactions occur strictly inside PayTR's 256-bit SSL encrypted iframe.
+- **Card Scheme Support**: Visa, Mastercard, and TROY cards are supported subject to the merchant's active PayTR contract. International foreign cards require explicit merchant approval from the PayTR panel and are not guaranteed without provider activation.
+
+### 7.1 Safe Checkout Activation Switch (`checkout_enabled`)
+- Stored securely in `site_settings.commerce.checkout_enabled` (boolean).
+- **Safety Gate**: The checkout activation toggle in `Admin -> Settings -> Entegrasyon Hazırlığı` can only be switched to `true` when:
+  1. `seller_legal_complete === true` (all 9 mandatory legal fields for sole proprietorship are filled).
+  2. `has_active_shipping === true` (at least 1 active shipping rate exists).
+- **Disabled State Experience**:
+  - Storefront Cart page disables checkout navigation with message: *"Sipariş Sistemi Hazırlık Aşamasında"*.
+  - `/checkout` displays a maintenance explanation with buttons to return to cart or browse products.
+  - Server-side edge functions `create-paytr-token` and `create-checkout-order` reject incoming requests with HTTP 403.
+
+### 7.2 Return URLs and HTTPS Enforcement
+- Return endpoints strictly constructed via centralized helper `getPaytrReturnUrls(orderId)`:
+  - `merchant_ok_url`: `https://shop.monocactus.com/payment/success?order_id=<order_id>`
+  - `merchant_fail_url`: `https://shop.monocactus.com/payment/failure?order_id=<order_id>`
+- Local development preserves `http://localhost:<port>` for automated testing. Insecure `http://` is strictly prohibited on production domains.
+
+---
+
+## 8. Testing Strategy
 
 1. **Unit & Contract Testing**: Mock PayTR adapter simulating token generation, valid/invalid HMAC signatures, and timeout handling in Vitest.
 2. **Webhook Idempotency Testing**: Test replay of duplicate callbacks against in-memory and pgTAP databases to ensure zero duplicate mutations.
 3. **Refund Boundary Testing**: Automated verification that exceeding the refundable amount or refunding unpaid orders is rejected with explicit errors.
-4. **E2E Integration Testing**: End-to-end checkout flow with test card numbers in sandbox mode verifying the inline iFrame mount and callback lifecycle.
+4. **Checkout Gate Testing**: Verified disabled state gates on Cart and Checkout pages, as well as Edge Function enforcement.
+5. **E2E Integration Testing**: End-to-end checkout flow with test card numbers in sandbox mode verifying the inline iFrame mount and callback lifecycle.

@@ -121,7 +121,36 @@ serve(async (req: Request) => {
       return new Response(data?.error || 'Finalization rejected', { status: 400 });
     }
 
-    // 4. Return EXACT plain text OK to satisfy PayTR callback confirmation
+    // 5. Fire-and-forget: dispatch pending email for this order (non-blocking)
+    // Payment outcome is independent of email delivery success.
+    const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET');
+    const functionsUrl = Deno.env.get('SUPABASE_FUNCTIONS_URL') ??
+      supabaseUrl.replace('/rest/v1', '') + '/functions/v1';
+
+    if (internalSecret && data.order_id) {
+      // Resolve email_id from outbox (inserted by finalize_paytr_callback RPC)
+      supabase
+        .rpc('get_pending_email_for_order', { p_order_id: data.order_id })
+        .then(({ data: emailId }: { data: string | null }) => {
+          if (!emailId) return;
+          return fetch(`${functionsUrl}/send-transactional-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': internalSecret,
+            },
+            body: JSON.stringify({ email_id: emailId }),
+          });
+        })
+        .catch((e: unknown) => {
+          const msg = e instanceof Error ? e.message : 'Unknown';
+          console.warn('[paytr-callback] Email dispatch fire-and-forget failed:', msg);
+          // Outbox retry will pick this up — payment is unaffected.
+        });
+    }
+
+    // 6. Return EXACT plain text OK to satisfy PayTR callback confirmation
+
     return new Response('OK', {
       status: 200,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -132,3 +161,4 @@ serve(async (req: Request) => {
     return new Response('Internal Server Error', { status: 500 });
   }
 });
+
