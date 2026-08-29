@@ -52,4 +52,17 @@ describe('PolicyBottomSheet Component', () => {
 
     expect(policyDrawerStore.getState().isOpen).toBe(false);
   });
+
+  it('handles policy fetch rejection gracefully', async () => {
+    const { contentRepository } = await import('@/entities/content/api/content-repository');
+    vi.spyOn(contentRepository, 'getPolicyContent').mockRejectedValueOnce(new Error('Politika yüklenemedi'));
+
+    renderWithRouter(<PolicyBottomSheet />);
+
+    act(() => {
+      policyDrawerStore.open('privacy');
+    });
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
 });

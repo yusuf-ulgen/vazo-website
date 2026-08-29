@@ -11,7 +11,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Boxes,
-  Percent,
   AlertTriangle,
   Mail,
   AlertCircle,
@@ -19,6 +18,7 @@ import {
   History,
   Database,
   Lock,
+  FolderTree,
 } from 'lucide-react';
 import { AdminPageHeader, AdminCard, StatusBadge, LoadingSkeleton } from '../ui';
 import { useAdminAuth } from '../auth/AdminAuthContext';
@@ -54,7 +54,7 @@ export function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <AdminPageHeader
           title="Yönetim Paneli"
-          description={`Hoş geldiniz, ${adminUser?.email || 'Yönetici'}. Vazo E-Ticaret atölye ve mağaza verileri canlı olarak listelenmektedir.`}
+          description={`Hoş geldiniz, ${adminUser?.email || 'Yönetici'}. Vazo E-Ticaret atölye ve sipariş verileri canlı olarak listelenmektedir.`}
           badge={<StatusBadge status="active" label="Sistem Canlı" />}
         />
         <button
@@ -102,25 +102,20 @@ export function AdminDashboardPage() {
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
-          <button
-            onClick={fetchSummary}
-            className="underline font-semibold hover:opacity-75"
-          >
+          <button onClick={fetchSummary} className="underline font-semibold hover:opacity-75">
             Tekrar Dene
           </button>
         </div>
       )}
 
-      {/* Key Metrics Grid */}
+      {/* Real Live Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Products Metric */}
+        {/* Products Metric */}
         <Link to="/admin/products" className="group block">
           <AdminCard className="h-full hover:border-text-primary/30 transition-all shadow-xs">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
-                  Ürün Kataloğu
-                </span>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">Ürün Kataloğu</span>
                 <div className="text-2xl font-display font-medium text-text-primary mt-1">
                   {summary ? summary.products.total : <LoadingSkeleton height="h-7 w-12" />}
                 </div>
@@ -136,14 +131,12 @@ export function AdminDashboardPage() {
           </AdminCard>
         </Link>
 
-        {/* 2. Stock / Inventory Metric */}
-        <Link to="/admin/inventory" className="group block">
+        {/* Stock & Variants Metric */}
+        <Link to="/admin/variants" className="group block">
           <AdminCard className="h-full hover:border-text-primary/30 transition-all shadow-xs">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
-                  Stok & Varyantlar
-                </span>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">Stok & Varyantlar</span>
                 <div className="text-2xl font-display font-medium text-text-primary mt-1">
                   {summary ? summary.inventory.totalVariants : <LoadingSkeleton height="h-7 w-12" />}
                 </div>
@@ -153,58 +146,52 @@ export function AdminDashboardPage() {
               </div>
             </div>
             <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs">
-              {summary ? (
-                summary.inventory.lowStockVariants > 0 || summary.inventory.outOfStockVariants > 0 ? (
-                  <span className="text-feedback-warning flex items-center gap-1 font-medium">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    {summary.inventory.lowStockVariants + summary.inventory.outOfStockVariants} Kritik/Tükenen
-                  </span>
-                ) : (
-                  <span className="text-feedback-success">Tüm Stoklar Yeterli</span>
-                )
+              <span className="text-text-muted">{summary ? `${summary.inventory.totalVariants} Varyant` : '...'}</span>
+              {summary && summary.inventory.lowStockVariants > 0 ? (
+                <span className="text-feedback-warning font-medium flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  {summary.inventory.lowStockVariants} Kritik
+                </span>
               ) : (
-                <span className="text-text-muted">Yükleniyor...</span>
+                <span className="text-feedback-success">Stok Yeterli</span>
               )}
-              <span className="text-text-muted">{summary ? `${summary.inventory.inStockVariants} Stokta` : ''}</span>
             </div>
           </AdminCard>
         </Link>
 
-        {/* 3. Submissions Metric */}
-        <Link to="/admin/submissions" className="group block">
+        {/* Trade Submissions Metric */}
+        <Link to="/admin/submissions?tab=trade" className="group block">
           <AdminCard className="h-full hover:border-text-primary/30 transition-all shadow-xs">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
-                  Gelen Talep & Başvuru
-                </span>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">Gelen Talep & Başvuru</span>
                 <div className="text-2xl font-display font-medium text-text-primary mt-1">
-                  {summary ? (
-                    summary.submissions.newContactMessages + summary.submissions.pendingTradeApplications
-                  ) : (
-                    <LoadingSkeleton height="h-7 w-12" />
-                  )}
+                  {summary ? summary.submissions.pendingTradeApplications : <LoadingSkeleton height="h-7 w-12" />}
                 </div>
               </div>
               <div className="p-2 bg-surface-secondary rounded-lg text-text-secondary group-hover:text-text-primary transition-colors">
-                <Inbox className="w-5 h-5" />
+                <Building2 className="w-5 h-5" />
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-text-muted">
-              <span>{summary ? `${summary.submissions.newContactMessages} Yeni Mesaj` : '...'}</span>
-              <span>{summary ? `${summary.submissions.pendingTradeApplications} Toptan Bekleyen` : '...'}</span>
+            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs">
+              {summary && summary.submissions.pendingTradeApplications > 0 ? (
+                <span className="text-feedback-warning font-medium">
+                  {summary.submissions.pendingTradeApplications} İnceleme Bekliyor
+                </span>
+              ) : (
+                <span className="text-feedback-success">Tümü İncelendi</span>
+              )}
+              <span className="text-text-muted">B2B</span>
             </div>
           </AdminCard>
         </Link>
 
-        {/* 4. Audience & Taxonomy Metric */}
-        <Link to="/admin/submissions?tab=newsletter" className="group block">
+        {/* Newsletter & Audience Metric */}
+        <Link to="/admin/submissions?tab=messages" className="group block">
           <AdminCard className="h-full hover:border-text-primary/30 transition-all shadow-xs">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
-                  Bülten & Kitle
-                </span>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">Bülten & Kitle</span>
                 <div className="text-2xl font-display font-medium text-text-primary mt-1">
                   {summary ? summary.submissions.activeNewsletterSubscribers : <LoadingSkeleton height="h-7 w-12" />}
                 </div>
@@ -213,118 +200,176 @@ export function AdminDashboardPage() {
                 <Mail className="w-5 h-5" />
               </div>
             </div>
-            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs text-text-muted">
-              <span>{summary ? `${summary.taxonomies.activeCategories} Kategori` : '...'}</span>
-              <span>{summary ? `${summary.taxonomies.activeCollections} Koleksiyon` : '...'}</span>
+            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between text-xs">
+              {summary && summary.submissions.newContactMessages > 0 ? (
+                <span className="text-accent-primary font-medium">{summary.submissions.newContactMessages} Yeni Mesaj</span>
+              ) : (
+                <span className="text-text-muted">Yeni Mesaj Yok</span>
+              )}
+              <span className="text-text-muted">{summary ? `${summary.submissions.activeNewsletterSubscribers} Abone` : ''}</span>
             </div>
           </AdminCard>
         </Link>
       </div>
 
-      {/* Activity Timeline & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Audit Activities (2 cols) */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="w-4 h-4 text-text-muted" />
-              <h3 className="font-display text-base text-text-primary font-medium">
-                Son Denetim & Yönetim Olayları
-              </h3>
+      {/* Quick Access Module Navigation Cards */}
+      <div>
+        <h2 className="text-sm font-mono uppercase tracking-wider text-text-muted mb-3">Modüller & Hızlı Erişim</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link to="/admin/products" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Package className="w-4 h-4" />
             </div>
-            <Link
-              to="/admin/audit"
-              className="text-xs font-semibold text-action-primary hover:underline flex items-center gap-1"
-            >
-              <span>Tüm Günlüğü Gör</span>
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Ürün Yönetimi</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Ürün kataloğu ve fiyatlandırma.</p>
+            </div>
+          </Link>
 
-          <AdminCard className="divide-y divide-border-subtle p-0 overflow-hidden">
-            {!summary ? (
-              <div className="p-6 space-y-3">
-                <LoadingSkeleton count={3} height="h-8" />
-              </div>
-            ) : summary.recentAuditLogs.length === 0 ? (
-              <div className="p-6 text-center text-xs text-text-muted">
-                Henüz kaydedilmiş denetim olayı bulunmuyor.
-              </div>
-            ) : (
-              summary.recentAuditLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="p-4 flex items-center justify-between gap-4 hover:bg-surface-secondary/40 transition-colors text-xs"
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-text-primary truncate">
-                        {log.entity_name || log.entity_id}
-                      </span>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-secondary text-text-muted">
-                        {log.entity_type}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-text-muted truncate">
-                      {log.actor_email || 'Yönetici'} &bull; {new Date(log.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} ({new Date(log.created_at).toLocaleDateString('tr-TR')})
-                    </div>
-                  </div>
-                  <StatusBadge
-                    status={
-                      log.action === 'CREATE'
-                        ? 'active'
-                        : log.action === 'DELETE'
-                        ? 'draft'
-                        : 'info'
-                    }
-                    label={log.action}
-                  />
-                </div>
-              ))
-            )}
-          </AdminCard>
-        </div>
+          <Link to="/admin/categories" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <FolderTree className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Kategoriler</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Ürün kategorileri ve vitrin düzeni.</p>
+            </div>
+          </Link>
 
-        {/* Quick Links Hub (1 col) */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-text-muted" />
-            <h3 className="font-display text-base text-text-primary font-medium">
-              Yönetim Kısayolları
-            </h3>
-          </div>
+          <Link to="/admin/collections" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Koleksiyonlar</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Özel seriler ve koleksiyonlar.</p>
+            </div>
+          </Link>
 
-          <div className="grid grid-cols-1 gap-2.5">
-            {[
-              { title: 'Ürün Yönetimi', path: '/admin/products', icon: Package },
-              { title: 'Stok & Envanter', path: '/admin/inventory', icon: Boxes },
-              { title: 'Fiyatlandırma', path: '/admin/pricing', icon: Percent },
-              { title: 'Toptan Portalı', path: '/admin/wholesale', icon: Building2 },
-              { title: 'Kategoriler', path: '/admin/categories', icon: Layers },
-              { title: 'Koleksiyonlar', path: '/admin/collections', icon: Sparkles },
-              { title: 'İçerik & CMS', path: '/admin/content', icon: FileText },
-              { title: 'Gelen Başvurular', path: '/admin/submissions', icon: Inbox },
-              { title: 'Denetim İzi', path: '/admin/audit', icon: History },
-              { title: 'Site Ayarları', path: '/admin/settings', icon: Settings },
-            ].map((mod) => {
-              const Icon = mod.icon;
-              return (
-                <Link
-                  key={mod.path}
-                  to={mod.path}
-                  className="flex items-center justify-between p-3 bg-surface-primary hover:bg-surface-secondary border border-border-subtle hover:border-border-default rounded-lg transition-all text-xs font-medium text-text-primary shadow-xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Icon className="w-4 h-4 text-text-muted" />
-                    <span>{mod.title}</span>
-                  </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-text-muted" />
-                </Link>
-              );
-            })}
-          </div>
+          <Link to="/admin/variants" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Layers className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Stok & Envanter</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Varyant bazlı stok kontrolü.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/submissions?tab=trade" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Toptan Portalı</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Kurumsal B2B toptan başvuruları.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/content" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>İçerik & CMS</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">SSS ve kurumsal sayfalar.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/submissions" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Inbox className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Gelen Başvurular</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Mesajlar ve bülten aboneleri.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/settings" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Settings className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>Site Ayarları</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">İletişim ve SEO genel ayarları.</p>
+            </div>
+          </Link>
         </div>
       </div>
+
+      {/* Recent Audit Activity */}
+      <AdminCard>
+        <div className="flex items-center justify-between mb-4">
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+              <History className="w-4 h-4 text-accent-primary" />
+              Son Denetim & Yönetim Olayları
+            </h3>
+            <p className="text-xs text-text-secondary">
+              Atölye panelinde gerçekleştirilen son işlemlerin kriptografik denetim kaydı.
+            </p>
+          </div>
+          <Link
+            to="/admin/audit"
+            className="text-xs text-accent-primary hover:underline font-medium inline-flex items-center gap-1"
+          >
+            Tüm Kayıtlar <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {summary && summary.recentAuditLogs.length > 0 ? (
+          <div className="divide-y divide-border-subtle text-xs">
+            {summary.recentAuditLogs.map((log) => (
+              <div key={log.id} className="py-2.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="px-1.5 py-0.5 font-mono text-[10px] font-semibold bg-surface-secondary text-text-secondary rounded border border-border-default uppercase shrink-0">
+                    {log.action}
+                  </span>
+                  <span className="text-text-primary font-medium truncate">
+                    {log.entity_type}: {log.entity_id}
+                  </span>
+                </div>
+                <span className="text-[11px] text-text-muted shrink-0 font-mono">
+                  {new Date(log.created_at).toLocaleTimeString('tr-TR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-xs text-text-muted">
+            {loading ? 'Denetim kayıtları yükleniyor...' : 'Henüz bir denetim kaydı bulunmuyor.'}
+          </div>
+        )}
+      </AdminCard>
     </div>
   );
 }

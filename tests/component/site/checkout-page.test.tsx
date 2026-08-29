@@ -4,6 +4,7 @@ import { CheckoutPage } from '@/site/pages/CheckoutPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { cartStore } from '@/shared/stores/cart-store';
 import { customerAuthStore, useCustomerAuth } from '@/shared/stores/customer-auth-store';
+import { orderRepository } from '@/entities/order/api/order-repository';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { CustomerProfile, CustomerAddress } from '@/entities/customer/types';
 import { User } from '@supabase/supabase-js';
@@ -67,6 +68,26 @@ const mockAddresses: CustomerAddress[] = [
   },
 ];
 
+const mockUser: User = {
+  id: 'cust-01',
+  email: 'ayse@example.com',
+  app_metadata: {},
+  user_metadata: { full_name: 'Ayşe Yılmaz' },
+  aud: 'authenticated',
+  created_at: '2026-08-28T00:00:00Z',
+};
+
+const mockProfile: CustomerProfile = {
+  id: 'cust-01',
+  first_name: 'Ayşe',
+  last_name: 'Yılmaz',
+  email: 'ayse@example.com',
+  phone: '5551234567',
+  customer_type: 'retail',
+  created_at: '2026-08-28T00:00:00Z',
+  updated_at: '2026-08-28T00:00:00Z',
+};
+
 describe('CheckoutPage Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -115,7 +136,7 @@ describe('CheckoutPage Component', () => {
     renderWithRouter(<CheckoutPage />);
 
     expect(screen.getByText('Sepetiniz Boş')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Koleksiyonu İncele/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Koleksiyonu Keşfet/ })).toBeInTheDocument();
   });
 
   it('handles quote fetch error and separate billing address flow', async () => {
@@ -215,5 +236,249 @@ describe('CheckoutPage Component', () => {
     expect(await screen.findByText('Sipariş Kaydı Oluşturuldu')).toBeInTheDocument();
     expect(await screen.findByTitle('Güvenli PayTR ödeme formu')).toBeInTheDocument();
     expect(cartStore.getItems()).toHaveLength(0); // Cart cleared
+  });
+
+  it('allows unchecking same-as-shipping and selecting a distinct billing address', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    const product = createProduct({ id: 'p-chk-02', name: 'Terra Mini', retailPrice: 1500 });
+    const variant = createVariant({ id: 'v-chk-02', title: 'Toprak', retailPrice: 1500, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    // Step 1: Select distinct delivery address
+    const officeAddr = screen.getByText('Ayşe Ofis');
+    fireEvent.click(officeAddr);
+
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+
+    // Step 2: Uncheck "Fatura adresim teslimat adresim ile aynı olsun"
+    expect(screen.getByText('2. Fatura Adresi')).toBeInTheDocument();
+    const sameCheckbox = screen.getByLabelText(/Fatura adresim teslimat/);
+    fireEvent.click(sameCheckbox);
+
+    // Select different billing address
+    const homeAddr = screen.getByText('Ayşe Yılmaz');
+    fireEvent.click(homeAddr);
+
+    // Step back to delivery address using back button
+    const backBtn = screen.getByRole('button', { name: /Teslimat Adresine Dön/ });
+    fireEvent.click(backBtn);
+    expect(screen.getByText('1. Teslimat Adresi')).toBeInTheDocument();
+  });
+
+  it('renders free shipping badge and step 3 navigation back to billing', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    const product = createProduct({ id: 'p-chk-03', name: 'Büyük Vazo', retailPrice: 5000 });
+    const variant = createVariant({ id: 'v-chk-03', title: 'Toprak', retailPrice: 5000, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    // Step 1 -> 2 -> 3
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
+
+    expect(await screen.findByText('3. Kargo & Teslimat')).toBeInTheDocument();
+    expect(await screen.findByText('150 ₺')).toBeInTheDocument();
+
+    // Click "Fatura Adresine Dön"
+    const returnToBillingBtn = screen.getByRole('button', { name: /Fatura Adresine Dön/ });
+    fireEvent.click(returnToBillingBtn);
+    expect(screen.getByText('2. Fatura Adresi')).toBeInTheDocument();
+
+    // Click stepper step 1
+    const step1Btn = screen.getByRole('button', { name: 'Teslimat Adresi (Tamamlandı)' });
+    fireEvent.click(step1Btn);
+    expect(screen.getByText('1. Teslimat Adresi')).toBeInTheDocument();
+  });
+
+  it('renders quote error banner when orderRepository.getQuote fails', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    vi.spyOn(orderRepository, 'getQuote').mockRejectedValueOnce(new Error('Kargo hesaplama sunucu hatası'));
+
+    const product = createProduct({ id: 'p-chk-04', name: 'Vazo Test', retailPrice: 1500 });
+    const variant = createVariant({ id: 'v-chk-04', title: 'Toprak', retailPrice: 1500, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    // Step 1 -> 2 -> 3
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
+
+    expect(await screen.findByText('Kargo hesaplama sunucu hatası')).toBeInTheDocument();
+  });
+
+  it('renders submit error banner when orderRepository.createOrder fails', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    vi.spyOn(orderRepository, 'createOrder').mockRejectedValueOnce(new Error('Stok yetersiz'));
+
+    const product = createProduct({ id: 'p-chk-05', name: 'Vazo Test 2', retailPrice: 1500 });
+    const variant = createVariant({ id: 'v-chk-05', title: 'Toprak', retailPrice: 1500, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    // Step 1 -> 2 -> 3 -> 4
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
+    expect(await screen.findByText('150 ₺')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Sipariş Özetine Geç/ }));
+
+    expect(await screen.findByText('Sipariş Özeti')).toBeInTheDocument();
+
+    // Accept legal consent
+    const consentBoxes = screen.getAllByRole('checkbox');
+    consentBoxes.forEach((box) => fireEvent.click(box));
+
+    // Submit order to step 5
+    const payBtn = screen.getByRole('button', { name: /Siparişi Onayla & Ödemeye Geç/ });
+    fireEvent.click(payBtn);
+
+    expect(await screen.findByText('Stok yetersiz')).toBeInTheDocument();
+  });
+
+  it('validates legal consent check and handles back navigation through checkout steps', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    const product = createProduct({ id: 'p-chk-06', name: 'Vazo Test 3', retailPrice: 1500 });
+    const variant = createVariant({ id: 'v-chk-06', title: 'Toprak', retailPrice: 1500, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    // Step 1 -> 2 -> 3 -> 4
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
+    expect(await screen.findByText('150 ₺')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Sipariş Özetine Geç/ }));
+
+    expect(screen.getByRole('button', { name: /Siparişi Onayla & Ödemeye Geç/ })).toBeDisabled();
+
+    // Step back 4 -> 3
+    const backToShipping = screen.getByRole('button', { name: /Kargo Adımına Dön/ });
+    fireEvent.click(backToShipping);
+    expect(screen.getByText(/3\. Kargo & Teslimat/)).toBeInTheDocument();
+
+    // Step back 3 -> 2
+    const backToBilling = screen.getByRole('button', { name: /Fatura Adresine Dön/ });
+    fireEvent.click(backToBilling);
+    expect(screen.getByText(/2\. Fatura Adresi/)).toBeInTheDocument();
+
+    // Step back 2 -> 1
+    const backToDelivery = screen.getByRole('button', { name: /Teslimat Adresine Dön/ });
+    fireEvent.click(backToDelivery);
+    expect(screen.getByText(/1\. Teslimat Adresi/)).toBeInTheDocument();
+  });
+
+  it('renders free shipping badge in shipping step when free_shipping_applied is true', async () => {
+    (useCustomerAuth as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      user: mockUser,
+      profile: mockProfile,
+      addresses: mockAddresses,
+      isLoading: false,
+      isAuthenticated: true,
+      email: 'ayse@example.com',
+      customerType: 'retail',
+      isWholesaleApproved: false,
+      signOut: vi.fn(),
+      updateProfile: vi.fn(),
+    });
+
+    vi.spyOn(orderRepository, 'getQuote').mockResolvedValueOnce({
+      currency: 'TRY',
+      channel: 'retail',
+      destination_country: 'TR',
+      items: [],
+      subtotal_minor: 500000,
+      shipping_minor: 0,
+      discount_minor: 0,
+      tax_included_minor: 83333,
+      total_minor: 500000,
+      free_shipping_applied: true,
+      shipping_option: {
+        method: 'domestic_standard',
+        carrier: 'Yurtiçi Kargo',
+        title: 'Standart Kargo',
+        description: 'Ücretsiz Teslimat',
+        supported: true,
+        rate_minor: 0,
+        currency: 'TRY',
+        estimated_delivery_days: 2,
+        free_shipping_threshold_minor: 300000,
+        is_free_shipping: true,
+      },
+    });
+
+    const product = createProduct({ id: 'p-chk-free', name: 'Vazo Free', retailPrice: 5000 });
+    const variant = createVariant({ id: 'v-chk-free', title: 'Toprak', retailPrice: 5000, stockQuantity: 5 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CheckoutPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Fatura Adımına Geç/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Kargo Seçimine Geç/ }));
+
+    expect(await screen.findByText('Ücretsiz')).toBeInTheDocument();
   });
 });

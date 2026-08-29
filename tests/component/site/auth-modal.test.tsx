@@ -121,6 +121,70 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     expect(mockSignOut).toHaveBeenCalled();
   });
 
+  it('renders error message when signInWithGoogle rejects', async () => {
+    mockSignInWithGoogle.mockRejectedValueOnce(new Error('OAuth bağlantı hatası'));
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: false,
+      displayName: 'Müşteri',
+      email: null,
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
+
+    const googleBtn = screen.getByText('Google ile Giriş Yap');
+    fireEvent.click(googleBtn);
+
+    expect(await screen.findByText('OAuth bağlantı hatası')).toBeInTheDocument();
+  });
+
+  it('renders error message when signOut rejects', async () => {
+    mockSignOut.mockRejectedValueOnce(new Error('Çıkış bağlantı hatası'));
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      user: { id: 'u-1', email: 'test@example.com' } as unknown as import('@supabase/supabase-js').User,
+      profile: { user_id: 'u-1', first_name: 'Test', last_name: 'User', customer_type: 'retail' } as unknown as customerAuthModule.CustomerAuthState['profile'],
+      addresses: [],
+      isLoading: false,
+      error: null,
+      isAuthenticated: true,
+      displayName: 'Test User',
+      email: 'test@example.com',
+      customerType: 'retail',
+      signInWithGoogle: mockSignInWithGoogle,
+      signOut: mockSignOut,
+      refresh: vi.fn(),
+      updateProfile: vi.fn(),
+      createAddress: vi.fn(),
+      updateAddress: vi.fn(),
+      deleteAddress: vi.fn(),
+      setDefaultShipping: vi.fn(),
+      setDefaultBilling: vi.fn(),
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
+
+    const logoutBtn = screen.getByRole('button', { name: /Oturumu Kapat/i });
+    fireEvent.click(logoutBtn);
+
+    expect(await screen.findByText('Çıkış bağlantı hatası')).toBeInTheDocument();
+  });
+
   it('closes on Escape key press or close button click', () => {
     const handleClose = vi.fn();
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({

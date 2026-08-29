@@ -168,7 +168,23 @@ serve(async (req: Request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
+    // Server-side user identity extraction (never trusted from payload)
+    let authenticatedUserId: string | null = null;
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      try {
+        const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+        if (user) {
+          authenticatedUserId = user.id;
+        }
+      } catch {
+        // Continue unlinked if token is invalid or expired
+      }
+    }
+
     const { error: dbError } = await supabaseAdmin.from('trade_applications').insert({
+      user_id: authenticatedUserId,
       company_name: companyName,
       tax_number: taxNumber,
       tax_office: taxOffice,

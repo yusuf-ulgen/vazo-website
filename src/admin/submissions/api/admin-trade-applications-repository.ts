@@ -8,6 +8,7 @@ import type {
 
 interface RawTradeApplicationRow {
   id: string;
+  user_id?: string | null;
   company_name: string;
   tax_number: string;
   tax_office: string;
@@ -29,6 +30,7 @@ function mapRowToTradeApplication(row: RawTradeApplicationRow): AdminTradeApplic
   const message = row.customer_message || row.notes || null;
   return {
     id: row.id,
+    user_id: row.user_id || null,
     company_name: row.company_name,
     tax_number: row.tax_number,
     tax_office: row.tax_office,
@@ -113,6 +115,44 @@ export const adminTradeApplicationsRepository = {
     }
 
     return mapRowToTradeApplication(data as unknown as RawTradeApplicationRow);
+  },
+
+  async approveTradeApplication(
+    id: string,
+    adminNotes?: string
+  ): Promise<{ success: boolean; application_id: string; is_user_bound: boolean }> {
+    const client = requireAdminSupabase();
+
+    const { data, error } = await client.rpc('admin_approve_trade_application', {
+      p_application_id: id,
+      p_admin_notes: adminNotes || null,
+    });
+
+    if (error) {
+      console.error('[adminTradeApplicationsRepository.approveTradeApplication] Error:', error.message);
+      throw new Error(`Toptan başvuru onaylanamadı: ${error.message}`);
+    }
+
+    return data as { success: boolean; application_id: string; is_user_bound: boolean };
+  },
+
+  async revokeWholesaleAccess(
+    id: string,
+    adminNotes?: string
+  ): Promise<{ success: boolean; application_id: string }> {
+    const client = requireAdminSupabase();
+
+    const { data, error } = await client.rpc('admin_revoke_wholesale_access', {
+      p_application_id: id,
+      p_admin_notes: adminNotes || null,
+    });
+
+    if (error) {
+      console.error('[adminTradeApplicationsRepository.revokeWholesaleAccess] Error:', error.message);
+      throw new Error(`Toptan yetkisi iptal edilemedi: ${error.message}`);
+    }
+
+    return data as { success: boolean; application_id: string };
   },
 
   async updateTradeApplication(

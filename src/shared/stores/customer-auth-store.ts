@@ -262,9 +262,40 @@ export const customerAuthStore = {
   },
 
   /**
+   * Claims and binds approved trade application for the current customer.
+   */
+  async claimTradeApplication(): Promise<{
+    success: boolean;
+    claimed: boolean;
+    message: string;
+    company_name?: string;
+  }> {
+    if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
+
+    const client = getSupabase();
+    const { data, error } = await client.rpc('claim_trade_application');
+
+    if (error) {
+      throw new Error(`Başvuru bağlanamadı: ${error.message}`);
+    }
+
+    const result = data as {
+      success: boolean;
+      claimed: boolean;
+      message: string;
+      company_name?: string;
+    };
+    if (result.claimed) {
+      await loadUserData(currentState.user.id);
+    }
+    return result;
+  },
+
+  /**
    * Internal helper for testing environments to set state directly.
    */
   _setStateForTesting(state: Partial<CustomerAuthState>): void {
+    isInitialized = true;
     currentState = {
       ...currentState,
       ...state,
@@ -302,12 +333,16 @@ export function useCustomerAuth() {
         state.user?.email?.split('@')[0] ||
         'Müşteri';
 
+  const isWholesaleApproved =
+    state.profile?.customer_type === 'wholesale' && Boolean(state.profile?.wholesale_approved_at);
+
   return {
     ...state,
     isAuthenticated: Boolean(state.user),
     displayName,
     email: state.user?.email || null,
     customerType: state.profile?.customer_type || 'retail',
+    isWholesaleApproved,
     signInWithGoogle: customerAuthStore.signInWithGoogle,
     signOut: customerAuthStore.signOut,
     refresh: customerAuthStore.refresh,
@@ -317,5 +352,6 @@ export function useCustomerAuth() {
     deleteAddress: customerAuthStore.deleteAddress,
     setDefaultShipping: customerAuthStore.setDefaultShipping,
     setDefaultBilling: customerAuthStore.setDefaultBilling,
+    claimTradeApplication: () => customerAuthStore.claimTradeApplication(),
   };
 }

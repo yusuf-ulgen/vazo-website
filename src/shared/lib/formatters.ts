@@ -21,7 +21,7 @@ export function formatDimensions(dimensions?: ProductDimensions): string {
 }
 
 /**
- * Formats an ISO date string into readable localized format.
+ * Formats an ISO date string into readable localized format (Date only).
  */
 export function formatDate(isoString: string, locale = 'tr-TR'): string {
   try {
@@ -30,6 +30,24 @@ export function formatDate(isoString: string, locale = 'tr-TR'): string {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    }).format(date);
+  } catch {
+    return isoString;
+  }
+}
+
+/**
+ * Formats an ISO date string into readable localized format with time.
+ */
+export function formatDateTime(isoString: string, locale = 'tr-TR'): string {
+  try {
+    const date = new Date(isoString);
+    return new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   } catch {
     return isoString;

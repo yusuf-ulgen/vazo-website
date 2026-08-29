@@ -114,7 +114,7 @@ describe('Customer Profile & Address Modals', () => {
       unmount();
     });
 
-    it('validates required fields on address submission', () => {
+    it('validates each required field on address submission', () => {
       const handleSave = vi.fn();
 
       const { unmount } = renderWithRouter(
@@ -127,9 +127,31 @@ describe('Customer Profile & Address Modals', () => {
       );
 
       const form = screen.getByPlaceholderText('Örn: Ev, Ofis, Atölye').closest('form')!;
+
+      // 1. Missing recipient name
       fireEvent.submit(form);
-      expect(handleSave).not.toHaveBeenCalled();
       expect(screen.getByText('Lütfen alıcı ad ve soyadını giriniz.')).toBeInTheDocument();
+
+      // Enter recipient name, missing phone
+      fireEvent.change(screen.getByPlaceholderText('Ad Soyad'), { target: { value: 'Ali Veli' } });
+      fireEvent.submit(form);
+      expect(screen.getByText('Lütfen iletişim telefonunu giriniz.')).toBeInTheDocument();
+
+      // Enter phone, missing address line 1
+      fireEvent.change(screen.getByPlaceholderText('0555 123 45 67'), { target: { value: '05551112233' } });
+      fireEvent.submit(form);
+      expect(screen.getByText('Lütfen açık adres bilgisini giriniz.')).toBeInTheDocument();
+
+      // Enter address line 1, missing city
+      fireEvent.change(screen.getByPlaceholderText('Mahalle, Cadde, Bina No, Kapı No'), { target: { value: 'Bağdat Cad. No: 1' } });
+      fireEvent.submit(form);
+      expect(screen.getByText('Lütfen şehir giriniz.')).toBeInTheDocument();
+
+      // Enter city, missing postal code
+      fireEvent.change(screen.getByPlaceholderText('İstanbul'), { target: { value: 'İstanbul' } });
+      fireEvent.submit(form);
+      expect(screen.getByText('Lütfen posta kodunu giriniz.')).toBeInTheDocument();
+
       unmount();
     });
 
@@ -183,6 +205,35 @@ describe('Customer Profile & Address Modals', () => {
       const countrySelect = screen.getByRole('combobox');
       fireEvent.change(countrySelect, { target: { value: 'DE' } });
       expect(countrySelect).toHaveValue('DE');
+      unmount();
+    });
+  });
+
+  describe('ProfileEditModal Error Handling', () => {
+    it('renders error message when profile save fails', async () => {
+      const handleSave = vi.fn().mockRejectedValueOnce(new Error('Profil güncellenemedi'));
+
+      const { unmount } = renderWithRouter(
+        <ProfileEditModal
+          isOpen={true}
+          onClose={vi.fn()}
+          profile={{
+            user_id: 'u1',
+            first_name: 'Ayşe',
+            last_name: 'Demir',
+            phone: '05551112233',
+            customer_type: 'retail',
+            wholesale_approved_at: null,
+            created_at: '2026-08-28T00:00:00Z',
+            updated_at: '2026-08-28T00:00:00Z',
+          }}
+          email="ayse@example.com"
+          onSave={handleSave}
+        />
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Kaydet' }));
+      expect(await screen.findByText('Profil güncellenemedi')).toBeInTheDocument();
       unmount();
     });
   });

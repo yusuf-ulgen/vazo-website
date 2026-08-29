@@ -1,8 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, ShieldCheck, CheckCircle2, AlertCircle, RefreshCcw, ArrowRight } from 'lucide-react';
+import { Building2, ShieldCheck, CheckCircle2, AlertCircle, ArrowRight, UserCheck } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
 import { contentRepository, TradeApplicationPayload } from '@/entities/content/api/content-repository';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useSEO } from '@/shared/lib/seo';
 
 export function WholesaleApplyPage() {
@@ -11,6 +12,8 @@ export function WholesaleApplyPage() {
     description:
       'İç mimarlar, tasarım ofisleri, oteller ve perakende mağazalar için kurumsal iş ortaklığı ve toptan teklif başvuru formu.',
   });
+
+  const { user, profile, displayName, email, isWholesaleApproved } = useCustomerAuth();
 
   const [formData, setFormData] = useState<TradeApplicationPayload>({
     companyName: '',
@@ -28,6 +31,18 @@ export function WholesaleApplyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Auto-fill applicant details if customer is logged in
+  useEffect(() => {
+    if (user?.email && !formData.email) {
+      setFormData((prev) => ({
+        ...prev,
+        email: user.email || '',
+        contactPerson: prev.contactPerson || (displayName !== 'Müşteri' ? displayName : ''),
+        phone: prev.phone || profile?.phone || '',
+      }));
+    }
+  }, [user, profile, displayName, formData.email]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,6 +75,32 @@ export function WholesaleApplyPage() {
             Mimari projeleriniz, otel/restoran tefrişatları ve konsept mağazalarınız için toptan fiyatlandırma ve özel üretim teklifi almak üzere aşağıdaki formu doldurunuz.
           </p>
         </div>
+
+        {/* Already Approved Wholesale Account Notice */}
+        {isWholesaleApproved && (
+          <div className="p-5 bg-feedback-success-surface border border-feedback-success/30 rounded-none text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-feedback-success text-surface-primary flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text-primary text-sm">
+                  Toptan Hesabınız Zaten Aktif
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Giriş yaptığınız hesap ({email}) onaylı kurumsal toptan statüsündedir. Toptan kataloğumuz üzerinden doğrudan sipariş verebilirsiniz.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/wholesale/products"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-action-primary text-action-primary-text text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shrink-0"
+            >
+              <span>Toptan Kataloğa Git</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
 
         {/* Form Container */}
         {isSubmitted ? (
@@ -112,6 +153,16 @@ export function WholesaleApplyPage() {
               onChange={(e) => setFormData({ ...formData, company_website_confirm: e.target.value })}
             />
 
+            {/* Authenticated Account Link Info */}
+            {user && (
+              <div className="p-3.5 bg-surface-primary border border-border-default flex items-center gap-2.5 text-xs text-text-secondary">
+                <UserCheck className="w-4 h-4 text-feedback-success shrink-0" />
+                <span>
+                  Giriş Yapılan Hesap: <strong className="text-text-primary">{user.email}</strong> (Başvurunuz onaylandığında bu hesaba otomatik olarak toptan sipariş yetkisi tanımlanacaktır).
+                </span>
+              </div>
+            )}
+
             {errorMessage && (
               <div className="p-4 bg-feedback-danger/10 border border-feedback-danger/30 text-feedback-danger text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -148,23 +199,24 @@ export function WholesaleApplyPage() {
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
                   >
                     <option value="İç Mimarlık / Tasarım Ofisi">İç Mimarlık / Tasarım Ofisi</option>
-                    <option value="Otel / Restoran / HoReCa">Otel / Restoran / HoReCa</option>
-                    <option value="Perakende / Konsept Mağaza">Perakende / Konsept Mağaza</option>
-                    <option value="Peyzaj & Dış Mekan">Peyzaj & Dış Mekan</option>
-                    <option value="Kurumsal Hediye">Kurumsal Hediye</option>
+                    <option value="Otel & Konaklama">Otel & Konaklama</option>
+                    <option value="Restoran & Kafe">Restoran & Kafe</option>
+                    <option value="Konsept Mağaza / Perakende">Konsept Mağaza / Perakende</option>
+                    <option value="Kurumsal Hediye / Etkinlik">Kurumsal Hediye / Etkinlik</option>
+                    <option value="İhracat / Yurt Dışı Proje">İhracat / Yurt Dışı Proje</option>
                     <option value="Diğer">Diğer</option>
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="taxNumber" className="font-medium text-text-primary">Vergi Numarası *</label>
+                  <label htmlFor="taxNumber" className="font-medium text-text-primary">Vergi Kimlik Numarası (VKN / TCKN) *</label>
                   <input
                     id="taxNumber"
                     type="text"
                     required
                     value={formData.taxNumber}
                     onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
-                    placeholder="Vergi No / T.C."
+                    placeholder="10 Haneli Vergi No veya 11 Haneli TCKN"
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
                   />
                 </div>
@@ -185,7 +237,7 @@ export function WholesaleApplyPage() {
             </div>
 
             {/* Section 2: Contact Info */}
-            <div className="space-y-4 pt-4 border-t border-border-subtle">
+            <div className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-editorial text-text-secondary border-b border-border-subtle pb-2">
                 2. Yetkili İletişim Bilgileri
               </h3>
@@ -231,21 +283,21 @@ export function WholesaleApplyPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="website" className="font-medium text-text-primary">Web Sitesi / Instagram (Opsiyonel)</label>
+                  <label htmlFor="website" className="font-medium text-text-secondary">Web Sitesi / Portfolyo (İsteğe Bağlı)</label>
                   <input
                     id="website"
-                    type="text"
+                    type="url"
                     value={formData.website || ''}
                     onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                    placeholder="www.sirketiniz.com"
+                    placeholder="https://sirketiniz.com"
                     className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Section 3: Project & Order Context */}
-            <div className="space-y-4 pt-4 border-t border-border-subtle">
+            {/* Section 3: Project & Volume */}
+            <div className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-editorial text-text-secondary border-b border-border-subtle pb-2">
                 3. Proje & Sipariş Kapsamı
               </h3>
@@ -268,41 +320,38 @@ export function WholesaleApplyPage() {
               </div>
 
               <div className="space-y-1.5 text-xs">
-                <label htmlFor="customerMessage" className="font-medium text-text-primary">Proje Detayları & Talep Notları</label>
+                <label htmlFor="customerMessage" className="font-medium text-text-secondary">Proje Detayları / İlgilendiğiniz Modeller (İsteğe Bağlı)</label>
                 <textarea
                   id="customerMessage"
                   rows={4}
                   value={formData.customerMessage || ''}
                   onChange={(e) => setFormData({ ...formData, customerMessage: e.target.value })}
-                  placeholder="İlgilendiğiniz modeller, özel sır/renk talepleri, şantiye teslim tarihi veya numune talebiniz hakkında bilgi veriniz..."
-                  className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary"
+                  placeholder="İlgilendiğiniz koleksiyonlar, talep edilen renkler ve termin beklentinizi belirtebilirsiniz..."
+                  className="w-full px-3.5 py-2.5 bg-surface-primary border border-border-default text-text-primary focus:outline-none focus:border-text-primary resize-none"
                 />
               </div>
             </div>
 
-            {/* Submit Bar */}
-            <div className="pt-4 border-t border-border-subtle flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5 text-[11px] text-text-muted">
-                <ShieldCheck className="w-4 h-4 text-feedback-success" />
-                <span>Bilgileriniz KVKK kapsamında gizli tutulmaktadır.</span>
+            {/* Legal Notice */}
+            <div className="p-4 bg-surface-primary border border-border-subtle text-[11px] text-text-muted space-y-2">
+              <div className="flex items-center gap-1.5 text-text-secondary font-medium">
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Kurumsal İnceleme Prosedürü</span>
               </div>
+              <p className="leading-relaxed">
+                Toptan satış başvuruları yalnızca tüzel kişilikler, şahıs şirketleri ve serbest meslek erbabı (mimarlar, tasarımcılar) için geçerlidir. Başvurunuz onaylandığında kurumsal toptan fiyat listesi ve PayTR ödeme kanalları hesabınıza tanımlanacaktır.
+              </p>
+            </div>
 
+            {/* Submit Button */}
+            <div className="pt-4 flex items-center justify-end">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-4 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 disabled:opacity-50 transition-colors shadow-xs"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-action-primary text-action-primary-text px-8 py-3.5 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors disabled:opacity-50 shadow-xs"
               >
-                {isSubmitting ? (
-                  <>
-                    <RefreshCcw className="w-4 h-4 animate-spin" />
-                    <span>Gönderiliyor...</span>
-                  </>
-                ) : (
-                  <>
-                    <Building2 className="w-4 h-4" />
-                    <span>Başvuruyu Tamamla</span>
-                  </>
-                )}
+                <span>{isSubmitting ? 'İletiliyor...' : 'Başvuruyu Tamamla'}</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>

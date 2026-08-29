@@ -29,6 +29,7 @@ export type TradeApplicationStatus = 'pending' | 'approved' | 'rejected' | 'more
 
 export interface AdminTradeApplication {
   id: string;
+  user_id?: string | null;
   company_name: string;
   tax_number: string;
   tax_office: string;

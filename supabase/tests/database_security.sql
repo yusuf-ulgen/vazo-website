@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(145);
+SELECT plan(154);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -1131,6 +1131,121 @@ SELECT is(
     (SELECT count(*)::INTEGER FROM public.payment_events WHERE merchant_oid = 'VZTESTPAYTR001'),
     1,
     'Payment event logged with deduplication fingerprint'
+);
+
+-- ------------------------------------------------------------------------------
+-- 15. Phase 3.7 Admin Orders, Fulfillment & Refund Security Tests
+-- ------------------------------------------------------------------------------
+
+-- 15.1 Function existence: admin_update_order_fulfillment
+SELECT has_function('public', 'admin_update_order_fulfillment', ARRAY['uuid', 'text', 'text', 'text', 'text', 'text'], 'Function public.admin_update_order_fulfillment should exist');
+
+-- 15.2 Function existence: admin_cancel_order
+SELECT has_function('public', 'admin_cancel_order', ARRAY['uuid', 'text'], 'Function public.admin_cancel_order should exist');
+
+-- 15.3 Function existence: prepare_admin_refund
+SELECT has_function('public', 'prepare_admin_refund', ARRAY['uuid', 'bigint', 'text', 'text'], 'Function public.prepare_admin_refund should exist');
+
+-- 15.4 Function existence: finalize_admin_refund
+SELECT has_function('public', 'finalize_admin_refund', ARRAY['uuid', 'boolean', 'text', 'text', 'text'], 'Function public.finalize_admin_refund should exist');
+
+-- 15.5 Function existence: get_admin_dashboard_metrics
+SELECT has_function('public', 'get_admin_dashboard_metrics', 'Function public.get_admin_dashboard_metrics should exist');
+
+-- 15.6 Non-admin calling admin_update_order_fulfillment throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_update_order_fulfillment('a0000000-0000-0000-0000-000000000001'::UUID, 'shipped', 'Kargo', 'TRK123', NULL, NULL) $$,
+    'Erişim engellendi: Bu işlem için yönetici yetkisi gereklidir.',
+    'Non-admin cannot execute admin_update_order_fulfillment'
+);
+
+-- 15.7 Non-admin calling admin_cancel_order throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_cancel_order('a0000000-0000-0000-0000-000000000001'::UUID, 'İptal') $$,
+    'Erişim engellendi: Bu işlem için yönetici yetkisi gereklidir.',
+    'Non-admin cannot execute admin_cancel_order'
+);
+
+-- 15.8 Non-admin calling prepare_admin_refund throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.prepare_admin_refund('b0000000-0000-0000-0000-000000000001'::UUID, 5000, 'Kusurlu ürün', 'req_test_01') $$,
+    'Erişim engellendi: İade başlatmak için yönetici yetkisi gereklidir.',
+    'Non-admin cannot execute prepare_admin_refund'
+);
+
+-- 15.9 Non-admin calling finalize_admin_refund throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.finalize_admin_refund('c0000000-0000-0000-0000-000000000001'::UUID, true, 'ref_prov_123', NULL, NULL) $$,
+    'Erişim engellendi: İade sonuçlandırmak için yönetici yetkisi gereklidir.',
+    'Non-admin cannot execute finalize_admin_refund'
+);
+
+-- 15.10 Non-admin calling get_admin_dashboard_metrics throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.get_admin_dashboard_metrics() $$,
+    'Erişim engellendi: Gösterge paneli metrikleri için yönetici yetkisi gereklidir.',
+    'Non-admin cannot execute get_admin_dashboard_metrics'
+);
+
+-- ------------------------------------------------------------------------------
+-- 16. Phase 3.8 Authenticated Wholesale Identity & PayTR Checkout Security Tests
+-- ------------------------------------------------------------------------------
+
+-- 16.1 trade_applications.user_id column exists
+SELECT has_column('public', 'trade_applications', 'user_id', 'Column trade_applications.user_id should exist');
+
+-- 16.2 Function existence: claim_trade_application
+SELECT has_function('public', 'claim_trade_application', 'Function public.claim_trade_application should exist');
+
+-- 16.3 Function existence: admin_approve_trade_application
+SELECT has_function('public', 'admin_approve_trade_application', ARRAY['uuid', 'text'], 'Function public.admin_approve_trade_application should exist');
+
+-- 16.4 Function existence: admin_revoke_wholesale_access
+SELECT has_function('public', 'admin_revoke_wholesale_access', ARRAY['uuid', 'text'], 'Function public.admin_revoke_wholesale_access should exist');
+
+-- 16.5 Function existence: calculate_checkout_quote
+SELECT has_function('public', 'calculate_checkout_quote', ARRAY['uuid', 'text', 'text', 'text', 'jsonb'], 'Function public.calculate_checkout_quote should exist');
+
+-- 16.6 Function existence: create_checkout_order
+SELECT has_function('public', 'create_checkout_order', ARRAY['uuid', 'text', 'text', 'text', 'jsonb', 'jsonb', 'jsonb', 'boolean', 'boolean'], 'Function public.create_checkout_order should exist');
+
+-- 16.7 Non-admin calling admin_approve_trade_application throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_approve_trade_application('d0000000-0000-0000-0000-000000000001'::UUID, 'Onay') $$,
+    'Bu işlem yalnızca yetkili yöneticiler tarafından gerçekleştirilebilir.',
+    'Non-admin cannot execute admin_approve_trade_application'
+);
+
+-- 16.8 Non-admin calling admin_revoke_wholesale_access throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_revoke_wholesale_access('d0000000-0000-0000-0000-000000000001'::UUID, 'İptal') $$,
+    'Bu işlem yalnızca yetkili yöneticiler tarafından gerçekleştirilebilir.',
+    'Non-admin cannot execute admin_revoke_wholesale_access'
+);
+
+-- 16.9 Unauthenticated calling claim_trade_application throws error
+SELECT throws_ok(
+    $$ SELECT public.claim_trade_application() $$,
+    '42501',
+    NULL,
+    'Unauthenticated user cannot execute claim_trade_application'
+);
+
+-- 16.10 Unapproved customer calling create_checkout_order for wholesale channel throws error
+SELECT throws_ok(
+    $$ SELECT public.create_checkout_order(
+        'c1000000-0000-0000-0000-000000000001'::UUID,
+        'wholesale',
+        'TRY',
+        'TR',
+        '[{"variant_id": "f1000000-0000-0000-0000-000000000001", "quantity": 10}]'::JSONB,
+        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
+        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
+        true,
+        true
+    ) $$,
+    'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.',
+    'Unapproved retail customer cannot create wholesale order'
 );
 
 SELECT * FROM finish();

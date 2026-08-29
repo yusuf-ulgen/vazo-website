@@ -46,6 +46,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -55,6 +56,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -79,6 +81,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -88,6 +91,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -101,16 +105,22 @@ describe('AccountAddressesPage Component', () => {
       target: { value: 'Ahmet Yılmaz' },
     });
     fireEvent.change(screen.getByPlaceholderText('0555 123 45 67'), {
-      target: { value: '05559998877' },
+      target: { value: '05551112233' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Örn: Ev, Ofis, Atölye'), {
+      target: { value: 'Evim' },
     });
     fireEvent.change(screen.getByPlaceholderText('Mahalle, Cadde, Bina No, Kapı No'), {
-      target: { value: 'Barbaros Bulvarı No: 20' },
+      target: { value: 'Bağdat Cad. No:10 Daire:4' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Kadıköy'), {
+      target: { value: 'Kadıköy' },
     });
     fireEvent.change(screen.getByPlaceholderText('İstanbul'), {
       target: { value: 'İstanbul' },
     });
     fireEvent.change(screen.getByPlaceholderText('34710'), {
-      target: { value: '34349' },
+      target: { value: '34710' },
     });
 
     const submitBtn = screen.getByRole('button', { name: 'Adresi Kaydet' });
@@ -119,18 +129,17 @@ describe('AccountAddressesPage Component', () => {
     await waitFor(() => {
       expect(mockCreateAddress).toHaveBeenCalledWith(
         expect.objectContaining({
+          label: 'Evim',
           recipient_name: 'Ahmet Yılmaz',
-          city: 'İstanbul',
-          postal_code: '34349',
         })
       );
     });
   });
 
-  it('triggers setDefaultBilling and deleteAddress actions', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('handles delete error and setDefaultBilling / delete operations', async () => {
+    mockDeleteAddress.mockRejectedValueOnce(new Error('Silme işlemi başarısız'));
     mockSetDefaultBilling.mockResolvedValue({});
-    mockDeleteAddress.mockResolvedValue({});
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
       user: { id: 'u1', email: 'ahmet@example.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
@@ -142,6 +151,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -151,6 +161,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -161,7 +172,8 @@ describe('AccountAddressesPage Component', () => {
 
     const deleteBtn = screen.getByRole('button', { name: 'Sil' });
     fireEvent.click(deleteBtn);
-    expect(mockDeleteAddress).toHaveBeenCalledWith('addr-1');
+
+    expect(await screen.findByText('Silme işlemi başarısız')).toBeInTheDocument();
   });
 
   it('cancels address deletion when confirm returns false', () => {
@@ -177,6 +189,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -186,6 +199,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -195,7 +209,7 @@ describe('AccountAddressesPage Component', () => {
     expect(mockDeleteAddress).not.toHaveBeenCalled();
   });
 
-  it('renders default billing badge and triggers setDefaultShipping for non-default shipping address', () => {
+  it('renders default billing badge and triggers setDefaultShipping for non-default address', async () => {
     const billingAddress = {
       ...sampleAddress,
       id: 'addr-2',
@@ -215,6 +229,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -224,6 +239,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -231,6 +247,7 @@ describe('AccountAddressesPage Component', () => {
     expect(screen.getByText('Varsayılan Fatura')).toBeInTheDocument();
     const makeShippingDefaultBtn = screen.getByText('Teslimat Yap');
     fireEvent.click(makeShippingDefaultBtn);
+
     expect(mockSetDefaultShipping).toHaveBeenCalledWith('addr-2');
   });
 
@@ -247,6 +264,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -256,6 +274,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);
@@ -292,6 +311,7 @@ describe('AccountAddressesPage Component', () => {
       displayName: 'Ahmet',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
       refresh: vi.fn(),
@@ -301,6 +321,7 @@ describe('AccountAddressesPage Component', () => {
       deleteAddress: mockDeleteAddress,
       setDefaultShipping: mockSetDefaultShipping,
       setDefaultBilling: mockSetDefaultBilling,
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountAddressesPage />);

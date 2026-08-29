@@ -52,6 +52,7 @@ describe('AccountOverviewPage Component', () => {
       displayName: 'Ahmet Yılmaz',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: mockSignOut,
       refresh: vi.fn(),
@@ -61,6 +62,7 @@ describe('AccountOverviewPage Component', () => {
       deleteAddress: vi.fn(),
       setDefaultShipping: vi.fn(),
       setDefaultBilling: vi.fn(),
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountOverviewPage />);
@@ -72,7 +74,7 @@ describe('AccountOverviewPage Component', () => {
     expect(screen.getByText('Bireysel Müşteri')).toBeInTheDocument();
     expect(screen.getByText('Kayıtlı Adreslerim')).toBeInTheDocument();
     expect(screen.getByText('Evim')).toBeInTheDocument();
-    expect(screen.getByText('Yakında (Phase 3.8)')).toBeInTheDocument();
+    expect(screen.getByText('Siparişleri Gör')).toBeInTheDocument();
   });
 
   it('opens profile edit modal and updates customer details', async () => {
@@ -97,6 +99,7 @@ describe('AccountOverviewPage Component', () => {
       displayName: 'Ahmet Yılmaz',
       email: 'ahmet@example.com',
       customerType: 'retail',
+      isWholesaleApproved: false,
       signInWithGoogle: vi.fn(),
       signOut: mockSignOut,
       refresh: vi.fn(),
@@ -106,6 +109,7 @@ describe('AccountOverviewPage Component', () => {
       deleteAddress: vi.fn(),
       setDefaultShipping: vi.fn(),
       setDefaultBilling: vi.fn(),
+      claimTradeApplication: vi.fn(),
     });
 
     renderWithRouter(<AccountOverviewPage />);

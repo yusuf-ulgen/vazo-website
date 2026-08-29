@@ -79,6 +79,15 @@ const AdminSettingsPage = React.lazy(() =>
 const AdminShippingPage = React.lazy(() =>
   import('@/admin/shipping/pages/AdminShippingPage').then((m) => ({ default: m.AdminShippingPage }))
 );
+const AdminOrdersPage = React.lazy(() =>
+  import('@/admin/orders/pages/AdminOrdersPage').then((m) => ({ default: m.AdminOrdersPage }))
+);
+const AdminOrderDetailPage = React.lazy(() =>
+  import('@/admin/orders/pages/AdminOrderDetailPage').then((m) => ({ default: m.AdminOrderDetailPage }))
+);
+const AdminPaymentsPage = React.lazy(() =>
+  import('@/admin/payments/pages/AdminPaymentsPage').then((m) => ({ default: m.AdminPaymentsPage }))
+);
 
 const adminFallback = (
   <div className="min-h-screen bg-canvas-default flex items-center justify-center p-8 text-xs font-sans text-text-secondary">
@@ -269,14 +278,38 @@ export const router = createBrowserRouter([
               </Suspense>
             ),
           },
-      {
-        path: 'products',
-        element: (
-          <Suspense fallback={adminFallback}>
-            <AdminProductsPage />
-          </Suspense>
-        ),
-      },
+          {
+            path: 'orders',
+            element: (
+              <Suspense fallback={adminFallback}>
+                <AdminOrdersPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'orders/:orderId',
+            element: (
+              <Suspense fallback={adminFallback}>
+                <AdminOrderDetailPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'payments',
+            element: (
+              <Suspense fallback={adminFallback}>
+                <AdminPaymentsPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'products',
+            element: (
+              <Suspense fallback={adminFallback}>
+                <AdminProductsPage />
+              </Suspense>
+            ),
+          },
       {
         path: 'categories',
         element: (

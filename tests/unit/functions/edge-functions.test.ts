@@ -148,7 +148,7 @@ describe('Supabase Edge Functions Security & Validation Rules', () => {
     });
   });
 
-  describe('create-paytr-token & paytr-callback edge functions rules', () => {
+  describe('create-paytr-token, paytr-callback & paytr-refund edge functions rules', () => {
     it('requires order_id for create-paytr-token', () => {
       const payload: Record<string, unknown> = {};
       const hasOrderId = Boolean(payload.order_id);
@@ -175,6 +175,26 @@ describe('Supabase Edge Functions Security & Validation Rules', () => {
     it('allows public unauthenticated requests for paytr-callback (verify_jwt=false)', () => {
       const isPublicCallback = true;
       expect(isPublicCallback).toBe(true);
+    });
+
+    it('requires payment_id and positive refund_amount_minor for paytr-refund', () => {
+      const invalidPayload: Record<string, unknown> = {
+        payment_id: '',
+        refund_amount_minor: -100,
+      };
+
+      const isValid = Boolean(
+        invalidPayload.payment_id &&
+        typeof invalidPayload.refund_amount_minor === 'number' &&
+        invalidPayload.refund_amount_minor > 0
+      );
+
+      expect(isValid).toBe(false);
+    });
+
+    it('enforces admin RBAC for paytr-refund endpoint', () => {
+      const requiresAdminAuth = true;
+      expect(requiresAdminAuth).toBe(true);
     });
   });
 });

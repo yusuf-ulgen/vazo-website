@@ -129,6 +129,19 @@ describe('AccountOrdersPage & AccountOrderDetailPage Components', () => {
     expect(await screen.findByText('Sipariş yükleme hatası')).toBeInTheDocument();
   });
 
+  it('renders order with unmapped fallback status gracefully', async () => {
+    const unmappedOrder = {
+      ...mockOrder,
+      id: 'order-unmapped',
+      status: 'custom_unknown_status' as unknown as Order['status'],
+    };
+    vi.spyOn(orderRepository, 'getCustomerOrders').mockResolvedValue([unmappedOrder]);
+
+    renderWithRouter(<AccountOrdersPage />);
+
+    expect(await screen.findByText('custom_unknown_status')).toBeInTheDocument();
+  });
+
   it('renders order detail page with tracking link, items breakdown, and address snapshot', async () => {
     vi.spyOn(orderRepository, 'getOrderById').mockResolvedValue(mockOrder);
 

@@ -25,7 +25,16 @@ export interface DashboardTaxonomyMetrics {
   activeCollections: number;
 }
 
+export interface DashboardOrderMetrics {
+  paidRevenueMinor: number;
+  paidOrdersCount: number;
+  pendingOrdersCount: number;
+  awaitingFulfillmentCount: number;
+  refundedTotalMinor: number;
+}
+
 export interface DashboardSummary {
+  orders: DashboardOrderMetrics;
   products: DashboardProductMetrics;
   inventory: DashboardInventoryMetrics;
   submissions: DashboardSubmissionsMetrics;

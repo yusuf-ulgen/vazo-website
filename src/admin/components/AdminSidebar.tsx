@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   Truck,
   History,
+  ShoppingBag,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 
@@ -33,6 +35,8 @@ export function AdminSidebar({
 }: AdminSidebarProps) {
   const navItems = [
     { label: 'Gösterge Paneli', path: '/admin', icon: LayoutDashboard, end: true },
+    { label: 'Siparişler', path: '/admin/orders', icon: ShoppingBag },
+    { label: 'Ödemeler & İadeler', path: '/admin/payments', icon: CreditCard },
     { label: 'Ürün Yönetimi', path: '/admin/products', icon: Package },
     { label: 'Kategoriler', path: '/admin/categories', icon: Layers },
     { label: 'Koleksiyonlar', path: '/admin/collections', icon: Sparkles },

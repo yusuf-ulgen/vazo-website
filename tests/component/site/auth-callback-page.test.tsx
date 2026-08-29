@@ -110,4 +110,31 @@ describe('AuthCallbackPage Component', () => {
       expect(screen.getByText('Giriş işlemi tamamlanırken beklenmedik bir hata oluştu.')).toBeInTheDocument();
     });
   });
+
+  it('listens for SIGNED_IN event when initial session is null', async () => {
+    mockGetSession.mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    });
+
+    const unsubscribeMock = vi.fn();
+    mockOnAuthStateChange.mockImplementationOnce((callback: (event: string, session: unknown) => void) => {
+      setTimeout(() => {
+        callback('SIGNED_IN', {
+          user: { id: 'usr-sub-1', email: 'test@sub.com' },
+        });
+      }, 10);
+      return {
+        data: { subscription: { unsubscribe: unsubscribeMock } },
+      };
+    });
+
+    saveAuthRedirect('/account/orders');
+    renderWithRouter(<AuthCallbackPage />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/account/orders', { replace: true });
+      expect(unsubscribeMock).toHaveBeenCalled();
+    });
+  });
 });

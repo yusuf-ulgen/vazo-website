@@ -32,7 +32,7 @@ const CHECKOUT_STEPS: StepItem[] = [
 ];
 
 export function CheckoutPage() {
-  const { user, addresses, isLoading: isAuthLoading } = useCustomerAuth();
+  const { user, addresses, isLoading: isAuthLoading, isWholesaleApproved } = useCustomerAuth();
   const { items: cartItems, clear: clearCart } = useCart();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -50,6 +50,8 @@ export function CheckoutPage() {
   const [createdOrder, setCreatedOrder] = useState<CreateOrderResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const effectiveChannel: 'retail' | 'wholesale' = isWholesaleApproved ? 'wholesale' : 'retail';
 
   useSEO({
     title: 'Güvenli Ödeme & Sipariş | Vazo Studio',
@@ -89,7 +91,7 @@ export function CheckoutPage() {
         quantity: ci.quantity,
       })),
       destination_country: destinationCountry,
-      channel: 'retail' as const,
+      channel: effectiveChannel,
     };
 
     orderRepository
@@ -110,7 +112,7 @@ export function CheckoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [destinationCountry, cartSignature]);
+  }, [destinationCountry, cartSignature, cartItems, effectiveChannel]);
 
   // If Auth Loading
   if (isAuthLoading) {
@@ -156,21 +158,28 @@ export function CheckoutPage() {
   }
 
   // Empty Cart Gate
-  if (cartItems.length === 0 && !createdOrder) {
+  if (cartItems.length === 0 && currentStep !== 5) {
     return (
       <div className="w-full bg-canvas-default min-h-screen py-16">
         <Container size="sm">
-          <div className="text-center p-8 bg-surface-primary border border-border-default rounded-sm space-y-4">
-            <ShoppingBag className="w-10 h-10 text-text-muted mx-auto" />
-            <h2 className="font-display text-xl text-text-primary">Sepetiniz Boş</h2>
-            <p className="text-xs text-text-secondary">
-              Ödeme işlemine devam edebilmek için sepetinize en az bir ürün eklemelisiniz.
-            </p>
+          <div className="text-center p-8 bg-surface-primary border border-border-default rounded-sm shadow-sm space-y-6">
+            <div className="w-12 h-12 bg-surface-muted rounded-full flex items-center justify-center mx-auto text-text-muted">
+              <ShoppingBag className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-2">
+              <h1 className="font-display text-2xl text-text-primary">Sepetiniz Boş</h1>
+              <p className="text-xs text-text-secondary">
+                Ödeme adımına geçebilmek için lütfen sepetinize ürün ekleyin.
+              </p>
+            </div>
+
             <Link
               to="/products"
-              className="inline-block px-5 py-2.5 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 mt-2"
+              className="inline-flex items-center gap-2 bg-action-primary text-action-primary-text px-6 py-3 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs"
             >
-              Koleksiyonu İncele
+              <span>Koleksiyonu Keşfet</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </Container>
@@ -198,7 +207,7 @@ export function CheckoutPage() {
           variant_id: ci.variantId,
           quantity: ci.quantity,
         })),
-        channel: 'retail',
+        channel: effectiveChannel,
         currency: 'TRY',
         destination_country: shippingAddress.country_code,
         shipping_address: shippingAddress,
@@ -223,9 +232,16 @@ export function CheckoutPage() {
       <Container size="lg">
         {/* Top Header */}
         <div className="text-center mb-6">
-          <h1 className="font-display text-3xl sm:text-4xl text-text-primary">Güvenli Ödeme</h1>
+          <h1 className="font-display text-3xl sm:text-4xl text-text-primary">
+            {effectiveChannel === 'wholesale' ? 'Kurumsal Toptan Güvenli Ödeme' : 'Güvenli Ödeme'}
+          </h1>
           <p className="text-xs text-text-secondary mt-1">
             Giriş Yapılan Hesap: <strong className="text-text-primary">{user.email}</strong>
+            {effectiveChannel === 'wholesale' && (
+              <span className="ml-2 px-2 py-0.5 bg-feedback-success/10 text-feedback-success font-semibold rounded text-[11px]">
+                Toptan Sipariş (B2B)
+              </span>
+            )}
           </p>
         </div>
 

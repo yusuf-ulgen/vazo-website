@@ -113,6 +113,17 @@ describe('Payment Result Pages & PayTR Frame (Phase 3.5 & 3.6)', () => {
 
       expect(await screen.findByText('Ağ bağlantısı koptu')).toBeInTheDocument();
     });
+
+    it('renders verifying state while order status is pending_payment', async () => {
+      const pendingOrder: Order = { ...baseMockOrder, status: 'pending_payment' };
+      vi.spyOn(orderRepository, 'getOrderById').mockResolvedValue(pendingOrder);
+
+      renderWithRouter(<PaymentSuccessPage />, {
+        routerInitialEntries: ['/payment/success?order_id=order-test-101'],
+      });
+
+      expect(await screen.findByText(/Ödeme Sonucunuz Doğrulanıyor/i)).toBeInTheDocument();
+    });
   });
 
   describe('PaymentFailurePage Component', () => {

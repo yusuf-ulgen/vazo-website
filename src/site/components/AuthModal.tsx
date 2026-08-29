@@ -171,6 +171,13 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
               </Link>
             </div>
 
+            {errorMsg && (
+              <div className="p-3 bg-feedback-danger-surface text-feedback-danger text-xs flex items-center gap-2 border border-feedback-danger/20">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
             {/* Logout Button */}
             <div className="pt-2 border-t border-border-subtle">
               <button

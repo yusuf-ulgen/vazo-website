@@ -7,10 +7,18 @@ import { WholesaleApplyPage } from '@/site/pages/wholesale/WholesaleApplyPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { contentRepository } from '@/entities/content/api/content-repository';
 import { productRepository } from '@/entities/product/api/product-repository';
+import { customerAuthStore } from '@/shared/stores/customer-auth-store';
 
 describe('Wholesale Pages Integration Tests', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    customerAuthStore._setStateForTesting({
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      isInitialized: true,
+    });
   });
 
   it('renders WholesaleLandingPage with value proposition and model cards', () => {
@@ -44,6 +52,31 @@ describe('Wholesale Pages Integration Tests', () => {
     expect(screen.getByText('Başvuru & İhtiyaç Belirleme')).toBeInTheDocument();
   });
 
+  it('renders WholesaleApplyPage for authenticated wholesale customer with active banner', async () => {
+    customerAuthStore._setStateForTesting({
+      user: { id: 'u-b2b', email: 'b2b@studio.com' } as unknown as import('@supabase/supabase-js').User,
+      profile: {
+        id: 'u-b2b',
+        user_id: 'u-b2b',
+        first_name: 'Berk',
+        last_name: 'Mimar',
+        phone: '05551234567',
+        customer_type: 'wholesale',
+        wholesale_approved_at: '2026-08-28T00:00:00Z',
+        created_at: '2026-08-28T00:00:00Z',
+        updated_at: '2026-08-28T00:00:00Z',
+      },
+      addresses: [],
+      isLoading: false,
+      isInitialized: true,
+    });
+
+    renderWithRouter(<WholesaleApplyPage />, { routerInitialEntries: ['/wholesale/apply'] });
+
+    expect(screen.getByText('Toptan Hesabınız Zaten Aktif')).toBeInTheDocument();
+    expect(screen.getByText(/Giriş Yapılan Hesap/)).toBeInTheDocument();
+  });
+
   it('fills and submits WholesaleApplyPage with real persistence and success state', async () => {
     vi.spyOn(contentRepository, 'submitTradeApplication').mockResolvedValue({
       success: true,
@@ -72,6 +105,15 @@ describe('Wholesale Pages Integration Tests', () => {
     fireEvent.change(screen.getByPlaceholderText(/\+90 5XX/i), {
       target: { value: '05321234567' },
     });
+    fireEvent.change(screen.getByPlaceholderText(/https:\/\/sirketiniz.com/i), {
+      target: { value: 'https://arkhe.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/İlgilendiğiniz koleksiyonlar/i), {
+      target: { value: 'Ikigai serisi 50 adet' },
+    });
+
+    const volumeSelect = screen.getByLabelText(/Tahmini Sipariş \/ Aylık Hacim/i);
+    fireEvent.change(volumeSelect, { target: { value: '50 - 100 Adet' } });
 
     const submitBtn = screen.getByRole('button', { name: 'Başvuruyu Tamamla' });
     fireEvent.click(submitBtn);

@@ -5,6 +5,14 @@ describe('adminDashboardRepository', () => {
   it('returns comprehensive dashboard summary with real product, inventory, and submission counts', async () => {
     const summary = await adminDashboardRepository.getDashboardSummary();
 
+    // Orders metrics (Phase 3.7)
+    expect(summary.orders).toBeDefined();
+    expect(typeof summary.orders.paidRevenueMinor).toBe('number');
+    expect(typeof summary.orders.paidOrdersCount).toBe('number');
+    expect(typeof summary.orders.pendingOrdersCount).toBe('number');
+    expect(typeof summary.orders.awaitingFulfillmentCount).toBe('number');
+    expect(typeof summary.orders.refundedTotalMinor).toBe('number');
+
     // Products metrics
     expect(summary.products.total).toBeGreaterThan(0);
     expect(summary.products.published + summary.products.draft + summary.products.archived).toBe(

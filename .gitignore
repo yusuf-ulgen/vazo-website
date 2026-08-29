@@ -65,3 +65,7 @@ test-results/
 .gemini/history/
 .gemini/settings.local.json
 *.local.agent.*
+
+# Supabase CLI temp
+supabase/.temp/
+

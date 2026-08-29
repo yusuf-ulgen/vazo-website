@@ -13,6 +13,9 @@ import {
   Edit3,
   ArrowRight,
   ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { Section } from '@/shared/ui/Section';
@@ -29,12 +32,15 @@ function AccountOverviewContent() {
     addresses,
     displayName,
     email,
-    customerType,
+    isWholesaleApproved,
     signOut,
     updateProfile,
+    claimTradeApplication,
   } = useCustomerAuth();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<{ text: string; success: boolean } | null>(null);
 
   const defaultShippingAddress =
     addresses.find((a) => a.is_default_shipping) || addresses[0] || null;
@@ -45,6 +51,32 @@ function AccountOverviewContent() {
       navigate('/', { replace: true });
     } catch {
       // Handled in store
+    }
+  };
+
+  const handleClaimWholesale = async () => {
+    try {
+      setIsClaiming(true);
+      setClaimMessage(null);
+      const res = await claimTradeApplication();
+      if (res.claimed) {
+        setClaimMessage({
+          text: res.message || `${res.company_name} başvurusu hesabınıza bağlandı. Toptan sipariş yetkiniz aktif!`,
+          success: true,
+        });
+      } else {
+        setClaimMessage({
+          text: res.message || 'E-posta adresinizle eşleşen onaylı toptan başvuru bulunamadı.',
+          success: false,
+        });
+      }
+    } catch (err: unknown) {
+      setClaimMessage({
+        text: err instanceof Error ? err.message : 'Başvuru bağlanırken bir hata oluştu.',
+        success: false,
+      });
+    } finally {
+      setIsClaiming(false);
     }
   };
 
@@ -74,6 +106,33 @@ function AccountOverviewContent() {
           </div>
         </div>
 
+        {/* Claim Message Banner */}
+        {claimMessage && (
+          <div
+            className={`p-4 mb-6 border text-xs flex items-center justify-between gap-3 animate-fade-in ${
+              claimMessage.success
+                ? 'bg-feedback-success-surface border-feedback-success/30 text-feedback-success'
+                : 'bg-feedback-danger-surface border-feedback-danger/30 text-feedback-danger'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {claimMessage.success ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
+              <span>{claimMessage.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setClaimMessage(null)}
+              className="underline text-[11px] font-semibold hover:opacity-80"
+            >
+              Kapat
+            </button>
+          </div>
+        )}
+
         {/* Overview Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Column 1 & 2: Profile Info & Addresses Summary */}
@@ -90,8 +149,11 @@ function AccountOverviewContent() {
                       {displayName}
                     </h2>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="muted" className="text-[10px] tracking-wider uppercase">
-                        {customerType === 'wholesale' ? 'Toptan Müşteri' : 'Bireysel Müşteri'}
+                      <Badge
+                        variant={isWholesaleApproved ? 'default' : 'muted'}
+                        className="text-[10px] tracking-wider uppercase"
+                      >
+                        {isWholesaleApproved ? 'Toptan Müşteri (B2B)' : 'Bireysel Müşteri'}
                       </Badge>
                       <span className="text-xs text-text-muted flex items-center gap-1">
                         <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
@@ -129,6 +191,59 @@ function AccountOverviewContent() {
                     </span>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Wholesale B2B Status Card */}
+            <div className="bg-surface-primary border border-border-default p-6 md:p-8 shadow-xs">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div
+                    className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                      isWholesaleApproved
+                        ? 'bg-feedback-success/15 text-feedback-success'
+                        : 'bg-surface-secondary text-text-muted'
+                    }`}
+                  >
+                    <Building2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-text-primary font-medium">
+                      {isWholesaleApproved
+                        ? 'Toptan / Kurumsal Hesap Aktif'
+                        : 'Toptan & B2B Hesap Durumu'}
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {isWholesaleApproved
+                        ? 'Toptan katalog ve kademeli fiyat avantajları ile sipariş oluşturabilirsiniz.'
+                        : 'Onaylı bir toptan başvurunuz varsa hesabınıza bağlayabilir veya yeni başvuru yapabilirsiniz.'}
+                    </p>
+                  </div>
+                </div>
+
+                {isWholesaleApproved ? (
+                  <Link
+                    to="/wholesale/products"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    <span>Toptan Katalog</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isClaiming}
+                    onClick={handleClaimWholesale}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-surface-secondary border border-border-default hover:bg-surface-muted text-text-primary text-xs font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {isClaiming ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-3.5 h-3.5 text-accent-primary" />
+                    )}
+                    <span>{isClaiming ? 'Sorgulanıyor...' : 'Başvurumu Bağla'}</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -188,23 +303,27 @@ function AccountOverviewContent() {
               )}
             </div>
 
-            {/* Orders Section (Explicitly Disabled for Phase 3.8 Contract) */}
-            <div className="bg-surface-primary border border-border-default p-6 md:p-8 opacity-75">
+            {/* Orders Section */}
+            <div className="bg-surface-primary border border-border-default p-6 md:p-8 shadow-xs">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-text-muted">
+                  <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-text-primary">
                     <Package className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="font-display text-lg text-text-primary">Sipariş Geçmişim</h3>
-                    <p className="text-xs text-text-muted">
-                      Verdiğiniz siparişlerin kargo takibi ve durum sorgusu.
+                    <p className="text-xs text-text-secondary">
+                      Verdiğiniz siparişlerin kargo takibi, faturaları ve durum sorgusu.
                     </p>
                   </div>
                 </div>
-                <Badge variant="muted" className="text-[10px] tracking-wider uppercase text-text-muted">
-                  Yakında (Phase 3.8)
-                </Badge>
+                <Link
+                  to="/account/orders"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-secondary hover:bg-surface-muted text-text-primary text-xs font-semibold border border-border-default transition-colors"
+                >
+                  <span>Siparişleri Gör</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           </div>
@@ -215,6 +334,17 @@ function AccountOverviewContent() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2">
                 Hızlı Erişim
               </h3>
+
+              <Link
+                to="/account/orders"
+                className="w-full flex items-center justify-between p-3 bg-surface-secondary hover:bg-surface-muted text-text-primary border border-border-subtle transition-colors text-xs"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Package className="w-4 h-4 text-text-secondary" />
+                  <span>Siparişlerim</span>
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 text-text-secondary" />
+              </Link>
 
               <Link
                 to="/account/addresses"

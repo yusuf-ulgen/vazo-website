@@ -80,6 +80,35 @@ export function TradeApplicationsTab() {
     }
   };
 
+  const handleApproveApplication = async (id: string, notes?: string) => {
+    try {
+      const res = await adminTradeApplicationsRepository.approveTradeApplication(id, notes);
+      success(
+        'Onaylandı',
+        res.is_user_bound
+          ? 'Toptan başvuru onaylandı ve kullanıcı hesabı toptan statüsüne yükseltildi.'
+          : 'Toptan başvuru onaylandı. Kullanıcı kayıt olduğunda e-posta üzerinden otomatik bağlanacaktır.'
+      );
+      fetchApplications();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Onaylama başarısız oldu.';
+      toastError('Hata', msg);
+      throw err;
+    }
+  };
+
+  const handleRevokeApplication = async (id: string, notes?: string) => {
+    try {
+      await adminTradeApplicationsRepository.revokeWholesaleAccess(id, notes);
+      success('İptal Edildi', 'Toptan başvuru reddedildi ve toptan sipariş yetkisi geri alındı.');
+      fetchApplications();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Yetki iptali başarısız oldu.';
+      toastError('Hata', msg);
+      throw err;
+    }
+  };
+
   const handleDeleteApplication = async () => {
     if (!deletingAppId) return;
 
@@ -118,55 +147,59 @@ export function TradeApplicationsTab() {
 
   return (
     <div className="space-y-6 text-left">
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Status Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {statusFilters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => {
-                setStatusFilter(f.id);
-                setPage(1);
-              }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors shrink-0 ${
-                statusFilter === f.id
-                  ? 'bg-action-primary text-action-primary-text'
-                  : 'bg-surface-secondary text-text-secondary hover:text-text-primary hover:bg-surface-muted'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      {/* Filters and Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Status Filter Buttons */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          {statusFilters.map((filter) => {
+            const isActive = statusFilter === filter.id;
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(filter.id);
+                  setPage(1);
+                }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+                  isActive
+                    ? 'bg-action-primary text-action-primary-text'
+                    : 'bg-surface-secondary text-text-secondary hover:text-text-primary hover:bg-surface-muted'
+                }`}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search Input */}
         <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
+            placeholder="Şirket, vergi no veya yetkili ara..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Firma, kişi veya vergi no ara..."
-            className="w-full pl-9 pr-3 py-2 bg-surface-primary border border-border-default rounded-md text-xs text-text-primary focus:outline-hidden focus:ring-1 focus:ring-accent-primary"
+            className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-surface-secondary border border-border-default rounded-md text-text-primary placeholder:text-text-muted focus:outline-hidden focus:ring-1 focus:ring-accent-primary"
           />
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error Message */}
       {error && (
-        <div className="p-4 bg-feedback-error/10 border border-feedback-error/20 text-feedback-error rounded-lg text-xs flex items-center justify-between">
+        <div className="p-3 bg-feedback-error/10 border border-feedback-error/20 rounded-md text-feedback-error text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
           <button
-            onClick={fetchApplications}
-            className="underline font-semibold hover:opacity-75"
+            type="button"
+            onClick={() => fetchApplications()}
+            className="font-semibold underline hover:opacity-80 ml-2"
           >
             Tekrar Dene
           </button>
@@ -271,6 +304,8 @@ export function TradeApplicationsTab() {
           setSelectedApplication(null);
         }}
         onSave={handleSaveApplication}
+        onApprove={handleApproveApplication}
+        onRevoke={handleRevokeApplication}
       />
 
       {/* Delete Confirmation */}

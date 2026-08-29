@@ -51,4 +51,19 @@ describe('ProductCard Component', () => {
     renderWithRouter(<ProductCard product={product} showWholesaleBadge />);
     expect(screen.getByText(/Toptan:/)).toBeInTheDocument();
   });
+
+  it('renders new arrival and bestseller badges and compare-at discount price', () => {
+    const product = createProduct({
+      name: 'Özel Vazo',
+      isNewArrival: true,
+      isBestseller: true,
+      retailPrice: 2000,
+      compareAtPrice: 2500,
+      images: [],
+    });
+
+    renderWithRouter(<ProductCard product={product} />);
+    expect(screen.getByText('Yeni')).toBeInTheDocument();
+    expect(screen.getByText(/2\.500/)).toBeInTheDocument();
+  });
 });

@@ -107,5 +107,11 @@ describe('SearchModal Component', () => {
     const closeBtn = screen.getByRole('button', { name: 'Kapat' });
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(2);
+
+    const backdrop = document.querySelector('.bg-neutral-950\\/60');
+    if (backdrop) {
+      fireEvent.click(backdrop);
+      expect(handleClose).toHaveBeenCalledTimes(3);
+    }
   });
 });

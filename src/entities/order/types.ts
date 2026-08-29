@@ -4,6 +4,7 @@ import { CurrencyCode, Money } from '@/shared/lib/money';
 export type { CurrencyCode, Money };
 
 export type OrderChannel = 'retail' | 'wholesale';
+export type SalesChannel = OrderChannel;
 
 export type OrderStatus =
   | 'pending_payment'
@@ -298,4 +299,145 @@ export interface PayTRTokenResponse {
   is_test_mode: boolean;
   error?: string;
 }
+
+// ------------------------------------------------------------------------------
+// Phase 3.7 Admin Orders, Payments, Fulfillment & Refunds Types
+// ------------------------------------------------------------------------------
+
+export interface AdminOrderListQuery {
+  page?: number;
+  pageSize?: number;
+  status?: OrderStatus | 'all';
+  channel?: SalesChannel | 'all';
+  paymentStatus?: PaymentStatus | 'all';
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface AdminOrderSummary {
+  id: string;
+  order_number: string;
+  customer_id: string;
+  customer_name: string;
+  customer_email: string;
+  channel: SalesChannel;
+  status: OrderStatus;
+  currency: CurrencyCode;
+  total_minor: number;
+  item_count: number;
+  payment_status: PaymentStatus;
+  shipping_carrier: string | null;
+  shipping_tracking_number: string | null;
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface AdminOrderListResponse {
+  orders: AdminOrderSummary[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+export interface OrderStatusHistoryRecord {
+  id: string;
+  order_id: string;
+  from_status: OrderStatus | null;
+  to_status: OrderStatus;
+  actor_type: 'system' | 'customer' | 'admin';
+  actor_id: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export interface OrderLegalAcceptanceRecord {
+  id: string;
+  order_id: string;
+  document_key: 'distance_sales_agreement' | 'preliminary_information_form' | 'terms_of_service' | 'privacy_policy';
+  document_version: string;
+  content_snapshot: Record<string, unknown>;
+  accepted_at: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  order_id: string;
+  order_number?: string;
+  customer_email?: string;
+  provider: string;
+  merchant_oid: string;
+  status: PaymentStatus;
+  expected_amount_minor: number;
+  refunded_amount_minor: number;
+  currency: CurrencyCode;
+  test_mode: boolean;
+  failure_code: string | null;
+  failure_message_safe: string | null;
+  initiated_at: string;
+  expires_at: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface RefundRecord {
+  id: string;
+  order_id: string;
+  payment_id: string;
+  request_id: string;
+  reference_no: string;
+  amount_minor: number;
+  currency: CurrencyCode;
+  status: 'pending' | 'succeeded' | 'failed' | 'cancelled';
+  requested_by: string | null;
+  safe_reason: string | null;
+  provider_reference: string | null;
+  provider_error_code: string | null;
+  provider_error_message: string | null;
+  requested_at: string;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface AdminOrderDetail extends Order {
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  items: OrderItem[];
+  payments: PaymentRecord[];
+  refunds: RefundRecord[];
+  status_history: OrderStatusHistoryRecord[];
+  legal_acceptances: OrderLegalAcceptanceRecord[];
+}
+
+export interface OrderFulfillmentRequest {
+  target_status: 'processing' | 'shipped' | 'delivered';
+  carrier?: string;
+  tracking_number?: string;
+  tracking_url?: string;
+  note?: string;
+}
+
+export interface AdminCancelOrderRequest {
+  reason: string;
+}
+
+export interface AdminRefundRequest {
+  payment_id: string;
+  refund_amount_minor: number;
+  reason?: string;
+  idempotency_key?: string;
+}
+
+export interface AdminRefundResponse {
+  success: boolean;
+  refund_id?: string;
+  reference_no?: string;
+  provider_reference?: string | null;
+  status?: string;
+  error?: string;
+  error_code?: string | null;
+}
+
 

@@ -95,9 +95,10 @@ describe('Content & Policy Pages Integration Tests', () => {
     expect(await screen.findByText('Favori Listeniz Henüz Boş')).toBeInTheDocument();
     unmount();
 
-    // Populate wishlist
+    // Populate wishlist with valid id and stale orphan id
     act(() => {
       wishlistStore.toggle('p1');
+      wishlistStore.toggle('orphan-stale-id');
     });
 
     renderWithRouter(<WishlistPage />);
