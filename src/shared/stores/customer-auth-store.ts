@@ -180,37 +180,10 @@ export const customerAuthStore = {
 
   /**
    * Initiates Google OAuth sign in with safe return path tracking.
-   * If remote backend is not available, falls back to instant authenticated demo user.
+   * Prompts the Google Account Chooser screen for account selection.
    */
   async signInWithGoogle(returnUrl = '/account'): Promise<void> {
     saveAuthRedirect(returnUrl);
-
-    if (isRemoteEnvironmentWithoutLiveSupabase()) {
-      const mockGoogleUser = {
-        id: 'usr-google-demo',
-        email: 'musteri@monocactus.com',
-        app_metadata: { provider: 'google' },
-        user_metadata: { full_name: 'Vazo Studio Müşterisi', name: 'Vazo Studio Müşterisi' },
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-      } as unknown as User;
-
-      try {
-        localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockGoogleUser));
-      } catch {
-        // Ignore storage errors
-      }
-
-      currentState = {
-        ...currentState,
-        user: mockGoogleUser,
-        isLoading: true,
-        error: null,
-      };
-      notify();
-      await loadUserData(mockGoogleUser.id);
-      return;
-    }
 
     const client = getSupabase();
     const redirectTo = `${getAppOrigin()}/auth/callback`;

@@ -107,15 +107,15 @@ export function BestSellersRailReference03() {
               type="button"
               onClick={() => handleScroll('left')}
               aria-label="Önceki Ürünler"
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary transition-colors"
+              className="absolute -left-3 sm:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary hover:scale-105 active:scale-95 transition-all"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
 
             {/* Scrollable Rail */}
             <div
               ref={scrollRef}
-              className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
+              className="flex gap-7 md:gap-9 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
             >
               {products.map((p) => {
                 const primaryImage = p.images.find((img) => img.isPrimary)?.url || p.images[0]?.url || '/placeholder-vase.jpg';
@@ -182,9 +182,9 @@ export function BestSellersRailReference03() {
               type="button"
               onClick={() => handleScroll('right')}
               aria-label="Sonraki Ürünler"
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary transition-colors"
+              className="absolute -right-3 sm:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary hover:scale-105 active:scale-95 transition-all"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         )}
