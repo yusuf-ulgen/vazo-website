@@ -63,4 +63,37 @@ describe('CartPage Checkout Enablement Gate (Phase 3.10)', () => {
     expect(screen.getByRole('link', { name: /Ödemeye Geç/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sipariş Sistemi Hazırlık Aşamasında/i })).not.toBeInTheDocument();
   });
+
+  it('renders volume discount badge, strikethrough price, and discount text in CartPage', () => {
+    vi.mocked(useSiteSettings).mockReturnValue({
+      settings: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS,
+        commerce: {
+          ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+          checkoutEnabled: true,
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    const product = createProduct({
+      id: 'p-cart-03',
+      name: 'Lunea Form No.4',
+      retailPrice: 1450,
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 6,
+        tiers: [{ minQuantity: 6, maxQuantity: 11, unitPrice: 1160, discountPercentage: 20 }],
+      },
+    });
+    const variant = createVariant({ id: 'v-cart-03', retailPrice: 1450, stockQuantity: 20 });
+    cartStore.addItem(product, variant, 6);
+
+    renderWithRouter(<CartPage />);
+
+    expect(screen.getByText(/-%20 Toplu Alım/)).toBeInTheDocument();
+    expect(screen.getByText(/%20 İskonto Uygulandı/)).toBeInTheDocument();
+    expect(screen.getAllByText(/6\.960/).length).toBeGreaterThan(0);
+  });
 });

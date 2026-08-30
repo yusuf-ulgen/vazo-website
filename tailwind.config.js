@@ -81,6 +81,10 @@ export default {
         editorial: '0.15em',
         wide: '0.08em',
       },
+      aspectRatio: {
+        '3/4': '3 / 4',
+        '4/5': '4 / 5',
+      },
     },
   },
   plugins: [],

@@ -105,9 +105,26 @@ export function CartPage() {
                       </div>
 
                       <p className="text-xs text-text-secondary">{item.variantName}</p>
-                      <p className="text-xs font-semibold text-text-primary pt-1">
-                        {formatCurrency(item.retailPrice)}
-                      </p>
+
+                      <div className="pt-1">
+                        {item.discountPercentage && item.unitPrice < item.retailPrice ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-semibold text-text-primary">
+                              {formatCurrency(item.unitPrice)}
+                            </span>
+                            <span className="text-[11px] text-text-muted line-through">
+                              {formatCurrency(item.retailPrice)}
+                            </span>
+                            <span className="inline-block text-[10px] uppercase font-bold text-feedback-success bg-feedback-success/10 px-1.5 py-0.5 rounded">
+                              -%{item.discountPercentage} Toplu Alım
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs font-semibold text-text-primary">
+                            {formatCurrency(item.unitPrice ?? item.retailPrice)}
+                          </p>
+                        )}
+                      </div>
 
                       <div className="pt-3 flex items-center justify-between">
                         <QuantitySelector
@@ -116,9 +133,16 @@ export function CartPage() {
                           onChange={(qty) => updateQuantity(item.id, qty)}
                         />
 
-                        <span className="text-xs sm:text-sm font-semibold text-text-primary">
-                          {formatCurrency(item.retailPrice * item.quantity)}
-                        </span>
+                        <div className="text-right">
+                          <span className="text-xs sm:text-sm font-semibold text-text-primary block">
+                            {formatCurrency((item.unitPrice ?? item.retailPrice) * item.quantity)}
+                          </span>
+                          {item.discountPercentage && item.unitPrice < item.retailPrice && (
+                            <span className="text-[10px] text-feedback-success font-medium block">
+                              %{item.discountPercentage} İskonto Uygulandı
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

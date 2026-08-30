@@ -35,7 +35,7 @@ export function BestSellersRailReference03() {
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 380;
+      const scrollAmount = 360;
       if (typeof scrollRef.current.scrollBy === 'function') {
         scrollRef.current.scrollBy({
           left: direction === 'left' ? -scrollAmount : scrollAmount,
@@ -115,7 +115,7 @@ export function BestSellersRailReference03() {
             {/* Scrollable Rail */}
             <div
               ref={scrollRef}
-              className="flex gap-10 sm:gap-14 md:gap-16 lg:gap-20 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
+              className="flex gap-5 sm:gap-6 md:gap-7 lg:gap-8 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
             >
               {products.map((p) => {
                 const primaryImage = p.images.find((img) => img.isPrimary)?.url || p.images[0]?.url || '/placeholder-vase.jpg';
@@ -124,10 +124,10 @@ export function BestSellersRailReference03() {
                 return (
                   <div
                     key={p.id}
-                    className="w-[240px] sm:w-[260px] md:w-[280px] shrink-0 snap-start flex flex-col group/card bg-surface-primary border border-border-subtle overflow-hidden transition-all duration-300 hover:shadow-card"
+                    className="w-[270px] sm:w-[300px] md:w-[320px] lg:w-[340px] shrink-0 snap-start flex flex-col group/card bg-surface-primary border border-border-subtle overflow-hidden transition-all duration-300 hover:shadow-card"
                   >
                     {/* Image Area */}
-                    <div className="relative aspect-3/4 overflow-hidden bg-surface-secondary">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-secondary">
                       <Link to={`/products/${p.slug}`} className="block w-full h-full">
                         <img
                           src={primaryImage}

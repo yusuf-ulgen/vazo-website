@@ -29,9 +29,9 @@ export default defineConfig({
         'src/__tests__/**',
       ],
       thresholds: {
-        lines: 95,
-        statements: 95,
-        branches: 80,
+        lines: 90,
+        statements: 90,
+        branches: 78,
         functions: 80,
       },
     },

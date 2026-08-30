@@ -27,9 +27,8 @@ describe('AdminNavigationTab Component (Phase 2.9)', () => {
       expect(screen.getByRole('button', { name: 'Perakende Mega Menü' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Toptan Mega Menü' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Yeni Menü Grubu/i })).toBeInTheDocument();
+      expect(screen.getByText('Kategoriler')).toBeInTheDocument();
     });
-
-    expect(screen.getByText('Kategoriler')).toBeInTheDocument();
   });
 
   it('filters groups when clicking a menu type filter', async () => {
