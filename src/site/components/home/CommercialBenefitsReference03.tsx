@@ -49,7 +49,7 @@ export function CommercialBenefitsReference03() {
 
   return (
     <section className="w-full bg-canvas-default py-12 md:py-16 border-b border-border-subtle">
-      <Container size="lg">
+      <Container size="full" className="max-w-[1536px] px-4 sm:px-8 lg:px-12">
         {/* Section Header (Reference 03) */}
         <div className="text-center max-w-xl mx-auto space-y-1 mb-10 md:mb-12">
           <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
@@ -78,15 +78,15 @@ export function CommercialBenefitsReference03() {
               return (
                 <div
                   key={b.id || b.title}
-                  className="flex flex-col items-center text-center px-4 sm:px-6 md:px-8 py-4 sm:py-6 space-y-2.5"
+                  className="flex flex-col items-center text-center px-6 sm:px-8 lg:px-12 py-6 sm:py-8 space-y-3"
                 >
-                  <div className="w-11 h-11 rounded-full bg-surface-secondary border border-border-subtle flex items-center justify-center text-text-primary mb-1">
+                  <div className="w-12 h-12 rounded-full bg-surface-secondary border border-border-subtle flex items-center justify-center text-text-primary mb-1 shadow-xs">
                     <Icon className="w-5 h-5 stroke-[1.5]" />
                   </div>
                   <h3 className="font-sans text-xs font-semibold text-text-primary tracking-wide">
                     {b.title}
                   </h3>
-                  <p className="text-[11px] text-text-secondary font-sans leading-relaxed max-w-[200px]">
+                  <p className="text-[11px] text-text-secondary font-sans leading-relaxed max-w-[220px]">
                     {b.description}
                   </p>
                 </div>

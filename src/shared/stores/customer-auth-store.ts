@@ -210,6 +210,37 @@ export const customerAuthStore = {
   },
 
   /**
+   * Signs in customer using chosen Google account (for preview/demo and mock sessions).
+   */
+  async signInWithGoogleAccount(accountEmail: string, accountName: string, returnUrl = '/account'): Promise<void> {
+    saveAuthRedirect(returnUrl);
+    const cleanEmail = accountEmail.trim().toLowerCase();
+    const mockUser = {
+      id: `usr-g-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`,
+      email: cleanEmail,
+      app_metadata: { provider: 'google' },
+      user_metadata: { full_name: accountName, name: accountName },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    } as unknown as User;
+
+    try {
+      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockUser));
+    } catch {
+      // Ignore storage errors
+    }
+
+    currentState = {
+      ...currentState,
+      user: mockUser,
+      isLoading: true,
+      error: null,
+    };
+    notify();
+    await loadUserData(mockUser.id);
+  },
+
+  /**
    * Signs in customer using email and password.
    */
   async signInWithPassword(email: string, password: string): Promise<void> {
@@ -530,7 +561,9 @@ export function useCustomerAuth() {
     email: state.user?.email || null,
     customerType: state.profile?.customer_type || 'retail',
     isWholesaleApproved,
+    isRemoteDemoMode: isRemoteEnvironmentWithoutLiveSupabase(),
     signInWithGoogle: customerAuthStore.signInWithGoogle,
+    signInWithGoogleAccount: customerAuthStore.signInWithGoogleAccount,
     signInWithPassword: customerAuthStore.signInWithPassword,
     signUpWithPassword: customerAuthStore.signUpWithPassword,
     signOut: customerAuthStore.signOut,

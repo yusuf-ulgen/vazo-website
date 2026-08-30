@@ -6,6 +6,7 @@ import * as customerAuthModule from '@/shared/stores/customer-auth-store';
 
 describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
   const mockSignInWithGoogle = vi.fn();
+  const mockSignInWithGoogleAccount = vi.fn();
   const mockSignInWithPassword = vi.fn();
   const mockSignUpWithPassword = vi.fn();
   const mockSignOut = vi.fn();
@@ -20,7 +21,9 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     displayName: 'Müşteri',
     email: null,
     customerType: 'retail' as const,
+    isRemoteDemoMode: false,
     signInWithGoogle: mockSignInWithGoogle,
+    signInWithGoogleAccount: mockSignInWithGoogleAccount,
     signInWithPassword: mockSignInWithPassword,
     signUpWithPassword: mockSignUpWithPassword,
     signOut: mockSignOut,
