@@ -183,6 +183,17 @@ export const customerAuthStore = {
    * Prompts the Google Account Chooser screen for account selection.
    */
   async signInWithGoogle(returnUrl = '/account'): Promise<void> {
+    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+      const errorMsg =
+        'Canlı Supabase yapılandırması eksik (VITE_SUPABASE_URL ortam değişkeni tanımlanmamış veya localhost gösteriyor). Google ile giriş için sunucunuzda VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY tanımlanmalıdır.';
+      currentState = {
+        ...currentState,
+        error: errorMsg,
+      };
+      notify();
+      throw new Error(errorMsg);
+    }
+
     saveAuthRedirect(returnUrl);
 
     const client = getSupabase();
