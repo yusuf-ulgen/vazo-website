@@ -43,6 +43,11 @@ export function SiteNavbar() {
     }, 150);
   };
 
+  const handleCloseImmediate = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setActiveMenu(null);
+  };
+
   // Keyboard shortcut CMD+K or / for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -75,7 +80,7 @@ export function SiteNavbar() {
             </div>
 
             {/* Brand Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center" onMouseEnter={handleCloseImmediate}>
               <Link
                 to="/"
                 className="font-display text-2xl md:text-3xl tracking-widest uppercase font-normal text-text-primary"
@@ -88,6 +93,7 @@ export function SiteNavbar() {
             <nav className="hidden lg:flex items-center space-x-8 text-sm font-sans tracking-wide">
               <Link
                 to="/new"
+                onMouseEnter={handleCloseImmediate}
                 className="text-text-primary hover:opacity-60 transition-opacity py-2 font-normal"
               >
                 Yeni
@@ -139,6 +145,7 @@ export function SiteNavbar() {
 
               <Link
                 to="/collections"
+                onMouseEnter={handleCloseImmediate}
                 className="text-text-primary hover:opacity-60 transition-opacity py-2"
               >
                 Koleksiyonlar
@@ -146,6 +153,7 @@ export function SiteNavbar() {
 
               <Link
                 to="/about"
+                onMouseEnter={handleCloseImmediate}
                 className="text-text-primary hover:opacity-60 transition-opacity py-2"
               >
                 Hakkımızda
@@ -153,6 +161,7 @@ export function SiteNavbar() {
 
               <Link
                 to="/contact"
+                onMouseEnter={handleCloseImmediate}
                 className="text-text-primary hover:opacity-60 transition-opacity py-2"
               >
                 İletişim
@@ -160,7 +169,10 @@ export function SiteNavbar() {
             </nav>
 
             {/* Action Icons */}
-            <div className="flex items-center space-x-2 sm:space-x-4 text-text-primary">
+            <div
+              className="flex items-center space-x-2 sm:space-x-4 text-text-primary"
+              onMouseEnter={handleCloseImmediate}
+            >
               {/* Search Trigger */}
               <button
                 onClick={() => setSearchModalOpen(true)}
@@ -223,10 +235,16 @@ export function SiteNavbar() {
         <PerakendeMegaMenu
           isOpen={activeMenu === 'perakende'}
           onClose={() => setActiveMenu(null)}
+          onMouseEnter={() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          }}
         />
         <ToptanMegaMenu
           isOpen={activeMenu === 'toptan'}
           onClose={() => setActiveMenu(null)}
+          onMouseEnter={() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          }}
         />
       </header>
 

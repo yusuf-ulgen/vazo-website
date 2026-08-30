@@ -320,4 +320,45 @@ describe('customerAuthStore & useCustomerAuth Hook', () => {
     initCustomerAuth(); // Idempotency test
     expect(mockOnAuthStateChange).toHaveBeenCalled();
   });
+
+  it('signs in and registers customer with email and password', async () => {
+    const mockSignInWithPassword = vi.fn().mockResolvedValue({
+      data: { user: { id: 'usr-pwd-1', email: 'test@example.com' } },
+      error: null,
+    });
+    const mockSignUp = vi.fn().mockResolvedValue({
+      data: { user: { id: 'usr-pwd-2', email: 'new@example.com' } },
+      error: null,
+    });
+
+    vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue({
+      auth: {
+        signInWithPassword: mockSignInWithPassword,
+        signUp: mockSignUp,
+      },
+    } as unknown as ReturnType<typeof supabaseModule.getSupabase>);
+
+    await customerAuthStore.signInWithPassword('test@example.com', 'mypassword');
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'mypassword',
+    });
+
+    await customerAuthStore.signUpWithPassword('new@example.com', 'mypassword', 'New User');
+    expect(mockSignUp).toHaveBeenCalledWith({
+      email: 'new@example.com',
+      password: 'mypassword',
+      options: {
+        data: {
+          full_name: 'New User',
+          name: 'New User',
+        },
+      },
+    });
+  });
+
+  it('validates email and password inputs and throws errors on empty or short password', async () => {
+    await expect(customerAuthStore.signInWithPassword('', 'pass')).rejects.toThrow('Lütfen geçerli bir e-posta adresi giriniz.');
+    await expect(customerAuthStore.signUpWithPassword('test@test.com', '123', 'Name')).rejects.toThrow('Şifre en az 6 karakter olmalıdır.');
+  });
 });

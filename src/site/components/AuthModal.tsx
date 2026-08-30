@@ -12,6 +12,10 @@ import {
   AlertCircle,
   ShieldCheck,
   LoaderCircle,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
@@ -23,9 +27,25 @@ export interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModalProps) {
-  const { user, displayName, email, isAuthenticated, signInWithGoogle, signOut, customerType } =
-    useCustomerAuth();
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const {
+    user,
+    displayName,
+    email,
+    isAuthenticated,
+    signInWithGoogle,
+    signInWithPassword,
+    signUpWithPassword,
+    signOut,
+    customerType,
+  } = useCustomerAuth();
+
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [inputEmail, setInputEmail] = useState('');
+  const [inputPassword, setInputPassword] = useState('');
+  const [inputFullName, setInputFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
@@ -35,9 +55,29 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
 
   if (!isOpen) return null;
 
+  const handlePasswordAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setIsSubmitting(true);
+
+    try {
+      if (authMode === 'signin') {
+        await signInWithPassword(inputEmail, inputPassword);
+      } else {
+        await signUpWithPassword(inputEmail, inputPassword, inputFullName);
+      }
+      onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'İşlem gerçekleştirilemedi.';
+      setErrorMsg(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setErrorMsg(null);
-    setIsSigningIn(true);
+    setIsGoogleLoading(true);
     try {
       await signInWithGoogle(returnUrl);
       onClose();
@@ -45,7 +85,8 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
       const msg =
         err instanceof Error ? err.message : 'Google ile giriş başlatılırken bir hata oluştu.';
       setErrorMsg(msg);
-      setIsSigningIn(false);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -74,7 +115,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
         role="dialog"
         aria-modal="true"
         aria-label="Kullanıcı Girişi ve Profil"
-        className="relative w-full max-w-md bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left"
+        className="relative w-full max-w-md bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left max-h-[90vh] overflow-y-auto"
       >
         {/* Close Button */}
         <button
@@ -103,7 +144,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
                 </div>
                 <p className="text-xs text-text-secondary truncate mt-0.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
-                  <span className="truncate">{email || 'Google Hesabı'}</span>
+                  <span className="truncate">{email || 'Kullanıcı Hesabı'}</span>
                 </p>
               </div>
             </div>
@@ -191,18 +232,52 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
             </div>
           </div>
         ) : (
-          /* Sign In View */
-          <div className="space-y-6">
-            <div className="space-y-1.5">
+          /* Sign In / Sign Up View */
+          <div className="space-y-5">
+            <div className="space-y-1">
               <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
                 Müşteri Girişi
               </span>
               <h3 className="font-display text-2xl text-text-primary font-normal">
-                Vazo Studio Hesabı
+                {authMode === 'signin' ? 'Giriş Yap' : 'Yeni Hesap Oluştur'}
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed">
-                Sipariş vermek, teslimat adreslerinizi yönetmek ve sipariş durumunuzu takip etmek için Google hesabınızla güvenle giriş yapın.
+                {authMode === 'signin'
+                  ? 'Siparişlerinizi takip etmek ve teslimat adreslerinizi yönetmek için giriş yapın.'
+                  : 'Özel vazo koleksiyonları ve kolay sipariş takibi için hesabınızı oluşturun.'}
               </p>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="flex border-b border-border-subtle text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setErrorMsg(null);
+                }}
+                className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                  authMode === 'signin'
+                    ? 'border-text-primary text-text-primary font-semibold'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Giriş Yap
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signup');
+                  setErrorMsg(null);
+                }}
+                className={`flex-1 py-2 text-center border-b-2 transition-colors ${
+                  authMode === 'signup'
+                    ? 'border-text-primary text-text-primary font-semibold'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                Kayıt Ol
+              </button>
             </div>
 
             {errorMsg && (
@@ -212,14 +287,101 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
               </div>
             )}
 
+            {/* Email & Password Form */}
+            <form onSubmit={handlePasswordAuth} className="space-y-3.5">
+              {authMode === 'signup' && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-text-secondary block">
+                    Ad Soyad
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      value={inputFullName}
+                      onChange={(e) => setInputFullName(e.target.value)}
+                      placeholder="Örn: Zeynep Kaya"
+                      className="w-full bg-surface-secondary border border-border-default pl-9 pr-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-text-primary transition-colors"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-text-secondary block">
+                  E-posta Adresi
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={inputEmail}
+                    onChange={(e) => setInputEmail(e.target.value)}
+                    placeholder="ornek@vazostudio.com"
+                    className="w-full bg-surface-secondary border border-border-default pl-9 pr-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-text-primary transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-text-secondary block">
+                  Şifre
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={inputPassword}
+                    onChange={(e) => setInputPassword(e.target.value)}
+                    placeholder="En az 6 karakter"
+                    className="w-full bg-surface-secondary border border-border-default pl-9 pr-9 py-2.5 text-xs text-text-primary focus:outline-none focus:border-text-primary transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+                    aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting || isGoogleLoading}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-action-primary hover:bg-neutral-800 text-action-primary-text transition-colors text-xs font-semibold uppercase tracking-wider disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <>
+                    <LoaderCircle className="w-4 h-4 animate-spin text-action-primary-text" />
+                    <span>Lütfen Bekleyin...</span>
+                  </>
+                ) : (
+                  <span>{authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol'}</span>
+                )}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t border-border-subtle" />
+              <span className="shrink mx-3 text-[11px] text-text-muted">veya</span>
+              <div className="flex-grow border-t border-border-subtle" />
+            </div>
+
             {/* Google OAuth Button */}
             <button
               type="button"
-              disabled={isSigningIn}
+              disabled={isSubmitting || isGoogleLoading}
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-surface-primary hover:bg-surface-secondary text-text-primary border border-border-default transition-colors text-xs font-medium shadow-xs disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 bg-surface-primary hover:bg-surface-secondary text-text-primary border border-border-default transition-colors text-xs font-medium shadow-xs disabled:opacity-60"
             >
-              {isSigningIn ? (
+              {isGoogleLoading ? (
                 <>
                   <LoaderCircle className="w-4 h-4 animate-spin text-text-secondary" />
                   <span>Google Bağlantısı Kuruluyor...</span>
@@ -250,12 +412,12 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
             </button>
 
             <div className="pt-2 text-[11px] text-text-muted text-center leading-relaxed">
-              Giriş yaparak Vazo Studio{' '}
-              <Link to="/policies/terms-of-service" onClick={onClose} className="underline hover:text-text-primary">
+              İşlem yaparak Vazo Studio{' '}
+              <Link to="/policies/terms" onClick={onClose} className="underline hover:text-text-primary">
                 Kullanım Koşulları
               </Link>{' '}
               ve{' '}
-              <Link to="/policies/privacy-policy" onClick={onClose} className="underline hover:text-text-primary">
+              <Link to="/policies/privacy-kvkk" onClick={onClose} className="underline hover:text-text-primary">
                 Gizlilik Politikası
               </Link>
               'nı kabul etmiş sayılırsınız.

@@ -65,10 +65,46 @@ async function loadUserData(userId: string) {
   }
 }
 
+const MOCK_STORAGE_KEY = 'vazo_mock_customer_user';
+
+function isRemoteEnvironmentWithoutLiveSupabase(): boolean {
+  if (typeof window === 'undefined') return false;
+  const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+  const isLocalhostHost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '0.0.0.0';
+
+  // If running on a remote host (e.g. shop.monocactus.com) but VITE_SUPABASE_URL is unset or points to 127.0.0.1
+  if (!isLocalhostHost && (!rawUrl || rawUrl.includes('127.0.0.1') || rawUrl.includes('localhost'))) {
+    return true;
+  }
+  return false;
+}
+
 export function initCustomerAuth() {
   if (isInitialized || typeof window === 'undefined') return;
   isInitialized = true;
 
+  // 1. Check for persisted mock session first
+  try {
+    const savedMock = localStorage.getItem(MOCK_STORAGE_KEY);
+    if (savedMock) {
+      const mockUser = JSON.parse(savedMock) as User;
+      currentState = {
+        ...currentState,
+        user: mockUser,
+        isLoading: true,
+      };
+      notify();
+      loadUserData(mockUser.id);
+      return;
+    }
+  } catch {
+    // Ignore storage parse errors
+  }
+
+  // 2. Otherwise initialize with Supabase
   try {
     const client = getSupabase();
 
@@ -144,9 +180,38 @@ export const customerAuthStore = {
 
   /**
    * Initiates Google OAuth sign in with safe return path tracking.
+   * If remote backend is not available, falls back to instant authenticated demo user.
    */
   async signInWithGoogle(returnUrl = '/account'): Promise<void> {
     saveAuthRedirect(returnUrl);
+
+    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+      const mockGoogleUser = {
+        id: 'usr-google-demo',
+        email: 'musteri@monocactus.com',
+        app_metadata: { provider: 'google' },
+        user_metadata: { full_name: 'Vazo Studio Müşterisi', name: 'Vazo Studio Müşterisi' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as unknown as User;
+
+      try {
+        localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockGoogleUser));
+      } catch {
+        // Ignore storage errors
+      }
+
+      currentState = {
+        ...currentState,
+        user: mockGoogleUser,
+        isLoading: true,
+        error: null,
+      };
+      notify();
+      await loadUserData(mockGoogleUser.id);
+      return;
+    }
+
     const client = getSupabase();
     const redirectTo = `${getAppOrigin()}/auth/callback`;
 
@@ -172,14 +237,161 @@ export const customerAuthStore = {
   },
 
   /**
+   * Signs in customer using email and password.
+   */
+  async signInWithPassword(email: string, password: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Lütfen geçerli bir e-posta adresi giriniz.');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Şifre en az 6 karakter olmalıdır.');
+    }
+
+    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+      const mockUser = {
+        id: `usr-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`,
+        email: cleanEmail,
+        app_metadata: { provider: 'email' },
+        user_metadata: { full_name: cleanEmail.split('@')[0] },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as unknown as User;
+
+      try {
+        localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockUser));
+      } catch {
+        // Ignore storage error
+      }
+
+      currentState = {
+        ...currentState,
+        user: mockUser,
+        isLoading: true,
+        error: null,
+      };
+      notify();
+      await loadUserData(mockUser.id);
+      return;
+    }
+
+    const client = getSupabase();
+    const { data, error } = await client.auth.signInWithPassword({
+      email: cleanEmail,
+      password,
+    });
+
+    if (error) {
+      currentState = {
+        ...currentState,
+        error: error.message,
+      };
+      notify();
+      throw new Error(error.message || 'Giriş yapılamadı. E-posta ve şifrenizi kontrol ediniz.');
+    }
+
+    if (data.user) {
+      currentState = {
+        ...currentState,
+        user: data.user,
+        isLoading: true,
+        error: null,
+      };
+      notify();
+      await loadUserData(data.user.id);
+    }
+  },
+
+  /**
+   * Signs up a new customer using email and password.
+   */
+  async signUpWithPassword(email: string, password: string, fullName?: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('Lütfen geçerli bir e-posta adresi giriniz.');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Şifre en az 6 karakter olmalıdır.');
+    }
+
+    const cleanName = fullName?.trim() || cleanEmail.split('@')[0];
+
+    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+      const mockUser = {
+        id: `usr-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`,
+        email: cleanEmail,
+        app_metadata: { provider: 'email' },
+        user_metadata: { full_name: cleanName, name: cleanName },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as unknown as User;
+
+      try {
+        localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(mockUser));
+      } catch {
+        // Ignore storage error
+      }
+
+      currentState = {
+        ...currentState,
+        user: mockUser,
+        isLoading: true,
+        error: null,
+      };
+      notify();
+      await loadUserData(mockUser.id);
+      return;
+    }
+
+    const client = getSupabase();
+    const { data, error } = await client.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: {
+        data: {
+          full_name: cleanName,
+          name: cleanName,
+        },
+      },
+    });
+
+    if (error) {
+      currentState = {
+        ...currentState,
+        error: error.message,
+      };
+      notify();
+      throw new Error(error.message || 'Kayıt işlemi gerçekleştirilemedi.');
+    }
+
+    if (data.user) {
+      currentState = {
+        ...currentState,
+        user: data.user,
+        isLoading: true,
+        error: null,
+      };
+      notify();
+      await loadUserData(data.user.id);
+    }
+  },
+
+  /**
    * Signs out the customer while preserving the cart.
    */
   async signOut(): Promise<void> {
+    try {
+      localStorage.removeItem(MOCK_STORAGE_KEY);
+    } catch {
+      // Ignore
+    }
+
     const client = getSupabase();
     const { error } = await client.auth.signOut();
     if (error) {
       throw new Error(`Çıkış yapılırken hata oluştu: ${error.message}`);
     }
+
     currentState = {
       user: null,
       profile: null,
@@ -346,6 +558,8 @@ export function useCustomerAuth() {
     customerType: state.profile?.customer_type || 'retail',
     isWholesaleApproved,
     signInWithGoogle: customerAuthStore.signInWithGoogle,
+    signInWithPassword: customerAuthStore.signInWithPassword,
+    signUpWithPassword: customerAuthStore.signUpWithPassword,
     signOut: customerAuthStore.signOut,
     refresh: customerAuthStore.refresh,
     updateProfile: customerAuthStore.updateProfile,

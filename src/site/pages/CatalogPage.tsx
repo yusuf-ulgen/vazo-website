@@ -103,16 +103,24 @@ export function CatalogPage({ mode = 'all' }: CatalogPageProps) {
     }
 
     if (selectedMaterial) {
-      list = list.filter((p) =>
-        p.material.toLowerCase().includes(selectedMaterial.toLowerCase())
-      );
+      const mat = selectedMaterial.toLowerCase();
+      list = list.filter((p) => {
+        const prodMat = p.material.toLowerCase();
+        if (mat === 'terracotta' || mat === 'terakota' || mat === 'toprak') {
+          return prodMat.includes('terakota') || prodMat.includes('toprak') || prodMat.includes('kil') || prodMat.includes('seramik');
+        }
+        if (mat === 'porcelain' || mat === 'porselen') {
+          return prodMat.includes('porselen');
+        }
+        if (mat === 'stoneware') {
+          return prodMat.includes('stoneware') || prodMat.includes('seramik');
+        }
+        return prodMat.includes(mat);
+      });
     }
 
     return list;
   }, [products, filterParam, wishlistIds, selectedMaterial]);
-
-  // Unique materials for filter dropdown
-  const materials = ['Stoneware', 'Seramik', 'Doğal Bazalt Kili', 'Doğal Kırmızı Kil', 'Porselen'];
 
   return (
     <div className="w-full bg-canvas-default min-h-screen py-10 md:py-16">
@@ -170,36 +178,20 @@ export function CatalogPage({ mode = 'all' }: CatalogPageProps) {
             ))}
           </div>
 
-          {/* Material & Sort Controls */}
-          <div className="flex items-center gap-3 ml-auto">
-            {/* Material Filter */}
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1.5 bg-surface-primary border border-border-default px-2.5 py-1.5 ml-auto">
+            <ArrowUpDown className="w-3.5 h-3.5 text-text-muted" />
             <select
-              value={selectedMaterial}
-              onChange={(e) => updateParam('material', e.target.value || null)}
-              className="bg-surface-primary text-text-primary border border-border-default px-3 py-1.5 focus:outline-none text-xs"
-              aria-label="Materyale göre filtrele"
+              value={selectedSort || 'recommended'}
+              onChange={(e) => updateParam('sort', e.target.value)}
+              className="bg-transparent text-text-primary focus:outline-none text-xs"
+              aria-label="Sıralama seçeneği"
             >
-              <option value="">Tüm Materyaller</option>
-              {materials.map((mat) => (
-                <option key={mat} value={mat}>{mat}</option>
-              ))}
+              <option value="recommended">Önerilen Sıralama</option>
+              <option value="newest">En Yeni Gelenler</option>
+              <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
+              <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
             </select>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 bg-surface-primary border border-border-default px-2 py-1">
-              <ArrowUpDown className="w-3.5 h-3.5 text-text-muted" />
-              <select
-                value={selectedSort || 'recommended'}
-                onChange={(e) => updateParam('sort', e.target.value)}
-                className="bg-transparent text-text-primary focus:outline-none text-xs"
-                aria-label="Sıralama seçeneği"
-              >
-                <option value="recommended">Önerilen Sıralama</option>
-                <option value="newest">En Yeni Gelenler</option>
-                <option value="price_asc">Fiyat: Düşükten Yükseğe</option>
-                <option value="price_desc">Fiyat: Yüksekten Düşüğe</option>
-              </select>
-            </div>
           </div>
         </div>
 

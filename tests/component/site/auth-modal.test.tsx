@@ -6,33 +6,39 @@ import * as customerAuthModule from '@/shared/stores/customer-auth-store';
 
 describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
   const mockSignInWithGoogle = vi.fn();
+  const mockSignInWithPassword = vi.fn();
+  const mockSignUpWithPassword = vi.fn();
   const mockSignOut = vi.fn();
+
+  const getBaseAuthMock = () => ({
+    user: null,
+    profile: null,
+    addresses: [],
+    isLoading: false,
+    error: null,
+    isAuthenticated: false,
+    displayName: 'Müşteri',
+    email: null,
+    customerType: 'retail' as const,
+    signInWithGoogle: mockSignInWithGoogle,
+    signInWithPassword: mockSignInWithPassword,
+    signUpWithPassword: mockSignUpWithPassword,
+    signOut: mockSignOut,
+    refresh: vi.fn(),
+    updateProfile: vi.fn(),
+    createAddress: vi.fn(),
+    updateAddress: vi.fn(),
+    deleteAddress: vi.fn(),
+    setDefaultShipping: vi.fn(),
+    setDefaultBilling: vi.fn(),
+  });
 
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
   it('renders Google sign in button and modal branding when unauthenticated', () => {
-    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
-      user: null,
-      profile: null,
-      addresses: [],
-      isLoading: false,
-      error: null,
-      isAuthenticated: false,
-      displayName: 'Müşteri',
-      email: null,
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
-    });
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
@@ -45,26 +51,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     const handleClose = vi.fn();
     mockSignInWithGoogle.mockResolvedValue(undefined);
 
-    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
-      user: null,
-      profile: null,
-      addresses: [],
-      isLoading: false,
-      error: null,
-      isAuthenticated: false,
-      displayName: 'Müşteri',
-      email: null,
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
-    });
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
     renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} returnUrl="/checkout" />);
 
@@ -76,6 +63,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
 
   it('renders logged in customer menu with account links and logout button', () => {
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      ...getBaseAuthMock(),
       user: { id: 'u1', email: 'merve@example.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
       profile: {
         user_id: 'u1',
@@ -87,22 +75,9 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
         created_at: '2026-08-28T00:00:00Z',
         updated_at: '2026-08-28T00:00:00Z',
       },
-      addresses: [],
-      isLoading: false,
-      error: null,
       isAuthenticated: true,
       displayName: 'Merve Aydın',
       email: 'merve@example.com',
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
     });
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
@@ -124,26 +99,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
   it('renders error message when signInWithGoogle rejects', async () => {
     mockSignInWithGoogle.mockRejectedValueOnce(new Error('OAuth bağlantı hatası'));
 
-    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
-      user: null,
-      profile: null,
-      addresses: [],
-      isLoading: false,
-      error: null,
-      isAuthenticated: false,
-      displayName: 'Müşteri',
-      email: null,
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
-    });
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
@@ -157,24 +113,12 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     mockSignOut.mockRejectedValueOnce(new Error('Çıkış bağlantı hatası'));
 
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      ...getBaseAuthMock(),
       user: { id: 'u-1', email: 'test@example.com' } as unknown as import('@supabase/supabase-js').User,
       profile: { user_id: 'u-1', first_name: 'Test', last_name: 'User', customer_type: 'retail' } as unknown as customerAuthModule.CustomerAuthState['profile'],
-      addresses: [],
-      isLoading: false,
-      error: null,
       isAuthenticated: true,
       displayName: 'Test User',
       email: 'test@example.com',
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
     });
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
@@ -187,26 +131,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
 
   it('closes on Escape key press or close button click', () => {
     const handleClose = vi.fn();
-    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
-      user: null,
-      profile: null,
-      addresses: [],
-      isLoading: false,
-      error: null,
-      isAuthenticated: false,
-      displayName: 'Müşteri',
-      email: null,
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
-    });
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
     renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
 
@@ -226,26 +151,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
   it('renders wholesale customer badge and handles sign in failure', async () => {
     mockSignInWithGoogle.mockRejectedValueOnce(new Error('Google Girişi Başarısız'));
 
-    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
-      user: null,
-      profile: null,
-      addresses: [],
-      isLoading: false,
-      error: null,
-      isAuthenticated: false,
-      displayName: 'Müşteri',
-      email: null,
-      customerType: 'retail',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
-    });
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
     renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
 
@@ -259,6 +165,7 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     const handleClose = vi.fn();
 
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      ...getBaseAuthMock(),
       user: { id: 'u2', email: 'b2b@example.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
       profile: {
         user_id: 'u2',
@@ -270,22 +177,10 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
         created_at: '2026-08-28T00:00:00Z',
         updated_at: '2026-08-28T00:00:00Z',
       },
-      addresses: [],
-      isLoading: false,
-      error: null,
       isAuthenticated: true,
       displayName: 'Ahmet Toptan',
       email: 'b2b@example.com',
       customerType: 'wholesale',
-      signInWithGoogle: mockSignInWithGoogle,
-      signOut: mockSignOut,
-      refresh: vi.fn(),
-      updateProfile: vi.fn(),
-      createAddress: vi.fn(),
-      updateAddress: vi.fn(),
-      deleteAddress: vi.fn(),
-      setDefaultShipping: vi.fn(),
-      setDefaultBilling: vi.fn(),
     });
 
     renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
@@ -295,5 +190,76 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     const accountLink = screen.getByText('Hesap Bilgilerim');
     fireEvent.click(accountLink);
     expect(handleClose).toHaveBeenCalled();
+  });
+
+  it('registers a new customer with email and password in registration tab', async () => {
+    const handleClose = vi.fn();
+    mockSignUpWithPassword.mockResolvedValue(undefined);
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
+
+    const { container } = renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} returnUrl="/account" />);
+
+    // Switch to Register tab
+    const registerTab = screen.getByRole('button', { name: 'Kayıt Ol' });
+    fireEvent.click(registerTab);
+    expect(screen.getByText('Yeni Hesap Oluştur')).toBeInTheDocument();
+
+    // Fill registration form
+    const nameInput = screen.getByPlaceholderText('Örn: Zeynep Kaya');
+    const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
+    const passwordInput = screen.getByPlaceholderText('En az 6 karakter');
+
+    fireEvent.change(nameInput, { target: { value: 'Zeynep Kaya' } });
+    fireEvent.change(emailInput, { target: { value: 'zeynep@vazostudio.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    // Toggle password visibility
+    const showPasswordBtn = screen.getByLabelText('Şifreyi göster');
+    fireEvent.click(showPasswordBtn);
+    expect(screen.getByLabelText('Şifreyi gizle')).toBeInTheDocument();
+
+    // Submit registration
+    const submitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    fireEvent.click(submitBtn);
+
+    expect(mockSignUpWithPassword).toHaveBeenCalledWith('zeynep@vazostudio.com', 'password123', 'Zeynep Kaya');
+  });
+
+  it('signs in an existing customer with email and password in sign-in tab', async () => {
+    const handleClose = vi.fn();
+    mockSignInWithPassword.mockResolvedValue(undefined);
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
+
+    const { container } = renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} returnUrl="/account" />);
+
+    const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
+    const passwordInput = screen.getByPlaceholderText('En az 6 karakter');
+    fireEvent.change(emailInput, { target: { value: 'zeynep@vazostudio.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+    const loginSubmitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    fireEvent.click(loginSubmitBtn);
+
+    expect(mockSignInWithPassword).toHaveBeenCalledWith('zeynep@vazostudio.com', 'password123');
+  });
+
+  it('handles email/password submission failure', async () => {
+    mockSignInWithPassword.mockRejectedValueOnce(new Error('Geçersiz şifre'));
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
+
+    const { container } = renderWithRouter(<AuthModal isOpen={true} onClose={vi.fn()} />);
+
+    const emailInput = screen.getByPlaceholderText('ornek@vazostudio.com');
+    const passwordInput = screen.getByPlaceholderText('En az 6 karakter');
+    fireEvent.change(emailInput, { target: { value: 'test@vazostudio.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrongpass' } });
+
+    const loginSubmitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+    fireEvent.click(loginSubmitBtn);
+
+    expect(await screen.findByText('Geçersiz şifre')).toBeInTheDocument();
   });
 });
