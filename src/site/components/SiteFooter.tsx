@@ -8,20 +8,20 @@ export function SiteFooter() {
   const { settings } = useSiteSettings();
 
   return (
-    <footer className="bg-canvas-warm border-t border-border-default pt-10 pb-8 text-xs font-sans text-text-secondary">
+    <footer className="bg-canvas-warm border-t border-border-default pt-6 sm:pt-7 pb-8 text-xs font-sans text-text-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Main Grid: 5 cols brand, 2 cols shop, 2 cols wholesale, 3 cols support */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-border-subtle text-left">
-          {/* Brand Info (5 cols) */}
-          <div className="lg:col-span-5 space-y-3 flex flex-col items-center text-center">
+        {/* Main Grid: 4 symmetrical columns */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 pb-8 border-b border-border-subtle items-start text-left">
+          {/* Brand Info (Col 1) */}
+          <div className="space-y-3 flex flex-col items-center text-center">
             <Link to="/" aria-label={settings.general.brandName} className="inline-flex justify-center">
               <img
                 src="/images/MONOCACTUS.png"
                 alt={settings.general.brandName}
-                className="h-16 w-auto object-contain"
+                className="h-20 sm:h-24 w-auto object-contain"
               />
             </Link>
-            <p className="text-xs max-w-sm leading-relaxed text-text-secondary font-normal text-center">
+            <p className="text-xs max-w-xs leading-relaxed text-text-secondary font-normal text-center">
               {settings.general.description}
             </p>
             <div className="pt-1 text-xs space-y-1 text-text-secondary text-center">
@@ -66,12 +66,12 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Shop Column (2 cols) - 4 links */}
-          <div className="lg:col-span-2 space-y-3">
+          {/* Shop Column (Col 2) */}
+          <div className="space-y-3 sm:pl-4 lg:pl-6">
             <h4 className="text-xs font-semibold uppercase tracking-editorial text-text-primary">
               Alışveriş
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               <li>
                 <Link to="/products" className="hover:text-text-primary transition-colors">
                   Tüm Modeller
@@ -95,12 +95,12 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Wholesale Column (2 cols) - 4 links */}
-          <div className="lg:col-span-2 space-y-3">
+          {/* Wholesale Column (Col 3) */}
+          <div className="space-y-3 sm:pl-4 lg:pl-6">
             <h4 className="text-xs font-semibold uppercase tracking-editorial text-text-primary">
               Toptan
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               <li>
                 <Link to="/wholesale" className="hover:text-text-primary transition-colors">
                   Toptan Satışımız
@@ -124,12 +124,12 @@ export function SiteFooter() {
             </ul>
           </div>
 
-          {/* Support Column (3 cols) - 4 links */}
-          <div className="lg:col-span-3 space-y-3">
+          {/* Support Column (Col 4) */}
+          <div className="space-y-3 sm:pl-4 lg:pl-6">
             <h4 className="text-xs font-semibold uppercase tracking-editorial text-text-primary">
               Müşteri Deneyimi
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2.5">
               <li>
                 <Link to="/about" className="hover:text-text-primary transition-colors">
                   Hakkımızda & Zanaat

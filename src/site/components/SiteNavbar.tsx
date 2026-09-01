@@ -84,16 +84,13 @@ export function SiteNavbar() {
               <Link
                 to="/"
                 aria-label={settings.general.brandName}
-                className="flex items-center gap-3 group"
+                className="flex items-center group"
               >
                 <img
                   src="/images/MONOCACTUS.png"
                   alt={settings.general.brandName}
                   className="h-11 sm:h-12 w-auto object-contain transition-transform group-hover:scale-105"
                 />
-                <span className="font-display text-xl sm:text-2xl tracking-wider text-text-primary uppercase font-medium">
-                  {settings.general.brandName}
-                </span>
               </Link>
             </div>
 
