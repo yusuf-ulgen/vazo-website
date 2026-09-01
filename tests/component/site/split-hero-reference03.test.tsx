@@ -1,12 +1,16 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SplitHeroReference03 } from '@/site/components/home/SplitHeroReference03';
 import { contentRepository } from '@/entities/content/api/content-repository';
 
 describe('SplitHeroReference03 Component (Phase 2.8)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders retail and wholesale split hero content from repository', async () => {
@@ -30,6 +34,31 @@ describe('SplitHeroReference03 Component (Phase 2.8)', () => {
     expect(wholesaleLink).toHaveAttribute('href', '/wholesale');
   });
 
+  it('switches between Perakende and Toptan on mobile tab and arrow clicks', async () => {
+    render(
+      <MemoryRouter>
+        <SplitHeroReference03 />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Perakende' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Toptan' })).toBeInTheDocument();
+    });
+
+    // Click Toptan tab
+    const toptanTab = screen.getByRole('button', { name: 'Toptan' });
+    fireEvent.click(toptanTab);
+    expect(toptanTab).toHaveClass('bg-action-primary');
+
+    // Click Next button
+    const nextBtn = screen.getByRole('button', { name: 'Sonraki vitrin' });
+    fireEvent.click(nextBtn);
+
+    const perakendeTab = screen.getByRole('button', { name: 'Perakende' });
+    expect(perakendeTab).toHaveClass('bg-action-primary');
+  });
+
   it('truthfully renders error state when repository fetch fails (NO silent mock fallback)', async () => {
     vi.spyOn(contentRepository, 'getSplitHero').mockRejectedValueOnce(
       new Error('Supabase split hero connection failed')
@@ -47,3 +76,4 @@ describe('SplitHeroReference03 Component (Phase 2.8)', () => {
     });
   });
 });
+
