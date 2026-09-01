@@ -13,28 +13,25 @@ export function SiteFooter() {
         {/* Main Grid: 5 cols brand, 2 cols shop, 2 cols wholesale, 3 cols support */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-border-subtle text-left">
           {/* Brand Info (5 cols) */}
-          <div className="lg:col-span-5 space-y-3">
-            <Link to="/" aria-label="Vazo Studio Ana Sayfa" className="inline-flex flex-col gap-1">
+          <div className="lg:col-span-5 space-y-3 flex flex-col items-center text-center">
+            <Link to="/" aria-label={settings.general.brandName} className="inline-flex justify-center">
               <img
-                src="/images/MONOCACTUS.jpeg"
-                alt=""
+                src="/images/MONOCACTUS.png"
+                alt={settings.general.brandName}
                 className="h-16 w-auto object-contain"
               />
-              <span className="font-display text-sm tracking-widest uppercase text-text-primary">
-                {settings.general.brandName}
-              </span>
             </Link>
-            <p className="text-xs max-w-sm leading-relaxed text-text-secondary font-normal">
+            <p className="text-xs max-w-sm leading-relaxed text-text-secondary font-normal text-center">
               {settings.general.description}
             </p>
-            <div className="pt-1 text-xs space-y-1 text-text-secondary">
+            <div className="pt-1 text-xs space-y-1 text-text-secondary text-center">
               <p>📍 {settings.contact.address}</p>
               <p>📞 {settings.contact.phone}</p>
               <p>✉️ {settings.contact.email}</p>
             </div>
 
             {/* Social Links */}
-            <div className="flex items-center gap-2.5 pt-1">
+            <div className="flex items-center justify-center gap-2.5 pt-1">
               {settings.social.instagram && (
                 <a
                   href={settings.social.instagram}
