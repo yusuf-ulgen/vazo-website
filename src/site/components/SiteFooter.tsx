@@ -14,11 +14,15 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-10 border-b border-border-subtle text-left">
           {/* Brand Info (5 cols) */}
           <div className="lg:col-span-5 space-y-3">
-            <Link
-              to="/"
-              className="font-display text-2xl md:text-3xl tracking-widest uppercase text-text-primary block"
-            >
-              {settings.general.brandName}
+            <Link to="/" aria-label="Vazo Studio Ana Sayfa" className="inline-flex flex-col gap-1">
+              <img
+                src="/images/MONOCACTUS.jpeg"
+                alt=""
+                className="h-16 w-auto object-contain"
+              />
+              <span className="font-display text-sm tracking-widest uppercase text-text-primary">
+                {settings.general.brandName}
+              </span>
             </Link>
             <p className="text-xs max-w-sm leading-relaxed text-text-secondary font-normal">
               {settings.general.description}

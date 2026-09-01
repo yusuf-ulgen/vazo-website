@@ -11,7 +11,6 @@ import {
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useCart } from '@/shared/stores/cart-store';
 import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
-import { useSiteSettings } from '@/shared/stores/settings-store';
 import { PerakendeMegaMenu } from './PerakendeMegaMenu';
 import { ToptanMegaMenu } from './ToptanMegaMenu';
 import { MobileNavDrawer } from './MobileNavDrawer';
@@ -30,7 +29,6 @@ export function SiteNavbar() {
   const { count: wishlistCount } = useWishlist();
   const { totalItems: cartCount } = useCart();
   const { user, displayName, isAuthenticated } = useCustomerAuth();
-  const { settings } = useSiteSettings();
 
   const handleMouseEnter = (menu: 'perakende' | 'toptan') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -81,11 +79,12 @@ export function SiteNavbar() {
 
             {/* Brand Logo */}
             <div className="flex items-center" onMouseEnter={handleCloseImmediate}>
-              <Link
-                to="/"
-                className="font-display text-2xl md:text-3xl tracking-widest uppercase font-normal text-text-primary"
-              >
-                {settings.general.brandName}
+              <Link to="/" aria-label="Vazo Studio">
+                <img
+                  src="/images/MONOCACTUS.jpeg"
+                  alt=""
+                  className="h-10 w-auto object-contain"
+                />
               </Link>
             </div>
 
