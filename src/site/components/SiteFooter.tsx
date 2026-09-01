@@ -25,9 +25,29 @@ export function SiteFooter() {
               {settings.general.description}
             </p>
             <div className="pt-1 text-xs space-y-1.5 text-text-secondary text-center">
-              <p>📍 {settings.contact.address}</p>
-              <p>📞 {settings.contact.phone}</p>
-              <p>✉️ {settings.contact.email}</p>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.contact.address)}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="block hover:text-text-primary transition-colors cursor-pointer"
+                title="Google Haritalar'da Aç"
+              >
+                📍 {settings.contact.address}
+              </a>
+              <a
+                href={`tel:${settings.contact.phone.replace(/\s+/g, '')}`}
+                className="block hover:text-text-primary transition-colors cursor-pointer"
+                title="Telefon ile Ara"
+              >
+                📞 {settings.contact.phone}
+              </a>
+              <a
+                href={`mailto:${settings.contact.email}`}
+                className="block hover:text-text-primary transition-colors cursor-pointer"
+                title="E-Posta Gönder"
+              >
+                ✉️ {settings.contact.email}
+              </a>
             </div>
 
             {/* Social Links */}
