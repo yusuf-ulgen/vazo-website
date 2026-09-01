@@ -8,7 +8,7 @@ export function SiteFooter() {
   const { settings } = useSiteSettings();
 
   return (
-    <footer className="bg-canvas-warm border-t border-border-subtle pt-12 sm:pt-16 pb-10 sm:pb-12 text-xs font-sans text-text-secondary">
+    <footer className="bg-canvas-warm border-t border-border-subtle pt-6 sm:pt-8 pb-10 sm:pb-12 text-xs font-sans text-text-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Grid: Brand (4 cols) & Nav Columns (8 cols: 3 equal sub-columns) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 xl:gap-16 pb-12 sm:pb-14 border-b border-border-subtle/70 items-start text-left">
@@ -67,7 +67,7 @@ export function SiteFooter() {
           </div>
 
           {/* Right Navigation Columns (8 cols: 3 equal sub-columns) */}
-          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 lg:gap-12 pt-2 sm:pt-4 lg:pt-6">
+          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 lg:gap-12 pt-6 sm:pt-10 lg:pt-14">
             {/* Shop Column */}
             <div className="space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">
