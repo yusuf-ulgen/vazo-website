@@ -224,3 +224,58 @@ VALUES
 ('a5000000-0000-0000-0000-000000000002', 'Düşük Minimum Sipariş (MOQ)', 'Model başına 3-6 adet arası düşük MOQ ile butik mağazalar için esnek stok yönetimi.', 'PackageCheck', 2, true),
 ('a5000000-0000-0000-0000-000000000003', 'Özel Sır & Renk Üretimi', 'Büyük ölçekli mimari projeler için RAL/Pantone uyumlu özel mineral sır geliştirme.', 'Palette', 3, true),
 ('a5000000-0000-0000-0000-000000000004', 'Güvenli Sandıklı Lojistik', 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.', 'Truck', 4, true);
+
+-- ------------------------------------------------------------------------------
+-- 9. Default Administrator Account (Seed)
+-- ------------------------------------------------------------------------------
+-- E-Posta: admin@vazostudio.com
+-- Şifre: VazoAdmin2026!
+DO $$
+DECLARE
+    v_admin_id UUID := 'a0000000-0000-0000-0000-000000000001';
+BEGIN
+    INSERT INTO auth.users (
+        id,
+        instance_id,
+        aud,
+        role,
+        email,
+        encrypted_password,
+        email_confirmed_at,
+        raw_app_meta_data,
+        raw_user_meta_data,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_admin_id,
+        '00000000-0000-0000-0000-000000000000',
+        'authenticated',
+        'authenticated',
+        'admin@vazostudio.com',
+        extensions.crypt('VazoAdmin2026!', extensions.gen_salt('bf')),
+        timezone('utc', now()),
+        '{"provider":"email","providers":["email"]}'::jsonb,
+        '{"full_name":"Sistem Yöneticisi"}'::jsonb,
+        timezone('utc', now()),
+        timezone('utc', now())
+    ) ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        encrypted_password = EXCLUDED.encrypted_password,
+        email_confirmed_at = EXCLUDED.email_confirmed_at;
+
+    INSERT INTO public.admin_users (
+        user_id,
+        role,
+        active,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_admin_id,
+        'super_admin',
+        true,
+        timezone('utc', now()),
+        timezone('utc', now())
+    ) ON CONFLICT (user_id) DO UPDATE SET
+        role = 'super_admin',
+        active = true;
+END $$;
