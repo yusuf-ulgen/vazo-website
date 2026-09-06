@@ -690,11 +690,14 @@ SELECT throws_ok(
 );
 
 -- 10.6 Customer A CANNOT update order status or totals directly
+DO $$
+BEGIN
+    UPDATE public.orders SET status = 'paid' WHERE customer_id = 'c1000000-0000-0000-0000-000000000001';
+END $$;
+
 SELECT is(
-    (WITH updated AS (
-        UPDATE public.orders SET status = 'paid' WHERE customer_id = 'c1000000-0000-0000-0000-000000000001' RETURNING 1
-    ) SELECT count(*) FROM updated),
-    0::bigint,
+    (SELECT status FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000001'),
+    'pending_payment'::order_status,
     'Customer cannot update order status or totals directly'
 );
 
