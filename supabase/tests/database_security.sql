@@ -697,7 +697,7 @@ END $$;
 
 SELECT is(
     (SELECT status FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000001'),
-    'pending_payment'::order_status,
+    'pending_payment',
     'Customer cannot update order status or totals directly'
 );
 
