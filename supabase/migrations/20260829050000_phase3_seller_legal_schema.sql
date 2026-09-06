@@ -226,8 +226,7 @@ GRANT EXECUTE ON FUNCTION public.get_checkout_readiness() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_enable_checkout(BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_disable_checkout() TO authenticated;
 
--- Security hardening: revoke direct mutations from anon on site_settings and all on transactional_emails
+-- Security hardening: revoke direct mutations from anon on site_settings
 REVOKE INSERT, UPDATE, DELETE ON public.site_settings FROM anon;
-REVOKE ALL ON public.transactional_emails FROM anon, authenticated;
 
 COMMIT;

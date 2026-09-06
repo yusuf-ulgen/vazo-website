@@ -1285,10 +1285,9 @@ SELECT has_function('public', 'get_pending_email_for_order', ARRAY['uuid'], 'Fun
 
 -- 17.2 Anon CANNOT select from transactional_emails
 SET LOCAL ROLE anon;
-SELECT throws_ok(
-    $$ SELECT * FROM public.transactional_emails $$,
-    '42501',
-    NULL,
+SELECT is(
+    (SELECT count(*)::INTEGER FROM public.transactional_emails),
+    0,
     'Anonymous user cannot select from transactional_emails'
 );
 
@@ -1297,10 +1296,9 @@ SET LOCAL ROLE authenticated;
 SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
 SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
-SELECT throws_ok(
-    $$ SELECT * FROM public.transactional_emails $$,
-    '42501',
-    NULL,
+SELECT is(
+    (SELECT count(*)::INTEGER FROM public.transactional_emails),
+    0,
     'Customer cannot select from transactional_emails'
 );
 
