@@ -29,12 +29,20 @@ test.describe('Navigation & Header E2E Tests', () => {
     await page.goto('/');
 
     const perakendeBtn = page.getByRole('button', { name: 'Perakende' }).first();
-    await perakendeBtn.click();
-    await expect(page.getByText('Masa Üstü Vazolar').first()).toBeVisible();
+    await perakendeBtn.hover();
+    const masaUstuText = page.getByText('Masa Üstü Vazolar').first();
+    if (!await masaUstuText.isVisible()) {
+      await perakendeBtn.click();
+    }
+    await expect(masaUstuText).toBeVisible();
 
     const toptanBtn = page.getByRole('button', { name: 'Toptan' }).first();
-    await toptanBtn.click();
-    await expect(page.getByText('Toptan Satış Programı').first()).toBeVisible();
+    await toptanBtn.hover();
+    const toptanText = page.getByText('Toptan Satış Programı').first();
+    if (!await toptanText.isVisible()) {
+      await toptanBtn.click();
+    }
+    await expect(toptanText).toBeVisible();
   });
 
   test('interacts with Mobile Navigation Drawer on mobile viewports', async ({ page, isMobile }) => {

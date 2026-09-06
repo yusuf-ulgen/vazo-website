@@ -449,6 +449,8 @@ DECLARE
     v_customer_email TEXT;
     v_customer_phone TEXT;
     v_is_wholesale_approved BOOLEAN := false;
+    v_preliminary_page RECORD;
+    v_distance_page RECORD;
 BEGIN
     -- 1. Validate Legal Acceptance
     IF NOT p_accepted_preliminary_info OR NOT p_accepted_distance_sales THEN
@@ -634,7 +636,60 @@ BEGIN
         );
     END LOOP;
 
-    -- 11. Return Authoritative Order Response
+    -- 11. Insert Initial Order Status History
+    INSERT INTO public.order_status_history (
+        order_id,
+        from_status,
+        to_status,
+        actor_type,
+        actor_id,
+        note
+    ) VALUES (
+        v_order_id,
+        NULL,
+        'pending_payment',
+        'customer',
+        p_customer_id,
+        'Sipariş oluşturuldu, ödeme bekleniyor (Rezervasyon süresi: 40 dk)'
+    );
+
+    -- 12. Insert Immutable Legal Acceptances
+    SELECT * INTO v_preliminary_page FROM public.content_pages WHERE page_key = 'preliminary_info';
+    SELECT * INTO v_distance_page FROM public.content_pages WHERE page_key = 'distance_sales';
+
+    INSERT INTO public.order_legal_acceptances (
+        order_id,
+        document_key,
+        document_version,
+        content_snapshot,
+        accepted_at
+    ) VALUES
+    (
+        v_order_id,
+        'preliminary_information_form',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'preliminary_info',
+            'title', COALESCE(v_preliminary_page.title, 'Ön Bilgilendirme Formu'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now())
+        ),
+        timezone('utc', now())
+    ),
+    (
+        v_order_id,
+        'distance_sales_agreement',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'distance_sales',
+            'title', COALESCE(v_distance_page.title, 'Mesafeli Satış Sözleşmesi'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now())
+        ),
+        timezone('utc', now())
+    );
+
+    -- 13. Return Authoritative Order Response
     RETURN jsonb_build_object(
         'order_id', v_order_id,
         'order_number', v_order_number,

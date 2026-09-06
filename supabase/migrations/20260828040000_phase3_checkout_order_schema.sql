@@ -156,9 +156,13 @@ BEGIN
 
     -- 2. If Wholesale, Validate Customer Approval
     IF p_channel = 'wholesale' THEN
-        SELECT (status = 'approved') INTO v_is_wholesale_approved
+        IF p_customer_id IS NULL THEN
+            RAISE EXCEPTION 'Toptan kanal için kimliği doğrulanmış kurumsal hesap gereklidir.';
+        END IF;
+
+        SELECT (customer_type = 'wholesale' AND wholesale_approved_at IS NOT NULL) INTO v_is_wholesale_approved
         FROM public.customer_profiles
-        WHERE id = p_customer_id;
+        WHERE user_id = p_customer_id;
 
         IF NOT COALESCE(v_is_wholesale_approved, false) THEN
             RAISE EXCEPTION 'Toptan kanal için onaylı kurumsal hesap gereklidir.';
@@ -190,7 +194,7 @@ BEGIN
         END IF;
 
         IF NOT v_variant.active THEN
-            RAISE EXCEPTION 'Seçilen ürün varyantı aktif değildir: %', v_variant.title;
+            RAISE EXCEPTION 'Seçilen ürün varyantı aktif değildir: %', v_variant.variant_name;
         END IF;
 
         -- Fetch Product
@@ -206,20 +210,11 @@ BEGIN
         SELECT public.get_variant_available_stock(v_variant_id) INTO v_available_stock;
         IF v_available_stock < v_requested_qty THEN
             RAISE EXCEPTION 'Yetersiz stok: "% - %". Mevcut adet: %, İstenen adet: %',
-                v_product.name, v_variant.title, v_available_stock, v_requested_qty;
+                v_product.name, v_variant.variant_name, v_available_stock, v_requested_qty;
         END IF;
 
         -- Calculate Authoritative Unit Price (Minor Units)
-        IF p_channel = 'wholesale' AND v_product.wholesale_price IS NOT NULL THEN
-            v_unit_price_minor := ROUND(v_product.wholesale_price * 100);
-        ELSE
-            v_unit_price_minor := ROUND(v_product.retail_price * 100);
-        END IF;
-
-        -- Variant Price Adjustment (if present)
-        IF v_variant.price_adjustment IS NOT NULL THEN
-            v_unit_price_minor := GREATEST(0, v_unit_price_minor + ROUND(v_variant.price_adjustment * 100));
-        END IF;
+        v_unit_price_minor := ROUND(COALESCE(v_variant.retail_price, v_product.retail_price) * 100);
 
         v_line_total_minor := v_unit_price_minor * v_requested_qty;
         v_subtotal_minor := v_subtotal_minor + v_line_total_minor;
@@ -228,9 +223,9 @@ BEGIN
             'variant_id', v_variant.id,
             'product_id', v_product.id,
             'product_name', v_product.name,
-            'variant_name', v_variant.title,
+            'variant_name', v_variant.variant_name,
             'sku', v_variant.sku,
-            'image_url', (SELECT image_url FROM public.product_images WHERE product_id = v_product.id AND is_primary LIMIT 1),
+            'image_url', v_variant.image_url,
             'unit_price_minor', v_unit_price_minor,
             'quantity', v_requested_qty,
             'line_total_minor', v_line_total_minor
@@ -341,9 +336,13 @@ BEGIN
     END IF;
 
     IF p_channel = 'wholesale' THEN
-        SELECT (status = 'approved') INTO v_is_wholesale_approved
+        IF p_customer_id IS NULL THEN
+            RAISE EXCEPTION 'Toptan kanal için kimliği doğrulanmış kurumsal hesap gereklidir.';
+        END IF;
+
+        SELECT (customer_type = 'wholesale' AND wholesale_approved_at IS NOT NULL) INTO v_is_wholesale_approved
         FROM public.customer_profiles
-        WHERE id = p_customer_id;
+        WHERE user_id = p_customer_id;
 
         IF NOT COALESCE(v_is_wholesale_approved, false) THEN
             RAISE EXCEPTION 'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.';
@@ -393,7 +392,7 @@ BEGIN
         END IF;
 
         IF NOT v_variant.active THEN
-            RAISE EXCEPTION 'Varyant aktif değil: %', v_variant.title;
+            RAISE EXCEPTION 'Varyant aktif değil: %', v_variant.variant_name;
         END IF;
 
         -- Fetch Product
@@ -418,19 +417,11 @@ BEGIN
 
         IF v_available_stock < v_requested_qty THEN
             RAISE EXCEPTION 'Yetersiz stok: "% - %". Kalan stok: %, Talep edilen: %',
-                v_product.name, v_variant.title, v_available_stock, v_requested_qty;
+                v_product.name, v_variant.variant_name, v_available_stock, v_requested_qty;
         END IF;
 
         -- Authoritative Pricing
-        IF p_channel = 'wholesale' AND v_product.wholesale_price IS NOT NULL THEN
-            v_unit_price_minor := ROUND(v_product.wholesale_price * 100);
-        ELSE
-            v_unit_price_minor := ROUND(v_product.retail_price * 100);
-        END IF;
-
-        IF v_variant.price_adjustment IS NOT NULL THEN
-            v_unit_price_minor := GREATEST(0, v_unit_price_minor + ROUND(v_variant.price_adjustment * 100));
-        END IF;
+        v_unit_price_minor := ROUND(COALESCE(v_variant.retail_price, v_product.retail_price) * 100);
 
         v_line_total_minor := v_unit_price_minor * v_requested_qty;
         v_subtotal_minor := v_subtotal_minor + v_line_total_minor;
@@ -515,22 +506,9 @@ BEGIN
         SELECT * INTO v_variant FROM public.product_variants WHERE id = v_variant_id;
         SELECT * INTO v_product FROM public.products WHERE id = v_variant.product_id;
 
-        IF p_channel = 'wholesale' AND v_product.wholesale_price IS NOT NULL THEN
-            v_unit_price_minor := ROUND(v_product.wholesale_price * 100);
-        ELSE
-            v_unit_price_minor := ROUND(v_product.retail_price * 100);
-        END IF;
-
-        IF v_variant.price_adjustment IS NOT NULL THEN
-            v_unit_price_minor := GREATEST(0, v_unit_price_minor + ROUND(v_variant.price_adjustment * 100));
-        END IF;
+        v_unit_price_minor := ROUND(COALESCE(v_variant.retail_price, v_product.retail_price) * 100);
 
         v_line_total_minor := v_unit_price_minor * v_requested_qty;
-
-        SELECT image_url INTO v_primary_image
-        FROM public.product_images
-        WHERE product_id = v_product.id AND is_primary
-        LIMIT 1;
 
         -- Order Item Snapshot
         INSERT INTO public.order_items (
@@ -553,21 +531,17 @@ BEGIN
             v_variant.id,
             v_variant.sku,
             v_product.name,
-            v_variant.title,
-            v_primary_image,
+            v_variant.variant_name,
+            v_variant.image_url,
             v_unit_price_minor,
             v_requested_qty,
             v_line_total_minor,
             p_currency,
             p_channel,
             jsonb_build_object(
-                'material', v_product.material,
-                'weight_grams', v_variant.weight_grams,
-                'dimensions', jsonb_build_object(
-                    'height_cm', v_variant.height_cm,
-                    'width_cm', v_variant.width_cm,
-                    'diameter_cm', v_variant.diameter_cm
-                )
+                'height_cm', v_variant.height_cm,
+                'width_cm', v_variant.width_cm,
+                'diameter_cm', v_variant.diameter_cm
             )
         );
 

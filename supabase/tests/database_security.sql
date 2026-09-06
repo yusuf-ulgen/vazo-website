@@ -1023,7 +1023,7 @@ SELECT throws_ok(
         true
     ) $$,
     NULL,
-    'Yetersiz stok: "Checkout Vazo - Beyaz". Kalan stok: 3, Talep edilen: 4',
+    'Yetersiz stok: "Checkout Vazo - Standart". Mevcut adet: 3, İstenen adet: 4',
     'create_checkout_order prevents overselling remaining stock'
 );
 
@@ -1062,7 +1062,7 @@ SELECT throws_ok(
     $$ SELECT public.initiate_order_payment(
         (SELECT id FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1),
         'VZ-INVALID-OID-WITH-HYPHEN',
-        105000,
+        500000,
         'TRY',
         true
     ) $$,
@@ -1076,7 +1076,7 @@ SELECT is(
     (SELECT (public.initiate_order_payment(
         (SELECT id FROM public.orders WHERE customer_id = 'c1000000-0000-0000-0000-000000000099' ORDER BY created_at DESC LIMIT 1),
         'VZTESTPAYTR001',
-        105000,
+        500000,
         'TRY',
         true
     ))->>'success')::BOOLEAN,
@@ -1096,10 +1096,10 @@ SELECT is(
     (SELECT (public.finalize_paytr_callback(
         'VZTESTPAYTR001',
         'success',
-        105000,
+        500000,
         NULL,
         NULL,
-        '{"merchant_oid": "VZTESTPAYTR001", "status": "success", "total_amount": "105000"}'::JSONB
+        '{"merchant_oid": "VZTESTPAYTR001", "status": "success", "total_amount": "500000"}'::JSONB
     ))->>'status'),
     'paid',
     'finalize_paytr_callback marks status paid on successful webhook'
