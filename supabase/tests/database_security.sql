@@ -690,10 +690,11 @@ SELECT throws_ok(
 );
 
 -- 10.6 Customer A CANNOT update order status or totals directly
-SELECT throws_ok(
-    $$ UPDATE public.orders SET status = 'paid' WHERE customer_id = 'c1000000-0000-0000-0000-000000000001' $$,
-    '42501',
-    NULL,
+SELECT is(
+    (WITH updated AS (
+        UPDATE public.orders SET status = 'paid' WHERE customer_id = 'c1000000-0000-0000-0000-000000000001' RETURNING 1
+    ) SELECT count(*) FROM updated),
+    0::bigint,
     'Customer cannot update order status or totals directly'
 );
 
@@ -923,7 +924,7 @@ SELECT throws_ok(
         true
     ) $$,
     NULL,
-    'Sipariş oluşturmak için Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi onaylanmalıdır.',
+    'Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi onaylanmalıdır.',
     'create_checkout_order requires both legal acceptance checkboxes'
 );
 
@@ -952,12 +953,12 @@ BEGIN
     VALUES ('c1000000-0000-0000-0000-000000000099', 'checkout-test@example.com')
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO public.products (id, slug, name, description, material, status, retail_price)
-    VALUES ('a2000000-0000-0000-0000-000000000099', 'checkout-vazo', 'Checkout Vazo', 'Desc', 'Seramik', 'published', 2500.00)
+    INSERT INTO public.products (id, slug, name, short_description, description, material, status, retail_price)
+    VALUES ('a2000000-0000-0000-0000-000000000099', 'checkout-vazo', 'Checkout Vazo', 'Kısa Açıklama', 'Desc', 'Seramik', 'published', 2500.00)
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO public.product_variants (id, product_id, sku, title, stock_quantity, active)
-    VALUES ('b2000000-0000-0000-0000-000000000099', 'a2000000-0000-0000-0000-000000000099', 'VZ-CHK-01', 'Beyaz', 5, true)
+    INSERT INTO public.product_variants (id, product_id, sku, variant_name, color_name, retail_price, stock_quantity, active)
+    VALUES ('b2000000-0000-0000-0000-000000000099', 'a2000000-0000-0000-0000-000000000099', 'VZ-CHK-01', 'Standart', 'Beyaz', 2500.00, 5, true)
     ON CONFLICT (id) DO UPDATE SET stock_quantity = 5, active = true;
 END $$;
 
