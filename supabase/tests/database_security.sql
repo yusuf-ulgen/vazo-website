@@ -1316,7 +1316,7 @@ SET LOCAL "request.jwt.claims" = '';
 SELECT has_function('public', 'get_checkout_readiness', 'Function public.get_checkout_readiness should exist');
 
 -- 18.2 Function existence: admin_enable_checkout
-SELECT has_function('public', 'admin_enable_checkout', 'Function public.admin_enable_checkout should exist');
+SELECT has_function('public', 'admin_enable_checkout', ARRAY['boolean'], 'Function public.admin_enable_checkout should exist');
 
 -- 18.3 Function existence: admin_disable_checkout
 SELECT has_function('public', 'admin_disable_checkout', 'Function public.admin_disable_checkout should exist');
@@ -1325,13 +1325,15 @@ SELECT has_function('public', 'admin_disable_checkout', 'Function public.admin_d
 SELECT throws_ok(
     $$ SELECT public.get_checkout_readiness() $$,
     'P0001',
+    'Yalnızca yöneticiler hazırlık durumunu görüntüleyebilir.',
     'Non-admin cannot execute get_checkout_readiness'
 );
 
 -- 18.5 Non-admin calling admin_enable_checkout throws RBAC error
 SELECT throws_ok(
-    $$ SELECT public.admin_enable_checkout() $$,
+    $$ SELECT public.admin_enable_checkout(true) $$,
     'P0001',
+    'Yalnızca yöneticiler ödeme etkinleştirme yapabilir.',
     'Non-admin cannot execute admin_enable_checkout'
 );
 
@@ -1339,6 +1341,7 @@ SELECT throws_ok(
 SELECT throws_ok(
     $$ SELECT public.admin_disable_checkout() $$,
     'P0001',
+    'Yalnızca yöneticiler ödeme etkinleştirme yapabilir.',
     'Non-admin cannot execute admin_disable_checkout'
 );
 

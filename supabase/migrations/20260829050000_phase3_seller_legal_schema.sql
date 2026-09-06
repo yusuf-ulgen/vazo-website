@@ -209,8 +209,25 @@ BEGIN
 END;
 $$;
 
--- Grant admin_enable_checkout to authenticated (is_admin() guard inside)
+-- 5. admin_disable_checkout() — Disables checkout via admin_enable_checkout(false)
+CREATE OR REPLACE FUNCTION public.admin_disable_checkout()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+    RETURN public.admin_enable_checkout(false);
+END;
+$$;
+
+-- Grant admin functions to authenticated (is_admin() guard inside)
 GRANT EXECUTE ON FUNCTION public.get_checkout_readiness() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_enable_checkout(BOOLEAN) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_disable_checkout() TO authenticated;
+
+-- Security hardening: revoke direct mutations from anon on site_settings and all on transactional_emails
+REVOKE INSERT, UPDATE, DELETE ON public.site_settings FROM anon;
+REVOKE ALL ON public.transactional_emails FROM anon, authenticated;
 
 COMMIT;
