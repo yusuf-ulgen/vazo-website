@@ -429,6 +429,9 @@ SELECT is(
 );
 
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- ------------------------------------------------------------------------------
 -- 7. Audit Trail Immutability Checks (Tested Against Real Existing Row)
@@ -517,6 +520,8 @@ END $$;
 
 -- Switch to Customer A context
 SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 
 -- 9.1 Customer A can read own profile
@@ -552,6 +557,9 @@ SELECT is(
 -- 10. Phase 3.2 Commerce RLS, Customer Isolation & Operational Tests
 -- ------------------------------------------------------------------------------
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- Setup test orders, order_items, payments, reservations, invoices
 DO $$
@@ -570,7 +578,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO public.product_variants (id, product_id, sku, variant_name, color_name, retail_price, stock_quantity)
-    VALUES (v_var_id, v_prod_id, 'VAZ-COMMERCE-01', 'Beyaz', 250.00, 10)
+    VALUES (v_var_id, v_prod_id, 'VAZ-COMMERCE-01', 'Standart', 'Beyaz', 250.00, 10)
     ON CONFLICT (sku) DO NOTHING;
 
     -- Order A for Customer A
@@ -640,6 +648,8 @@ END $$;
 
 -- Switch to Customer A context
 SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 
 -- 10.1 Customer A can read own order
@@ -707,6 +717,9 @@ SELECT is(
 -- 11. Commerce Domain Functions & Constraints Validation
 -- ------------------------------------------------------------------------------
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- 11.1 generate_order_number() returns VZ-YYYYMMDD-XXXXX pattern
 SELECT ok(
@@ -814,6 +827,8 @@ SELECT throws_ok(
 
 -- 12.7 Authenticated customer CANNOT mutate shipping zones
 SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 
 SELECT throws_ok(
@@ -832,6 +847,9 @@ SELECT throws_ok(
 );
 
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- ------------------------------------------------------------------------------
 -- 13. Phase 3.4 Checkout Quote, Order Creation RPC & Concurrency Assertions
@@ -1007,6 +1025,8 @@ SELECT throws_ok(
 
 -- 13.14 Orders RLS: Customer cannot view another customer order
 SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 
 SELECT is(
@@ -1025,6 +1045,9 @@ SELECT throws_ok(
 );
 
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- ------------------------------------------------------------------------------
 -- 14. PayTR Token Initiation & Atomic Callback Finalization (Phase 3.5 & 3.6)
@@ -1267,6 +1290,8 @@ SELECT throws_ok(
 
 -- 17.3 Customer CANNOT select from transactional_emails
 SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claim.sub" = 'c1000000-0000-0000-0000-000000000001';
+SET LOCAL "request.jwt.claim.role" = 'authenticated';
 SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
 SELECT throws_ok(
     $$ SELECT * FROM public.transactional_emails $$,
@@ -1279,6 +1304,9 @@ SELECT throws_ok(
 -- 18. Phase 3.10 Seller Legal Profile & Checkout Readiness Security Tests
 -- ------------------------------------------------------------------------------
 RESET ROLE;
+SET LOCAL "request.jwt.claim.sub" = '';
+SET LOCAL "request.jwt.claim.role" = '';
+SET LOCAL "request.jwt.claims" = '';
 
 -- 18.1 Function existence: get_checkout_readiness
 SELECT has_function('public', 'get_checkout_readiness', 'Function public.get_checkout_readiness should exist');
@@ -1292,21 +1320,21 @@ SELECT has_function('public', 'admin_disable_checkout', 'Function public.admin_d
 -- 18.4 Non-admin calling get_checkout_readiness throws RBAC error
 SELECT throws_ok(
     $$ SELECT public.get_checkout_readiness() $$,
-    'Yalnızca yöneticiler hazırlık durumunu görüntüleyebilir.',
+    'P0001',
     'Non-admin cannot execute get_checkout_readiness'
 );
 
 -- 18.5 Non-admin calling admin_enable_checkout throws RBAC error
 SELECT throws_ok(
     $$ SELECT public.admin_enable_checkout() $$,
-    'Yalnızca yöneticiler sipariş sistemini aktif hale getirebilir.',
+    'P0001',
     'Non-admin cannot execute admin_enable_checkout'
 );
 
 -- 18.6 Non-admin calling admin_disable_checkout throws RBAC error
 SELECT throws_ok(
     $$ SELECT public.admin_disable_checkout() $$,
-    'Yalnızca yöneticiler sipariş sistemini devre dışı bırakabilir.',
+    'P0001',
     'Non-admin cannot execute admin_disable_checkout'
 );
 
