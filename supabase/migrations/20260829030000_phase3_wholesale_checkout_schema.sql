@@ -536,22 +536,17 @@ BEGIN
         channel,
         status,
         currency,
+        tax_included,
         subtotal_minor,
         shipping_minor,
         discount_minor,
         tax_included_minor,
         total_minor,
         shipping_carrier,
-        shipping_tracking_number,
-        shipping_tracking_url,
         shipping_address,
         billing_address,
-        customer_name,
-        customer_email,
-        customer_phone,
-        legal_preliminary_accepted_at,
-        legal_distance_sales_accepted_at,
-        payment_expires_at,
+        seller_legal_snapshot,
+        customer_legal_snapshot,
         created_at,
         updated_at
     ) VALUES (
@@ -560,22 +555,25 @@ BEGIN
         p_channel,
         'pending_payment',
         p_currency,
+        true,
         v_subtotal_minor,
         v_shipping_minor,
         0,
         v_tax_included_minor,
         v_total_minor,
         COALESCE(v_quote->'shipping_option'->>'carrier', 'Yurtiçi Kargo'),
-        NULL,
-        NULL,
         p_shipping_address,
         p_billing_address,
-        v_customer_name,
-        v_customer_email,
-        v_customer_phone,
-        timezone('utc', now()),
-        timezone('utc', now()),
-        v_payment_expires_at,
+        NULL,
+        jsonb_build_object(
+            'customer_id', p_customer_id,
+            'customer_name', v_customer_name,
+            'customer_email', v_customer_email,
+            'customer_phone', v_customer_phone,
+            'legal_preliminary_accepted_at', timezone('utc', now()),
+            'legal_distance_sales_accepted_at', timezone('utc', now()),
+            'payment_expires_at', v_payment_expires_at
+        ),
         timezone('utc', now()),
         timezone('utc', now())
     )
@@ -589,30 +587,34 @@ BEGIN
 
         INSERT INTO public.order_items (
             order_id,
-            variant_id,
             product_id,
-            product_name,
-            variant_name,
-            sku,
+            variant_id,
+            sku_snapshot,
+            product_name_snapshot,
+            variant_name_snapshot,
+            image_url_snapshot,
             unit_price_minor,
             quantity,
             line_total_minor,
-            tax_rate,
-            image_url,
-            created_at
+            currency,
+            channel,
+            metadata_snapshot
         ) VALUES (
             v_order_id,
-            v_variant_id,
             (v_quote_item->>'product_id')::UUID,
-            v_quote_item->>'product_name',
-            v_quote_item->>'variant_name',
-            v_quote_item->>'sku',
+            v_variant_id,
+            COALESCE(v_quote_item->>'sku', ''),
+            COALESCE(v_quote_item->>'product_name', ''),
+            COALESCE(v_quote_item->>'variant_name', ''),
+            v_quote_item->>'image_url',
             (v_quote_item->>'unit_price_minor')::BIGINT,
             v_requested_qty,
             (v_quote_item->>'line_total_minor')::BIGINT,
-            20.00,
-            v_quote_item->>'image_url',
-            timezone('utc', now())
+            p_currency,
+            p_channel,
+            jsonb_build_object(
+                'source', 'wholesale_checkout'
+            )
         );
 
         INSERT INTO public.inventory_reservations (
@@ -621,13 +623,13 @@ BEGIN
             quantity,
             expires_at,
             status,
-            created_at
+            reserved_at
         ) VALUES (
             v_order_id,
             v_variant_id,
             v_requested_qty,
             v_reservation_expires_at,
-            'active',
+            'reserved',
             timezone('utc', now())
         );
     END LOOP;
