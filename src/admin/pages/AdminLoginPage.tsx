@@ -2,6 +2,7 @@ import { useState, type FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Shield, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useAdminAuth } from '../auth/AdminAuthContext';
+import { EMBEDDED_ADMIN_CREDENTIALS } from '../auth/admin-auth-service';
 
 export function AdminLoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
@@ -106,6 +107,27 @@ export function AdminLoginPage() {
               autoComplete="current-password"
               className="w-full px-3.5 py-2.5 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50"
             />
+          </div>
+
+          <div className="p-3 bg-surface-secondary border border-border-subtle text-[11px] text-text-secondary flex flex-col gap-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-text-primary">Varsayılan Yönetici Bilgileri:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail(EMBEDDED_ADMIN_CREDENTIALS.email);
+                  setPassword(EMBEDDED_ADMIN_CREDENTIALS.password);
+                }}
+                className="text-text-primary hover:underline font-semibold text-[11px]"
+              >
+                Otomatik Doldur
+              </button>
+            </div>
+            <div className="font-mono text-[10px] text-text-secondary">
+              <span>E-posta: </span><span className="text-text-primary font-medium">{EMBEDDED_ADMIN_CREDENTIALS.email}</span>
+              <br />
+              <span>Şifre: </span><span className="text-text-primary font-medium">{EMBEDDED_ADMIN_CREDENTIALS.password}</span>
+            </div>
           </div>
 
           <button

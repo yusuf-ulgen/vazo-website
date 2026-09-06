@@ -160,12 +160,33 @@ describe('Admin Auth Service (Phase 2.2 Supabase Auth & RBAC)', () => {
     expect(mockClient.auth.signOut).toHaveBeenCalled();
   });
 
-  it('throws when login is attempted without configured Supabase client', async () => {
+  it('throws when login is attempted without configured Supabase client for non-embedded user', async () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
     vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
     await expect(
       adminAuthService.login('admin@vazo.com', 'pass')
     ).rejects.toThrow('Supabase istemcisi yapılandırılmamış');
+  });
+
+  it('authenticates with embedded admin credentials when Supabase client is unconfigured or offline', async () => {
+    vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
+    vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+
+    const profile = await adminAuthService.login('admin@vazostudio.com', 'VazoAdmin2026!');
+
+    expect(profile).toEqual({
+      id: 'a0000000-0000-0000-0000-000000000001',
+      email: 'admin@vazostudio.com',
+      role: 'super_admin',
+      active: true,
+    });
+
+    const activeProfile = await adminAuthService.getCurrentAdmin();
+    expect(activeProfile).toEqual(profile);
+
+    await adminAuthService.logout();
+    const afterLogout = await adminAuthService.getCurrentAdmin();
+    expect(afterLogout).toBeNull();
   });
 });
