@@ -238,12 +238,13 @@ BEGIN
     END LOOP;
 
     -- 5. Resolve Authoritative Shipping
-    v_shipping_res := public.resolve_shipping_rate(
+    SELECT to_jsonb(r.*) INTO v_shipping_res
+    FROM public.resolve_shipping_rate(
         p_destination_country,
         p_channel,
         v_subtotal_minor,
         p_currency
-    );
+    ) r;
 
     IF NOT (v_shipping_res->>'supported')::BOOLEAN THEN
         RAISE EXCEPTION 'Seçilen teslimat ülkesi için kargo desteği bulunmamaktadır: %', p_destination_country;
@@ -436,12 +437,13 @@ BEGIN
     END LOOP;
 
     -- 7. Authoritative Shipping Rate Resolution
-    v_shipping_res := public.resolve_shipping_rate(
+    SELECT to_jsonb(r.*) INTO v_shipping_res
+    FROM public.resolve_shipping_rate(
         p_destination_country,
         p_channel,
         v_subtotal_minor,
         p_currency
-    );
+    ) r;
 
     IF NOT (v_shipping_res->>'supported')::BOOLEAN THEN
         RAISE EXCEPTION 'Teslimat ülkesi için kargo hizmeti bulunamadı: %', p_destination_country;

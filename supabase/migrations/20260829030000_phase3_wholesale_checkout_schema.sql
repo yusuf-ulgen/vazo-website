@@ -378,18 +378,19 @@ BEGIN
     END LOOP;
 
     -- 5. Resolve Authoritative Shipping
-    v_shipping_res := public.resolve_shipping_rate(
+    SELECT to_jsonb(r.*) INTO v_shipping_res
+    FROM public.resolve_shipping_rate(
         p_destination_country,
         p_channel,
         v_subtotal_minor,
         p_currency
-    );
+    ) r;
 
     IF NOT (v_shipping_res->>'supported')::BOOLEAN THEN
         RAISE EXCEPTION 'Seçilen teslimat ülkesi için kargo desteği bulunmamaktadır: %', p_destination_country;
     END IF;
 
-    v_shipping_minor := (v_shipping_res->>'rate_minor')::BIGINT;
+    v_shipping_minor := COALESCE((v_shipping_res->>'shipping_minor')::BIGINT, (v_shipping_res->>'rate_minor')::BIGINT, 0);
     v_total_minor := v_subtotal_minor + v_shipping_minor;
 
     -- Compute included tax for display (e.g. 20% KDV included)
