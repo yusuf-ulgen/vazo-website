@@ -134,7 +134,7 @@ This document defines the complete roadmap, sub-phase specifications, dependency
 - **Objective**: Assemble the complete end-to-end customer checkout journey at `/checkout`.
 - **Scope**:
   - Multi-step checkout UI: Customer auth check -> Address entry -> Shipping method -> Legal contracts acceptance (`Mesafeli Satış Sözleşmesi`) -> Order summary -> PayTR iFrame.
-  - Non-authoritative result pages (`/checkout/success`, `/checkout/fail`).
+  - Non-authoritative result pages (`/payment/success`, `/payment/failure`).
   - Clear customer messaging that success page is informational while server callback finalizes payment.
 - **Out of Scope**: Admin fulfillment UI.
 - **Dependencies**: Phase 3.6.

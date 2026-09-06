@@ -87,8 +87,8 @@ interface PayTRTokenRequest {
   max_installment: 0;           // Strictly 0
   currency: 'TL';               // Provider mapped currency
   test_mode: 0 | 1;             // 1 in staging/dev, 0 in production
-  merchant_ok_url: string;      // "https://shop.monocactus.com/checkout/success"
-  merchant_fail_url: string;    // "https://shop.monocactus.com/checkout/fail"
+  merchant_ok_url: string;      // "https://shop.monocactus.com/payment/success"
+  merchant_fail_url: string;    // "https://shop.monocactus.com/payment/failure"
   paytr_token: string;          // HMAC-SHA256 generated on server
 }
 ```

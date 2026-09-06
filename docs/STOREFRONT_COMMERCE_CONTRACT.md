@@ -81,7 +81,7 @@ Customer Authenticated?
            7. Server-to-Server HMAC Callback Finalizes Order (PostgreSQL 'paid' state)
                     │
                     ▼
-           8. Non-Authoritative Client Redirect to /checkout/success
+           8. Non-Authoritative Client Redirect to /payment/success
 ```
 
 ### 5.1 Non-Authoritative Redirect URLs

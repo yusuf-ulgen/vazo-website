@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   RotateCcw,
   X,
@@ -33,6 +33,16 @@ export function AdminRefundModal({
   const [reason, setReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, isSubmitting]);
 
   if (!isOpen) return null;
 
@@ -99,6 +109,7 @@ export function AdminRefundModal({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Kapat"
             disabled={isSubmitting}
             className="p-1.5 text-text-muted hover:text-text-primary rounded-md hover:bg-surface-muted transition-colors disabled:opacity-50"
           >

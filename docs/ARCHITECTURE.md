@@ -202,7 +202,7 @@ PayTR Server                     Supabase Edge Function               PostgreSQL
 ```
 
 ### 7.4 Non-Authoritative Client Redirect Rule
-- `merchant_ok_url` and `merchant_fail_url` redirect customer browser to storefront status pages (`https://shop.monocactus.com/checkout/success` or `/checkout/fail`).
+- `merchant_ok_url` and `merchant_fail_url` redirect customer browser to storefront status pages (`https://shop.monocactus.com/payment/success` or `/payment/failure`).
 - **Critical Rule**: Client redirect URLs are **DISPLAY-ONLY**. They must **NEVER** mark an order as paid or execute fulfillment actions.
 - Only the verified server-to-server PayTR callback executing in Supabase Edge Functions holds payment finalization authority.
 

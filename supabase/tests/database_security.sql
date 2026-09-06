@@ -4,7 +4,7 @@
 -- ==============================================================================
 
 BEGIN;
-SELECT plan(154);
+SELECT plan(176);
 
 -- ------------------------------------------------------------------------------
 -- 1. Table Existence & Schema Verification
@@ -1246,6 +1246,83 @@ SELECT throws_ok(
     ) $$,
     'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.',
     'Unapproved retail customer cannot create wholesale order'
+);
+
+-- ------------------------------------------------------------------------------
+-- 17. Phase 3.9 Transactional Email Queue & Security Tests
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- 17.1 Function existence: get_pending_email_for_order
+SELECT has_function('public', 'get_pending_email_for_order', ARRAY['uuid'], 'Function public.get_pending_email_for_order should exist');
+
+-- 17.2 Anon CANNOT select from transactional_emails
+SET LOCAL ROLE anon;
+SELECT throws_ok(
+    $$ SELECT * FROM public.transactional_emails $$,
+    '42501',
+    NULL,
+    'Anonymous user cannot select from transactional_emails'
+);
+
+-- 17.3 Customer CANNOT select from transactional_emails
+SET LOCAL ROLE authenticated;
+SET LOCAL "request.jwt.claims" = '{"sub": "c1000000-0000-0000-0000-000000000001", "role": "authenticated"}';
+SELECT throws_ok(
+    $$ SELECT * FROM public.transactional_emails $$,
+    '42501',
+    NULL,
+    'Customer cannot select from transactional_emails'
+);
+
+-- ------------------------------------------------------------------------------
+-- 18. Phase 3.10 Seller Legal Profile & Checkout Readiness Security Tests
+-- ------------------------------------------------------------------------------
+RESET ROLE;
+
+-- 18.1 Function existence: get_checkout_readiness
+SELECT has_function('public', 'get_checkout_readiness', 'Function public.get_checkout_readiness should exist');
+
+-- 18.2 Function existence: admin_enable_checkout
+SELECT has_function('public', 'admin_enable_checkout', 'Function public.admin_enable_checkout should exist');
+
+-- 18.3 Function existence: admin_disable_checkout
+SELECT has_function('public', 'admin_disable_checkout', 'Function public.admin_disable_checkout should exist');
+
+-- 18.4 Non-admin calling get_checkout_readiness throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.get_checkout_readiness() $$,
+    'Yalnızca yöneticiler hazırlık durumunu görüntüleyebilir.',
+    'Non-admin cannot execute get_checkout_readiness'
+);
+
+-- 18.5 Non-admin calling admin_enable_checkout throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_enable_checkout() $$,
+    'Yalnızca yöneticiler sipariş sistemini aktif hale getirebilir.',
+    'Non-admin cannot execute admin_enable_checkout'
+);
+
+-- 18.6 Non-admin calling admin_disable_checkout throws RBAC error
+SELECT throws_ok(
+    $$ SELECT public.admin_disable_checkout() $$,
+    'Yalnızca yöneticiler sipariş sistemini devre dışı bırakabilir.',
+    'Non-admin cannot execute admin_disable_checkout'
+);
+
+-- 18.7 Anonymous user CAN query seller_legal from site_settings
+SET LOCAL ROLE anon;
+SELECT ok(
+    (SELECT count(*) FROM public.site_settings WHERE key = 'seller_legal') = 1,
+    'Anonymous user can read seller_legal configuration'
+);
+
+-- 18.8 Anonymous user CANNOT update seller_legal
+SELECT throws_ok(
+    $$ UPDATE public.site_settings SET value = '{}'::jsonb WHERE key = 'seller_legal' $$,
+    '42501',
+    NULL,
+    'Anonymous user cannot update seller_legal configuration'
 );
 
 SELECT * FROM finish();

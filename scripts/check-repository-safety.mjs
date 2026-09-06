@@ -21,6 +21,9 @@ const SECRET_REGEX_LIST = [
   { name: 'Private Key Header', regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/ },
   { name: 'AWS Access Key ID', regex: /(?:A3T[A-Z0-9]|AKIA|AGPA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/ },
   { name: 'Stripe Live Secret Key', regex: /sk_live_[0-9a-zA-Z]{24}/ },
+  { name: 'Google OAuth Client Secret', regex: /GOCSPX-[0-9a-zA-Z_-]{28}/ },
+  { name: 'Google OAuth Refresh Token', regex: /1\/\/[0-9a-zA-Z_-]{30,}/ },
+  { name: 'Supabase Service Role Key Pattern', regex: /sb_secret_[0-9a-zA-Z_-]{20,}/ },
   { name: 'Generic Secret Token Pattern', regex: /(?:api_key|api_secret|app_secret|client_secret)\s*[:=]\s*["'][A-Za-z0-9_\-]{24,}["']/i },
 ];
 
@@ -29,6 +32,8 @@ const IGNORED_SCAN_DIRS = new Set([
   'dist',
   'build',
   'coverage',
+  'playwright-report',
+  'test-results',
   '.git',
   '.gemini',
 ]);

@@ -22,8 +22,8 @@ This document provides step-by-step operational setup instructions and configura
    https://<supabase-project-ref>.supabase.co/functions/v1/paytr-callback
    ```
 5. Set the **Dönüş URL (Return URLs)**:
-   - Success URL: `https://shop.monocactus.com/checkout/success`
-   - Fail URL: `https://shop.monocactus.com/checkout/fail`
+   - Success URL: `https://shop.monocactus.com/payment/success`
+   - Fail URL: `https://shop.monocactus.com/payment/failure`
 6. Disable installments in PayTR panel if requested, or rely on application constraint `no_installment = 1`.
 
 ### 1.2 Supabase Edge Function Secrets Provisioning

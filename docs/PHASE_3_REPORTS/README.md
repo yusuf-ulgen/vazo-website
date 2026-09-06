@@ -15,8 +15,8 @@ This directory contains the immutable, chronological sub-phase execution reports
 | [`PHASE_3_4_CHECKOUT.md`](PHASE_3_4_CHECKOUT.md) | Server-Authoritative Checkout & Legal Order Creation | `1f9596c3c46742a1318e31d007a82916900903d5` | `7659a2eb12e662325b9115ee72f7c8d934854dbe` | 🟢 100% VERIFIED |
 | [`PHASE_3_5_PAYTR_IFRAME.md`](PHASE_3_5_PAYTR_IFRAME.md) | PayTR Payment Integration — Token API & Inline iFrame | `093df2d2e51af51f3c256766671df2167cba2458` | `d082ab85d2c671f57431a11455bc899af5223285` | 🟢 100% VERIFIED |
 | [`PHASE_3_6_PAYTR_CALLBACK.md`](PHASE_3_6_PAYTR_CALLBACK.md) | PayTR Server-to-Server Callback & Webhook Verification | `093df2d2e51af51f3c256766671df2167cba2458` | `d082ab85d2c671f57431a11455bc899af5223285` | 🟢 100% VERIFIED |
-| `PHASE_3_7_CHECKOUT_FLOW.md` | Storefront Checkout Flow & Order Review Journey | Planned | Planned | ⏳ PENDING |
-| `PHASE_3_8_ADMIN_ORDERS.md` | Admin Orders & Fulfillment Management | Planned | Planned | ⏳ PENDING |
-| `PHASE_3_9_ADMIN_PAYMENTS_REFUNDS.md` | Admin Payments & Server-Side Refunds | Planned | Planned | ⏳ PENDING |
-| `PHASE_3_10_TRANSACTIONAL_EMAIL.md` | Transactional Email Infrastructure (Gmail API / SMTP) | Planned | Planned | ⏳ PENDING |
-| `PHASE_3_11_QUALITY_GATE.md` | Phase 3 Final Quality Gate, Security Audit & E2E Testing | Planned | Planned | ⏳ PENDING |
+| [`PHASE_3_8_WHOLESALE_CHECKOUT.md`](PHASE_3_8_WHOLESALE_CHECKOUT.md) | Authenticated Wholesale Accounts & PayTR Checkout | `0228a62376ad63d3eeb16a75f0f3531bf5f43db1` | `8abaf5c8e010bfa1987a5fff55cbb1d58a4991e5` | 🟢 100% VERIFIED |
+| [`PHASE_3_9_TRANSACTIONAL_EMAIL.md`](PHASE_3_9_TRANSACTIONAL_EMAIL.md) | Transactional Email Infrastructure (Gmail API & Outbox) | `8abaf5c8e010bfa1987a5fff55cbb1d58a4991e5` | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | 🟢 100% VERIFIED (Reconstructed) |
+| [`PHASE_3_10_PRODUCTION_READINESS.md`](PHASE_3_10_PRODUCTION_READINESS.md) | Legal Seller Profile, PayTR Readiness & Safe Activation | `8abaf5c8e010bfa1987a5fff55cbb1d58a4991e5` | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | 🟢 100% VERIFIED |
+| [`PHASE_3_11_FINAL_GREEN_GATE.md`](PHASE_3_11_FINAL_GREEN_GATE.md) | Phase 3 Final Quality Gate, Security Audit & Remote CI | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | In Progress | 🟢 IN PROGRESS |
+
