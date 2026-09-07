@@ -22,7 +22,9 @@ SET search_path = public, auth, pg_temp
 AS $$
 DECLARE
     v_is_checkout_enabled BOOLEAN;
-    v_customer_record RECORD;
+    v_first_name TEXT;
+    v_last_name TEXT;
+    v_profile_phone TEXT;
     v_customer_name TEXT;
     v_customer_email TEXT;
     v_customer_phone TEXT;
@@ -130,12 +132,13 @@ BEGIN
     END IF;
 
     -- 8. Fetch Customer Real Snapshot (Strictly No Dummy Values)
-    SELECT * INTO v_customer_record
+    SELECT first_name, last_name, phone
+    INTO v_first_name, v_last_name, v_profile_phone
     FROM public.customer_profiles
     WHERE user_id = p_customer_id;
 
     v_customer_name := COALESCE(
-        NULLIF(TRIM(COALESCE(v_customer_record.first_name, '') || ' ' || COALESCE(v_customer_record.last_name, '')), ''),
+        NULLIF(TRIM(COALESCE(v_first_name, '') || ' ' || COALESCE(v_last_name, '')), ''),
         NULLIF(TRIM(COALESCE(p_shipping_address->>'recipient_name', '')), '')
     );
 
@@ -157,7 +160,7 @@ BEGIN
 
     v_clean_phone := regexp_replace(
         COALESCE(
-            NULLIF(TRIM(COALESCE(v_customer_record.phone, '')), ''),
+            NULLIF(TRIM(COALESCE(v_profile_phone, '')), ''),
             NULLIF(TRIM(COALESCE(p_shipping_address->>'phone', '')), '')
         ),
         '\D',
@@ -235,7 +238,7 @@ BEGIN
             'email', v_customer_email,
             'phone', v_customer_phone,
             'channel', p_channel,
-            'is_tax_exempt', COALESCE(v_customer_record.tax_exempt, false),
+            'is_tax_exempt', false,
             'legal_preliminary_accepted_at', timezone('utc', now()),
             'legal_distance_sales_accepted_at', timezone('utc', now()),
             'kvkk_accepted_at', timezone('utc', now()),
