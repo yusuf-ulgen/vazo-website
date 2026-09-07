@@ -226,15 +226,13 @@ VALUES
 ('a5000000-0000-0000-0000-000000000004', 'Güvenli Sandıklı Lojistik', 'Kırılmaya karşı sigortalı, paletli ve özel köpük ambalajlı yurt içi & yurt dışı sevkiyat.', 'Truck', 4, true);
 
 -- ------------------------------------------------------------------------------
--- 9. Default Administrator Account (Seed)
+-- 9. Local Development Administrator Account (Deterministic Local Seed)
 -- ------------------------------------------------------------------------------
--- E-Posta: admin@vazostudio.com
--- Şifre: VazoAdmin2026!
 DO $$
 DECLARE
     v_admin_id UUID := 'a0000000-0000-0000-0000-000000000001';
-    v_email TEXT := 'admin@vazostudio.com';
-    v_password TEXT := 'VazoAdmin2026!';
+    v_email TEXT := 'dev-admin@vazo.local';
+    v_password TEXT := 'LocalDevOnlyPassword_DoNotUseInProd123!';
 BEGIN
     INSERT INTO auth.users (
         id,
@@ -257,7 +255,7 @@ BEGIN
         extensions.crypt(v_password, extensions.gen_salt('bf')),
         timezone('utc', now()),
         '{"provider":"email","providers":["email"]}'::jsonb,
-        '{"full_name":"Vazo Studio Yönetici","name":"Vazo Studio Yönetici"}'::jsonb,
+        '{"full_name":"Vazo Yerel Geliştirme Yöneticisi","name":"Vazo Yerel Geliştirme Yöneticisi"}'::jsonb,
         timezone('utc', now()),
         timezone('utc', now())
     ) ON CONFLICT (id) DO UPDATE SET
@@ -288,29 +286,6 @@ BEGIN
         timezone('utc', now()),
         timezone('utc', now())
     );
-
-    INSERT INTO public.customer_profiles (
-        user_id,
-        first_name,
-        last_name,
-        customer_type,
-        wholesale_approved_at,
-        created_at,
-        updated_at
-    ) VALUES (
-        v_admin_id,
-        'Vazo Studio',
-        'Yönetici',
-        'wholesale',
-        timezone('utc', now()),
-        timezone('utc', now()),
-        timezone('utc', now())
-    ) ON CONFLICT (user_id) DO UPDATE SET
-        first_name = 'Vazo Studio',
-        last_name = 'Yönetici',
-        customer_type = 'wholesale',
-        wholesale_approved_at = timezone('utc', now()),
-        updated_at = timezone('utc', now());
 
     INSERT INTO public.admin_users (
         user_id,

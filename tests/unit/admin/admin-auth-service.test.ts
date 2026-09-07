@@ -160,33 +160,27 @@ describe('Admin Auth Service (Phase 2.2 Supabase Auth & RBAC)', () => {
     expect(mockClient.auth.signOut).toHaveBeenCalled();
   });
 
-  it('throws when login is attempted without configured Supabase client for non-embedded user', async () => {
+  it('throws when login is attempted without configured Supabase client (fail-closed)', async () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
     vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
     await expect(
-      adminAuthService.login('admin@vazo.com', 'pass')
+      adminAuthService.login('admin@vazostudio.com', 'SomePass123')
     ).rejects.toThrow('Supabase istemcisi yapılandırılmamış');
   });
 
-  it('authenticates with embedded admin credentials when Supabase client is unconfigured or offline', async () => {
-    vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
-    vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
+  it('ignores any forged localStorage keys and returns null if no valid Supabase session exists', async () => {
+    localStorage.setItem('vazo_embedded_admin_session', JSON.stringify({ email: 'admin@vazostudio.com', role: 'super_admin' }));
+    vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
 
-    const profile = await adminAuthService.login('admin@vazostudio.com', 'VazoAdmin2026!');
-
-    expect(profile).toEqual({
-      id: 'a0000000-0000-0000-0000-000000000001',
-      email: 'admin@vazostudio.com',
-      role: 'super_admin',
-      active: true,
+    const mockClient = createMockSupabaseClient({});
+    mockClient.auth.getSession = vi.fn().mockResolvedValue({
+      data: { session: null },
+      error: null,
     });
+    vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
     const activeProfile = await adminAuthService.getCurrentAdmin();
-    expect(activeProfile).toEqual(profile);
-
-    await adminAuthService.logout();
-    const afterLogout = await adminAuthService.getCurrentAdmin();
-    expect(afterLogout).toBeNull();
+    expect(activeProfile).toBeNull();
   });
 });

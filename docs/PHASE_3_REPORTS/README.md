@@ -19,5 +19,6 @@ This directory contains the immutable, chronological sub-phase execution reports
 | [`PHASE_3_9_TRANSACTIONAL_EMAIL.md`](PHASE_3_9_TRANSACTIONAL_EMAIL.md) | Transactional Email Infrastructure (Gmail API & Outbox) | `8abaf5c8e010bfa1987a5fff55cbb1d58a4991e5` | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | 🟢 100% VERIFIED (Reconstructed) |
 | [`PHASE_3_10_PRODUCTION_READINESS.md`](PHASE_3_10_PRODUCTION_READINESS.md) | Legal Seller Profile, PayTR Readiness & Safe Activation | `8abaf5c8e010bfa1987a5fff55cbb1d58a4991e5` | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | 🟢 100% VERIFIED |
 | [`PHASE_3_11_FINAL_GREEN_GATE.md`](PHASE_3_11_FINAL_GREEN_GATE.md) | Phase 3 Final Quality Gate, Security Audit & Remote CI | `720f99ae2943c7d14e06bd91849b08fc8acd450b` | `82068fa0c3d4a8cd82523e9ac092150fdaa94ad0` | 🟢 100% VERIFIED |
-| [`PHASE_3_12_PRODUCTION_DATA_BOUNDARY.md`](PHASE_3_12_PRODUCTION_DATA_BOUNDARY.md) | Production Mock Isolation, Auth Mock Boundary & Cart Channel Integrity | `1c142280d96f9ad2616315a4cc692e88de21794d` | Tracking `phase-3` | 🟢 100% VERIFIED |
+| [`PHASE_3_12_PRODUCTION_DATA_BOUNDARY.md`](PHASE_3_12_PRODUCTION_DATA_BOUNDARY.md) | Production Mock Isolation, Auth Mock Boundary & Cart Channel Integrity | `1c142280d96f9ad2616315a4cc692e88de21794d` | `6c4c76ba208f237f8da0567e9b37c0eb0c5beeb6` | 🟢 100% VERIFIED |
+| [`PHASE_3_13_AUTH_SECURITY.md`](PHASE_3_13_AUTH_SECURITY.md) | Remove Embedded Admin Auth & Production Auth Bypasses | `6c4c76ba208f237f8da0567e9b37c0eb0c5beeb6` | Tracking `phase-3` | 🟢 100% VERIFIED |
 

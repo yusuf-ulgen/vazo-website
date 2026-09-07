@@ -1,22 +1,21 @@
 -- ==============================================================================
--- VAZO E-COMMERCE PLATFORM - ADMIN KULLANICI SEED BETİĞİ
--- Supabase SQL Editor üzerinden doğrudan çalıştırılabilir.
+-- VAZO E-COMMERCE PLATFORM - OPERATOR ADMIN PROVISIONING TEMPLATE
 -- ==============================================================================
--- Yönetici E-Posta: admin@vazostudio.com
--- Yönetici Şifre:   VazoAdmin2026!
--- Rol:              super_admin
--- ==============================================================================
--- Bu betik hem mağaza müşteri girişinde hem de /admin yönetim panelinde
--- aynı kimlik bilgileriyle sorunsuz oturum açılabilmesi için gerekli tüm
--- Supabase Auth (auth.users, auth.identities) ve veritabanı tablolarını
--- (public.admin_users, public.customer_profiles) eksiksiz olarak hazırlar.
+-- Bu betik operatör tarafından Supabase Dashboard SQL Editor veya CLI üzerinden
+-- güvenli yönetici hesabı oluşturmak / sıfırlamak için kullanılır.
+--
+-- GÜVENLİK TALİMATI:
+-- 1. Üretim ortamında aşağıdaki v_email ve v_password değişkenlerini kendi belirlediğiniz
+--    güçlü değerlerle güncelleyiniz.
+-- 2. Bu dosyaya asla gerçek üretim şifrelerini yazıp git reposuna kaydetmeyiniz.
+-- 3. Yerel geliştirme için varsayılan test değerleri aşağıda tanımlanmıştır.
 -- ==============================================================================
 
 DO $$
 DECLARE
     v_admin_id UUID := 'a0000000-0000-0000-0000-000000000001';
-    v_email TEXT := 'admin@vazostudio.com';
-    v_password TEXT := 'VazoAdmin2026!';
+    v_email TEXT := 'dev-admin@vazo.local';
+    v_password TEXT := 'LocalDevOnlyPassword_DoNotUseInProd123!';
 BEGIN
     -- 1. auth.users Tablosuna Kullanıcı Ekleme / Güncelleme
     INSERT INTO auth.users (
@@ -40,7 +39,7 @@ BEGIN
         extensions.crypt(v_password, extensions.gen_salt('bf')),
         timezone('utc', now()),
         '{"provider":"email","providers":["email"]}'::jsonb,
-        '{"full_name":"Vazo Studio Yönetici","name":"Vazo Studio Yönetici"}'::jsonb,
+        '{"full_name":"Vazo Geliştirme Yöneticisi","name":"Vazo Geliştirme Yöneticisi"}'::jsonb,
         timezone('utc', now()),
         timezone('utc', now())
     ) ON CONFLICT (id) DO UPDATE SET
@@ -73,31 +72,7 @@ BEGIN
         timezone('utc', now())
     );
 
-    -- 3. public.customer_profiles Tablosuna Yönetici Müşteri Profili Ekleme
-    INSERT INTO public.customer_profiles (
-        user_id,
-        first_name,
-        last_name,
-        customer_type,
-        wholesale_approved_at,
-        created_at,
-        updated_at
-    ) VALUES (
-        v_admin_id,
-        'Vazo Studio',
-        'Yönetici',
-        'wholesale',
-        timezone('utc', now()),
-        timezone('utc', now()),
-        timezone('utc', now())
-    ) ON CONFLICT (user_id) DO UPDATE SET
-        first_name = 'Vazo Studio',
-        last_name = 'Yönetici',
-        customer_type = 'wholesale',
-        wholesale_approved_at = timezone('utc', now()),
-        updated_at = timezone('utc', now());
-
-    -- 4. public.admin_users Tablosuna RBAC Yetkisi Tanımlama
+    -- 3. public.admin_users Tablosuna RBAC Yetkisi Tanımlama
     INSERT INTO public.admin_users (
         user_id,
         role,
@@ -114,6 +89,5 @@ BEGIN
         role = 'super_admin',
         active = true,
         updated_at = timezone('utc', now());
-
-    RAISE NOTICE 'Yönetici hesabı başarıyla oluşturuldu ve doğrulandı: % / %', v_email, v_password;
 END $$;
+

@@ -374,29 +374,45 @@ describe('customerAuthStore & useCustomerAuth Hook', () => {
     ).rejects.toThrow('Geçersiz e-posta adresi veya şifre.');
   });
 
-  it('authenticates admin user with embedded credentials via customer login even if Supabase fails', async () => {
+  it('verifies admin authority dynamically against admin_users database table without synthetic wholesale profile', async () => {
+    const mockUser = {
+      id: 'admin-usr-uuid-1',
+      email: 'admin@vazostudio.com',
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    };
+
     const mockSignInWithPassword = vi.fn().mockResolvedValue({
-      data: { user: null },
-      error: { message: 'Invalid login credentials' },
+      data: { user: mockUser },
+      error: null,
+    });
+
+    const mockFrom = vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { role: 'super_admin', active: true },
+            error: null,
+          }),
+        }),
+      }),
     });
 
     vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue({
       auth: {
         signInWithPassword: mockSignInWithPassword,
       },
+      from: mockFrom,
     } as unknown as ReturnType<typeof supabaseModule.getSupabase>);
 
-    await customerAuthStore.signInWithPassword('admin@vazostudio.com', 'VazoAdmin2026!');
+    await customerAuthStore.signInWithPassword('admin@vazostudio.com', 'AdminSecurePass123!');
 
     const state = customerAuthStore.getState();
     expect(state.user).not.toBeNull();
     expect(state.user?.email).toBe('admin@vazostudio.com');
-    expect(state.profile?.customer_type).toBe('wholesale');
-
-    // Also verify admin session was set for /admin panel
-    const embeddedAdminSession = localStorage.getItem('vazo_embedded_admin_session');
-    expect(embeddedAdminSession).not.toBeNull();
-    expect(JSON.parse(embeddedAdminSession!).email).toBe('admin@vazostudio.com');
+    expect(state.isAdmin).toBe(true);
 
     // Verify useCustomerAuth hook exposes isAdmin = true
     const hook = renderHook(() => useCustomerAuth());

@@ -1,5 +1,4 @@
-﻿import { useState, useEffect } from 'react';
-import { isAdminEmail } from '@/shared/constants/admin-credentials';
+import { useState, useEffect } from 'react';
 import {
   customerAuthStore,
   initCustomerAuth,
@@ -38,7 +37,7 @@ export function useCustomerAuth() {
     displayName,
     email: state.user?.email || null,
     customerType: state.profile?.customer_type || 'retail',
-    isAdmin: isAdminEmail(state.user?.email),
+    isAdmin: Boolean(state.isAdmin),
     isWholesaleApproved,
     isRemoteDemoMode: isRemoteEnvironmentWithoutLiveSupabase(),
     signInWithGoogle: customerAuthStore.signInWithGoogle,

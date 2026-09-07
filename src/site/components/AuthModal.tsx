@@ -143,7 +143,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
                 </div>
                 <p className="text-xs text-text-secondary truncate mt-0.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
-                  <span className="truncate">{email || (isAdmin ? 'admin@vazostudio.com' : 'Kullanıcı Hesabı')}</span>
+                  <span className="truncate">{email || 'Kullanıcı Hesabı'}</span>
                 </p>
               </div>
             </div>

@@ -47,95 +47,47 @@ async function fetchAdminProfile(user: SupabaseUser): Promise<AdminProfile | nul
     return null;
   }
 }
-
-import {
-  EMBEDDED_ADMIN_CREDENTIALS,
-  EMBEDDED_ADMIN_PROFILE,
-  EMBEDDED_ADMIN_SESSION_KEY,
-} from '@/shared/constants/admin-credentials';
 import { translateAuthError } from '@/shared/utils/auth-error-translator';
-
-export {
-  EMBEDDED_ADMIN_CREDENTIALS,
-  EMBEDDED_ADMIN_PROFILE,
-  EMBEDDED_ADMIN_SESSION_KEY,
-};
 
 export const adminAuthService = {
   /**
-   * Signs in an admin user using Supabase Auth or fallback embedded credentials.
+   * Signs in an admin user using Supabase Auth.
+   * Authority strictly requires valid Supabase Auth + active record in public.admin_users.
    */
   async login(email: string, password: string): Promise<AdminProfile> {
     const normalizedEmail = email.trim().toLowerCase();
-    const isEmbeddedMatch =
-      normalizedEmail === EMBEDDED_ADMIN_CREDENTIALS.email &&
-      password === EMBEDDED_ADMIN_CREDENTIALS.password;
 
     const client = supabaseModule.supabase;
     if (!client || !supabaseModule.isSupabaseConfigured) {
-      if (isEmbeddedMatch) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(EMBEDDED_ADMIN_SESSION_KEY, JSON.stringify(EMBEDDED_ADMIN_PROFILE));
-        }
-        return EMBEDDED_ADMIN_PROFILE;
-      }
       throw new Error(
         'Supabase istemcisi yapılandırılmamış. Lütfen geçerli Supabase ortam değişkenlerini sağlayın.'
       );
     }
 
-    try {
-      const { data, error } = await client.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
+    const { data, error } = await client.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
 
-      if (error || !data.user) {
-        if (isEmbeddedMatch) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(EMBEDDED_ADMIN_SESSION_KEY, JSON.stringify(EMBEDDED_ADMIN_PROFILE));
-          }
-          return EMBEDDED_ADMIN_PROFILE;
-        }
-        throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
-      }
-
-      const profile = await fetchAdminProfile(data.user);
-
-      if (!profile) {
-        if (isEmbeddedMatch) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(EMBEDDED_ADMIN_SESSION_KEY, JSON.stringify(EMBEDDED_ADMIN_PROFILE));
-          }
-          return EMBEDDED_ADMIN_PROFILE;
-        }
-        // Immediately sign out unprivileged customer or deactivated user
-        await client.auth.signOut();
-        throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(EMBEDDED_ADMIN_SESSION_KEY);
-      }
-      return profile;
-    } catch (err) {
-      if (isEmbeddedMatch) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(EMBEDDED_ADMIN_SESSION_KEY, JSON.stringify(EMBEDDED_ADMIN_PROFILE));
-        }
-        return EMBEDDED_ADMIN_PROFILE;
-      }
-      throw err;
+    if (error || !data.user) {
+      throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
     }
+
+    const profile = await fetchAdminProfile(data.user);
+
+    if (!profile) {
+      // Immediately sign out unprivileged customer or deactivated user
+      await client.auth.signOut();
+      throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
+    }
+
+    return profile;
   },
 
   /**
-   * Logs out the current admin user and clears both Supabase and embedded sessions.
+   * Logs out the current admin user via Supabase Auth.
    */
   async logout(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(EMBEDDED_ADMIN_SESSION_KEY);
-    }
     const client = supabaseModule.supabase;
     if (client && supabaseModule.isSupabaseConfigured) {
       await client.auth.signOut();
@@ -143,23 +95,9 @@ export const adminAuthService = {
   },
 
   /**
-   * Checks the active session and verifies current admin authorization status.
+   * Checks the active session and verifies current admin authorization status from public.admin_users.
    */
   async getCurrentAdmin(): Promise<AdminProfile | null> {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem(EMBEDDED_ADMIN_SESSION_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.email === EMBEDDED_ADMIN_CREDENTIALS.email) {
-            return EMBEDDED_ADMIN_PROFILE;
-          }
-        }
-      } catch {
-        // Ignore parse error
-      }
-    }
-
     const client = supabaseModule.supabase;
     if (!client || !supabaseModule.isSupabaseConfigured) {
       return null;

@@ -12,14 +12,6 @@ import type {
 } from '@/entities/customer/types';
 
 import { getAppOrigin } from '@/shared/lib/origin';
-import {
-  EMBEDDED_ADMIN_PROFILE,
-  EMBEDDED_ADMIN_SESSION_KEY,
-  isEmbeddedAdminCredentials,
-  isAdminEmail,
-  createAdminCustomerUser,
-  ADMIN_CUSTOMER_PROFILE,
-} from '@/shared/constants/admin-credentials';
 import { translateAuthError } from '@/shared/utils/auth-error-translator';
 import {
   isCustomerAuthMockAllowed,
@@ -27,7 +19,6 @@ import {
   getPersistedMockCustomerUser,
   setPersistedMockCustomerUser,
   clearPersistedMockCustomerUser,
-  persistEmbeddedAdminSession,
 } from './customer-auth-helpers';
 import { customerAddressActions } from './customer-address-actions';
 
@@ -35,6 +26,7 @@ export interface CustomerAuthState {
   user: User | null;
   profile: CustomerProfile | null;
   addresses: CustomerAddress[];
+  isAdmin: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -43,6 +35,7 @@ let currentState: CustomerAuthState = {
   user: null,
   profile: null,
   addresses: [],
+  isAdmin: false,
   isLoading: true,
   error: null,
 };
@@ -63,21 +56,34 @@ function setAuthError(err: unknown): string {
   return msg;
 }
 
+async function checkAdminUser(userId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const client = getSupabase();
+    const { data } = await client
+      .from('admin_users')
+      .select('role, active')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return Boolean(data && (data as { active?: boolean }).active === true);
+  } catch {
+    return false;
+  }
+}
+
 async function loadUserData(userId: string) {
   try {
-    const [profile, addresses] = await Promise.all([
+    const [profile, addresses, adminCheck] = await Promise.all([
       customerProfileRepository.getMyProfile(userId).catch(() => null),
       customerAddressRepository.getMyAddresses(userId).catch(() => []),
+      checkAdminUser(userId),
     ]);
-
-    const activeProfile =
-      profile ||
-      (isAdminEmail(currentState.user?.email) ? ADMIN_CUSTOMER_PROFILE : null);
 
     currentState = {
       ...currentState,
-      profile: activeProfile,
+      profile,
       addresses,
+      isAdmin: adminCheck,
       isLoading: false,
       error: null,
     };
@@ -116,6 +122,7 @@ export function initCustomerAuth() {
       user: null,
       profile: null,
       addresses: [],
+      isAdmin: false,
       isLoading: false,
       error: null,
     };
@@ -142,6 +149,7 @@ export function initCustomerAuth() {
           user: null,
           profile: null,
           addresses: [],
+          isAdmin: false,
           isLoading: false,
           error: null,
         };
@@ -150,6 +158,7 @@ export function initCustomerAuth() {
     }).catch(() => {
       currentState = {
         ...currentState,
+        isAdmin: false,
         isLoading: false,
       };
       notify();
@@ -172,6 +181,7 @@ export function initCustomerAuth() {
           user: null,
           profile: null,
           addresses: [],
+          isAdmin: false,
           isLoading: false,
           error: null,
         };
@@ -185,20 +195,6 @@ export function initCustomerAuth() {
     };
     notify();
   }
-}
-
-function signInAsEmbeddedAdmin(): void {
-  const adminUser = createAdminCustomerUser();
-  setPersistedMockCustomerUser(adminUser);
-  persistEmbeddedAdminSession(EMBEDDED_ADMIN_PROFILE);
-  currentState = {
-    ...currentState,
-    user: adminUser,
-    profile: ADMIN_CUSTOMER_PROFILE,
-    isLoading: false,
-    error: null,
-  };
-  notify();
 }
 
 export const customerAuthStore = {
@@ -280,21 +276,15 @@ export const customerAuthStore = {
       throw new Error('Şifre en az 6 karakter olmalıdır.');
     }
 
-    const isEmbeddedAdmin = isEmbeddedAdminCredentials(cleanEmail, password);
-
     // Controlled local mock customer auth
     if (isCustomerAuthMockAllowed()) {
-      if (isEmbeddedAdmin) {
-        signInAsEmbeddedAdmin();
-        return;
-      }
-
       const mockUser = createMockCustomerUser(cleanEmail);
       setPersistedMockCustomerUser(mockUser);
 
       currentState = {
         ...currentState,
         user: mockUser,
+        isAdmin: false,
         isLoading: true,
         error: null,
       };
@@ -305,10 +295,6 @@ export const customerAuthStore = {
 
     // Live mode requires configured Supabase
     if (!isSupabaseConfigured) {
-      if (isEmbeddedAdmin) {
-        signInAsEmbeddedAdmin();
-        return;
-      }
       const errorMsg = 'Canlı ortamda kimlik doğrulama için Supabase yapılandırması zorunludur.';
       setAuthError(errorMsg);
       throw new Error(errorMsg);
@@ -322,22 +308,11 @@ export const customerAuthStore = {
       });
 
       if (error) {
-        if (isEmbeddedAdmin) {
-          signInAsEmbeddedAdmin();
-          return;
-        }
         const msg = setAuthError(error.message);
         throw new Error(msg);
       }
 
       if (data.user) {
-        if (isEmbeddedAdmin && typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(EMBEDDED_ADMIN_SESSION_KEY, JSON.stringify(EMBEDDED_ADMIN_PROFILE));
-          } catch {
-            // Ignore
-          }
-        }
         currentState = {
           ...currentState,
           user: data.user,
@@ -348,10 +323,6 @@ export const customerAuthStore = {
         await loadUserData(data.user.id);
       }
     } catch (err) {
-      if (isEmbeddedAdmin) {
-        signInAsEmbeddedAdmin();
-        return;
-      }
       const msg = setAuthError(err);
       throw new Error(msg);
     }
@@ -428,13 +399,6 @@ export const customerAuthStore = {
    */
   async signOut(): Promise<void> {
     clearPersistedMockCustomerUser();
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(EMBEDDED_ADMIN_SESSION_KEY);
-      } catch {
-        // Ignore
-      }
-    }
 
     const client = getSupabase();
     const { error } = await client.auth.signOut();
@@ -446,6 +410,7 @@ export const customerAuthStore = {
       user: null,
       profile: null,
       addresses: [],
+      isAdmin: false,
       isLoading: false,
       error: null,
     };

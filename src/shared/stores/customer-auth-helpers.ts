@@ -111,15 +111,3 @@ export function clearPersistedMockCustomerUser(): void {
   }
 }
 
-/**
- * Persists the embedded admin session for admin panel synchronization.
- */
-export function persistEmbeddedAdminSession(profile: unknown): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem('vazo_embedded_admin_session', JSON.stringify(profile));
-  } catch {
-    // Ignore
-  }
-}
-
