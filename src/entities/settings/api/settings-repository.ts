@@ -97,8 +97,14 @@ export const settingsRepository = {
   },
 
   async getSellerLegal(): Promise<SellerLegalSettings> {
-    if (isStorefrontMockEnabled || !isSupabaseConfigured || !supabase) {
+    if (isStorefrontMockEnabled) {
       return { ...DEFAULT_SELLER_LEGAL };
+    }
+
+    if (!isSupabaseConfigured || !supabase) {
+      throw new Error(
+        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+      );
     }
 
     try {

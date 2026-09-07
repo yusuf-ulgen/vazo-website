@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
-import { getSupabase } from '@/shared/lib/supabase';
+import { getSupabase, isSupabaseConfigured } from '@/shared/lib/supabase';
 import { saveAuthRedirect } from '@/shared/lib/safe-redirect';
 import { customerProfileRepository } from '@/entities/customer/api/customer-profile-repository';
 import { customerAddressRepository } from '@/entities/customer/api/customer-address-repository';
@@ -23,7 +22,7 @@ import {
 } from '@/shared/constants/admin-credentials';
 import { translateAuthError } from '@/shared/utils/auth-error-translator';
 import {
-  isRemoteEnvironmentWithoutLiveSupabase,
+  isCustomerAuthMockAllowed,
   createMockCustomerUser,
   getPersistedMockCustomerUser,
   setPersistedMockCustomerUser,
@@ -57,6 +56,13 @@ function notify() {
 
 let isInitialized = false;
 
+function setAuthError(err: unknown): string {
+  const msg = translateAuthError(err);
+  currentState = { ...currentState, isLoading: false, error: msg };
+  notify();
+  return msg;
+}
+
 async function loadUserData(userId: string) {
   try {
     const [profile, addresses] = await Promise.all([
@@ -77,13 +83,7 @@ async function loadUserData(userId: string) {
     };
     notify();
   } catch (err: unknown) {
-    const msg = translateAuthError(err);
-    currentState = {
-      ...currentState,
-      isLoading: false,
-      error: msg,
-    };
-    notify();
+    setAuthError(err);
   }
 }
 
@@ -91,20 +91,39 @@ export function initCustomerAuth() {
   if (isInitialized || typeof window === 'undefined') return;
   isInitialized = true;
 
-  // 1. Check for persisted mock session first
-  const mockUser = getPersistedMockCustomerUser();
-  if (mockUser) {
+  // 1. Check for persisted mock session ONLY if mock auth is allowed
+  if (isCustomerAuthMockAllowed()) {
+    const mockUser = getPersistedMockCustomerUser();
+    if (mockUser) {
+      currentState = {
+        ...currentState,
+        user: mockUser,
+        isLoading: true,
+      };
+      notify();
+      loadUserData(mockUser.id);
+      return;
+    }
+  } else {
+    // Purge any stale mock customer session if running in live/production mode
+    clearPersistedMockCustomerUser();
+  }
+
+  // 2. If Supabase is unconfigured in live mode, fail closed safely
+  if (!isSupabaseConfigured) {
     currentState = {
       ...currentState,
-      user: mockUser,
-      isLoading: true,
+      user: null,
+      profile: null,
+      addresses: [],
+      isLoading: false,
+      error: null,
     };
     notify();
-    loadUserData(mockUser.id);
     return;
   }
 
-  // 2. Otherwise initialize with Supabase
+  // 3. Otherwise initialize with Supabase
   try {
     const client = getSupabase();
 
@@ -197,14 +216,9 @@ export const customerAuthStore = {
    * Prompts the Google Account Chooser screen for account selection.
    */
   async signInWithGoogle(returnUrl = '/account'): Promise<void> {
-    if (isRemoteEnvironmentWithoutLiveSupabase()) {
-      const errorMsg =
-        'Canlı Supabase yapılandırması eksik (VITE_SUPABASE_URL ortam değişkeni tanımlanmamış veya localhost gösteriyor). Google ile giriş için sunucunuzda VITE_SUPABASE_URL ve VITE_SUPABASE_ANON_KEY tanımlanmalıdır.';
-      currentState = {
-        ...currentState,
-        error: errorMsg,
-      };
-      notify();
+    if (!isSupabaseConfigured) {
+      const errorMsg = 'Canlı Supabase yapılandırması eksik (VITE_SUPABASE_URL veya VITE_SUPABASE_ANON_KEY tanımlanmalıdır).';
+      setAuthError(errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -225,13 +239,8 @@ export const customerAuthStore = {
     });
 
     if (error) {
-      const translated = translateAuthError(error.message);
-      currentState = {
-        ...currentState,
-        error: translated,
-      };
-      notify();
-      throw new Error(`Google ile giriş başlatılamadı: ${translated}`);
+      const msg = setAuthError(error.message);
+      throw new Error(`Google ile giriş başlatılamadı: ${msg}`);
     }
   },
 
@@ -239,6 +248,12 @@ export const customerAuthStore = {
    * Signs in customer using chosen Google account (for preview/demo and mock sessions).
    */
   async signInWithGoogleAccount(accountEmail: string, accountName: string, returnUrl = '/account'): Promise<void> {
+    if (!isCustomerAuthMockAllowed()) {
+      const errorMsg = 'Mock Google girişi yalnızca yerel test ortamında kullanılabilir.';
+      setAuthError(errorMsg);
+      throw new Error(errorMsg);
+    }
+
     saveAuthRedirect(returnUrl);
     const mockUser = createMockCustomerUser(accountEmail, accountName, 'google');
     setPersistedMockCustomerUser(mockUser);
@@ -267,7 +282,8 @@ export const customerAuthStore = {
 
     const isEmbeddedAdmin = isEmbeddedAdminCredentials(cleanEmail, password);
 
-    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+    // Controlled local mock customer auth
+    if (isCustomerAuthMockAllowed()) {
       if (isEmbeddedAdmin) {
         signInAsEmbeddedAdmin();
         return;
@@ -287,6 +303,17 @@ export const customerAuthStore = {
       return;
     }
 
+    // Live mode requires configured Supabase
+    if (!isSupabaseConfigured) {
+      if (isEmbeddedAdmin) {
+        signInAsEmbeddedAdmin();
+        return;
+      }
+      const errorMsg = 'Canlı ortamda kimlik doğrulama için Supabase yapılandırması zorunludur.';
+      setAuthError(errorMsg);
+      throw new Error(errorMsg);
+    }
+
     try {
       const client = getSupabase();
       const { data, error } = await client.auth.signInWithPassword({
@@ -299,14 +326,8 @@ export const customerAuthStore = {
           signInAsEmbeddedAdmin();
           return;
         }
-
-        const translated = translateAuthError(error.message);
-        currentState = {
-          ...currentState,
-          error: translated,
-        };
-        notify();
-        throw new Error(translated);
+        const msg = setAuthError(error.message);
+        throw new Error(msg);
       }
 
       if (data.user) {
@@ -331,13 +352,8 @@ export const customerAuthStore = {
         signInAsEmbeddedAdmin();
         return;
       }
-      const translated = translateAuthError(err);
-      currentState = {
-        ...currentState,
-        error: translated,
-      };
-      notify();
-      throw new Error(translated);
+      const msg = setAuthError(err);
+      throw new Error(msg);
     }
   },
 
@@ -355,7 +371,8 @@ export const customerAuthStore = {
 
     const cleanName = fullName?.trim() || cleanEmail.split('@')[0];
 
-    if (isRemoteEnvironmentWithoutLiveSupabase()) {
+    // Controlled local mock customer registration
+    if (isCustomerAuthMockAllowed()) {
       const mockUser = createMockCustomerUser(cleanEmail, cleanName);
       setPersistedMockCustomerUser(mockUser);
 
@@ -368,6 +385,13 @@ export const customerAuthStore = {
       notify();
       await loadUserData(mockUser.id);
       return;
+    }
+
+    // Live mode requires configured Supabase
+    if (!isSupabaseConfigured) {
+      const errorMsg = 'Canlı ortamda kayıt olmak için Supabase yapılandırması zorunludur.';
+      setAuthError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     const client = getSupabase();
@@ -383,13 +407,8 @@ export const customerAuthStore = {
     });
 
     if (error) {
-      const translated = translateAuthError(error.message);
-      currentState = {
-        ...currentState,
-        error: translated,
-      };
-      notify();
-      throw new Error(translated);
+      const msg = setAuthError(error.message);
+      throw new Error(msg);
     }
 
     if (data.user) {
@@ -455,32 +474,27 @@ export const customerAuthStore = {
     return updated;
   },
 
-  async createAddress(input: CreateAddressInput): Promise<CustomerAddress> {
+  async _withUser<T>(fn: (userId: string) => Promise<T>): Promise<T> {
     if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
-    const created = await customerAddressActions.createAddress(currentState.user.id, input);
+    const res = await fn(currentState.user.id);
     await loadUserData(currentState.user.id);
-    return created;
+    return res;
+  },
+
+  async createAddress(input: CreateAddressInput): Promise<CustomerAddress> {
+    return this._withUser((uid) => customerAddressActions.createAddress(uid, input));
   },
   async updateAddress(addressId: string, input: UpdateAddressInput): Promise<CustomerAddress> {
-    if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
-    const updated = await customerAddressActions.updateAddress(currentState.user.id, addressId, input);
-    await loadUserData(currentState.user.id);
-    return updated;
+    return this._withUser((uid) => customerAddressActions.updateAddress(uid, addressId, input));
   },
   async deleteAddress(addressId: string): Promise<void> {
-    if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
-    await customerAddressActions.deleteAddress(currentState.user.id, addressId);
-    await loadUserData(currentState.user.id);
+    return this._withUser((uid) => customerAddressActions.deleteAddress(uid, addressId));
   },
   async setDefaultShipping(addressId: string): Promise<void> {
-    if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
-    await customerAddressActions.setDefaultShipping(currentState.user.id, addressId);
-    await loadUserData(currentState.user.id);
+    return this._withUser((uid) => customerAddressActions.setDefaultShipping(uid, addressId));
   },
   async setDefaultBilling(addressId: string): Promise<void> {
-    if (!currentState.user) throw new Error('Oturum açmış kullanıcı bulunamadı.');
-    await customerAddressActions.setDefaultBilling(currentState.user.id, addressId);
-    await loadUserData(currentState.user.id);
+    return this._withUser((uid) => customerAddressActions.setDefaultBilling(uid, addressId));
   },
 
   /**
@@ -533,52 +547,5 @@ export const customerAuthStore = {
   },
 };
 
-/**
- * Hook to consume Customer Auth state and methods in components.
- */
-export function useCustomerAuth() {
-  const [state, setState] = useState<CustomerAuthState>(currentState);
-
-  useEffect(() => {
-    initCustomerAuth();
-    return customerAuthStore.subscribe((updated) => {
-      setState(updated);
-    });
-  }, []);
-
-  const displayName =
-    state.profile?.first_name && state.profile?.last_name
-      ? `${state.profile.first_name} ${state.profile.last_name}`
-      : state.profile?.first_name ||
-        state.user?.user_metadata?.full_name ||
-        state.user?.user_metadata?.name ||
-        state.user?.email?.split('@')[0] ||
-        'Müşteri';
-
-  const isWholesaleApproved =
-    state.profile?.customer_type === 'wholesale' && Boolean(state.profile?.wholesale_approved_at);
-
-  return {
-    ...state,
-    isAuthenticated: Boolean(state.user),
-    displayName,
-    email: state.user?.email || null,
-    customerType: state.profile?.customer_type || 'retail',
-    isAdmin: isAdminEmail(state.user?.email),
-    isWholesaleApproved,
-    isRemoteDemoMode: isRemoteEnvironmentWithoutLiveSupabase(),
-    signInWithGoogle: customerAuthStore.signInWithGoogle,
-    signInWithGoogleAccount: customerAuthStore.signInWithGoogleAccount,
-    signInWithPassword: customerAuthStore.signInWithPassword,
-    signUpWithPassword: customerAuthStore.signUpWithPassword,
-    signOut: customerAuthStore.signOut,
-    refresh: customerAuthStore.refresh,
-    updateProfile: customerAuthStore.updateProfile,
-    createAddress: customerAuthStore.createAddress,
-    updateAddress: customerAuthStore.updateAddress,
-    deleteAddress: customerAuthStore.deleteAddress,
-    setDefaultShipping: customerAuthStore.setDefaultShipping,
-    setDefaultBilling: customerAuthStore.setDefaultBilling,
-    claimTradeApplication: () => customerAuthStore.claimTradeApplication(),
-  };
-}
+export { useCustomerAuth } from './use-customer-auth';
+export { isWholesaleApprovedCustomer } from './customer-auth-helpers';

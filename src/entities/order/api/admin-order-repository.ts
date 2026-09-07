@@ -14,6 +14,14 @@ import {
 } from '../types';
 import { mockAdminOrders } from './admin-order-mocks';
 
+function requireLiveAdminDb(): void {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      'Supabase client is not configured. Live admin mode requires valid Supabase environment variables.'
+    );
+  }
+}
+
 export const adminOrderRepository = {
   /**
    * Fetch paginated list of orders with filters
@@ -22,7 +30,7 @@ export const adminOrderRepository = {
     const page = Math.max(1, query.page || 1);
     const pageSize = Math.max(1, Math.min(100, query.pageSize || 20));
 
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       let filtered = [...mockAdminOrders];
 
       if (query.status && query.status !== 'all') {
@@ -176,11 +184,12 @@ export const adminOrderRepository = {
    * Fetch complete order detail for admin inspection
    */
   async getAdminOrderById(orderId: string): Promise<AdminOrderDetail | null> {
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       const found = mockAdminOrders.find((o) => o.id === orderId || o.order_number === orderId);
       return found ? { ...found } : null;
     }
 
+    requireLiveAdminDb();
     const supabase = getSupabase();
     const { data: order, error } = await supabase
       .from('orders')
@@ -269,7 +278,7 @@ export const adminOrderRepository = {
     orderId: string,
     request: OrderFulfillmentRequest
   ): Promise<{ success: boolean; from_status: string; to_status: string }> {
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       const order = mockAdminOrders.find((o) => o.id === orderId);
       if (!order) throw new Error('Sipariş bulunamadı.');
 
@@ -297,6 +306,7 @@ export const adminOrderRepository = {
       return { success: true, from_status: fromStatus, to_status: request.target_status };
     }
 
+    requireLiveAdminDb();
     const supabase = getSupabase();
     const { data, error } = await supabase.rpc('admin_update_order_fulfillment', {
       p_order_id: orderId,
@@ -322,7 +332,7 @@ export const adminOrderRepository = {
     orderId: string,
     request: AdminCancelOrderRequest
   ): Promise<{ success: boolean; from_status: string; to_status: string }> {
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       const order = mockAdminOrders.find((o) => o.id === orderId);
       if (!order) throw new Error('Sipariş bulunamadı.');
 
@@ -348,6 +358,7 @@ export const adminOrderRepository = {
       return { success: true, from_status: fromStatus, to_status: 'cancelled' };
     }
 
+    requireLiveAdminDb();
     const supabase = getSupabase();
     const { data, error } = await supabase.rpc('admin_cancel_order', {
       p_order_id: orderId,
@@ -371,7 +382,7 @@ export const adminOrderRepository = {
     const page = Math.max(1, query.page || 1);
     const pageSize = Math.max(1, Math.min(100, query.pageSize || 20));
 
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       const allPayments: PaymentRecord[] = mockAdminOrders.flatMap((o) => o.payments);
       let filtered = [...allPayments];
 
@@ -389,6 +400,7 @@ export const adminOrderRepository = {
       };
     }
 
+    requireLiveAdminDb();
     const supabase = getSupabase();
     let dbQuery = supabase
       .from('payments')
@@ -476,7 +488,7 @@ export const adminOrderRepository = {
    * Dispatch PayTR refund request through paytr-refund Edge Function
    */
   async processPayTRRefund(request: AdminRefundRequest): Promise<AdminRefundResponse> {
-    if (!isSupabaseConfigured || isStorefrontMockEnabled) {
+    if (isStorefrontMockEnabled) {
       const order = mockAdminOrders.find((o) => o.payments.some((p) => p.id === request.payment_id));
       if (!order) throw new Error('Ödeme kaydı bulunamadı.');
 
@@ -508,8 +520,8 @@ export const adminOrderRepository = {
         provider_error_code: null,
         provider_error_message: null,
         requested_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
       };
       order.refunds.push(refRecord);
 
@@ -522,6 +534,7 @@ export const adminOrderRepository = {
       };
     }
 
+    requireLiveAdminDb();
     const supabase = getSupabase();
     const { data, error } = await supabase.functions.invoke('paytr-refund', {
       body: {

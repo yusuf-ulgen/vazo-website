@@ -45,5 +45,89 @@ describe('supabase configuration module', () => {
     );
     expect(secretKeys).toEqual([]);
   });
+
+  it('resolveSupabaseConfig rejects mock mode by default in production', async () => {
+    const { resolveSupabaseConfig } = await import('@/shared/lib/supabase');
+    const result = resolveSupabaseConfig({
+      isProd: true,
+      supabaseUrl: 'https://xyzcompany.supabase.co',
+      anonKey: 'valid-anon-key-12345',
+      hostname: 'vazostudio.com',
+    });
+    expect(result.isStorefrontMockEnabled).toBe(false);
+    expect(result.hasValidConfig).toBe(true);
+  });
+
+  it('resolveSupabaseConfig rejects loopback URLs on real remote origins in production', async () => {
+    const { resolveSupabaseConfig } = await import('@/shared/lib/supabase');
+    const result = resolveSupabaseConfig({
+      isProd: true,
+      supabaseUrl: 'http://127.0.0.1:54321',
+      anonKey: 'valid-anon-key-12345',
+      hostname: 'vazostudio.com',
+    });
+    expect(result.hasValidConfig).toBe(false);
+    expect(result.supabaseUrl).toBe('');
+  });
+
+  it('resolveSupabaseConfig rejects default demo keys in production', async () => {
+    const { resolveSupabaseConfig, DEFAULT_LOCAL_DEV_KEY } = await import('@/shared/lib/supabase');
+    const result = resolveSupabaseConfig({
+      isProd: true,
+      supabaseUrl: 'https://xyzcompany.supabase.co',
+      anonKey: DEFAULT_LOCAL_DEV_KEY,
+      hostname: 'vazostudio.com',
+    });
+    expect(result.hasValidConfig).toBe(false);
+  });
+
+  it('isCustomerAuthMockAllowed strictly fails closed in production and remote origins', async () => {
+    const { isCustomerAuthMockAllowed } = await import('@/shared/stores/customer-auth-helpers');
+
+    // 1. In production on remote host -> false
+    expect(
+      isCustomerAuthMockAllowed({
+        isProd: true,
+        hostname: 'vazostudio.com',
+        mockExplicit: true,
+      })
+    ).toBe(false);
+
+    // 2. In production even on localhost -> false
+    expect(
+      isCustomerAuthMockAllowed({
+        isProd: true,
+        hostname: 'localhost',
+        mockExplicit: true,
+      })
+    ).toBe(false);
+
+    // 3. In dev on remote host -> false
+    expect(
+      isCustomerAuthMockAllowed({
+        isProd: false,
+        hostname: 'preview.vazo.dev',
+        mockExplicit: true,
+      })
+    ).toBe(false);
+
+    // 4. In dev on localhost without explicit mock flag -> false
+    expect(
+      isCustomerAuthMockAllowed({
+        isProd: false,
+        hostname: 'localhost',
+        mockExplicit: false,
+      })
+    ).toBe(false);
+
+    // 5. In dev on localhost with explicit mock flag -> true
+    expect(
+      isCustomerAuthMockAllowed({
+        isProd: false,
+        hostname: 'localhost',
+        mockExplicit: true,
+      })
+    ).toBe(true);
+  });
 });
 

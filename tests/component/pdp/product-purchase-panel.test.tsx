@@ -5,11 +5,15 @@ import { renderWithRouter } from 'tests/utils/render-utils';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { cartStore } from '@/shared/stores/cart-store';
 import { wishlistStore } from '@/shared/stores/wishlist-store';
+import { customerAuthStore } from '@/shared/stores/customer-auth-store';
+import type { User } from '@supabase/supabase-js';
+import type { CustomerProfile } from '@/entities/customer/types';
 
 describe('ProductPurchasePanel Component', () => {
   beforeEach(() => {
     cartStore.clear();
     wishlistStore.clear();
+    customerAuthStore._setStateForTesting({ user: null, profile: null });
   });
 
   it('renders in-stock product, selects quantity, and adds to cart', () => {
@@ -97,7 +101,7 @@ describe('ProductPurchasePanel Component', () => {
     expect(handleSelectVariant).toHaveBeenCalledWith(variant2);
   });
 
-  it('displays volume tier discount banner when selecting quantity 6 or more', () => {
+  it('does not display wholesale tier banner for retail customer, but displays it for approved wholesale customer', () => {
     const variant = createVariant({ retailPrice: 1450, stockQuantity: 20 });
     const product = createProduct({
       retailPrice: 1450,
@@ -109,7 +113,8 @@ describe('ProductPurchasePanel Component', () => {
       },
     });
 
-    renderWithRouter(
+    // 1. Retail / unauthenticated customer: selecting quantity 6 does not show discount banner
+    const { unmount } = renderWithRouter(
       <ProductPurchasePanel
         product={product}
         selectedVariant={variant}
@@ -118,9 +123,29 @@ describe('ProductPurchasePanel Component', () => {
     );
 
     const incrementBtn = screen.getByRole('button', { name: 'Adet Artır' });
-    // Increase to 6
     for (let i = 0; i < 5; i++) {
       fireEvent.click(incrementBtn);
+    }
+    expect(screen.queryByText(/%20 Toplu Alım İndirimi/)).not.toBeInTheDocument();
+    unmount();
+
+    // 2. Approved wholesale customer: selecting quantity 6 DOES show discount banner
+    customerAuthStore._setStateForTesting({
+      user: { id: 'usr-ws' } as unknown as User,
+      profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01' } as unknown as CustomerProfile,
+    });
+
+    renderWithRouter(
+      <ProductPurchasePanel
+        product={product}
+        selectedVariant={variant}
+        onSelectVariant={vi.fn()}
+      />
+    );
+
+    const incrementBtnWs = screen.getByRole('button', { name: 'Adet Artır' });
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(incrementBtnWs);
     }
 
     expect(screen.getByText(/%20 Toplu Alım İndirimi/)).toBeInTheDocument();

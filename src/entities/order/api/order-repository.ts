@@ -17,8 +17,14 @@ export const orderRepository = {
    * Fetches an authoritative checkout quote for the customer's cart.
    */
   async getQuote(request: CheckoutQuoteRequest): Promise<CheckoutQuoteResponse> {
-    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+    if (isStorefrontMockEnabled) {
       return this._simulateLocalQuote(request);
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+      );
     }
 
     const client = getSupabase();
@@ -51,8 +57,14 @@ export const orderRepository = {
       );
     }
 
-    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+    if (isStorefrontMockEnabled) {
       return this._simulateLocalOrderCreation(request);
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+      );
     }
 
     const client = getSupabase();
@@ -91,9 +103,15 @@ export const orderRepository = {
    * Fetches customer's orders history via Supabase RLS.
    */
   async getCustomerOrders(): Promise<Order[]> {
-    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+    if (isStorefrontMockEnabled) {
       return [...mockOrders].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live orders require valid Supabase environment variables.'
       );
     }
 
@@ -122,9 +140,15 @@ export const orderRepository = {
   async getOrderById(orderId: string): Promise<Order | null> {
     if (!orderId) return null;
 
-    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+    if (isStorefrontMockEnabled) {
       const found = mockOrders.find((o) => o.id === orderId || o.order_number === orderId);
       return found || null;
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live orders require valid Supabase environment variables.'
+      );
     }
 
     const client = getSupabase();
@@ -274,8 +298,14 @@ export const orderRepository = {
       throw new Error('Sipariş kimliği (orderId) zorunludur.');
     }
 
-    if (isStorefrontMockEnabled || !isSupabaseConfigured) {
+    if (isStorefrontMockEnabled) {
       return this._simulateLocalPayTRToken(orderId);
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live payment requires valid Supabase environment variables.'
+      );
     }
 
     const client = getSupabase();

@@ -3,11 +3,15 @@ import { screen, fireEvent } from '@testing-library/react';
 import { CartDrawer } from '@/site/components/CartDrawer';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { cartStore } from '@/shared/stores/cart-store';
+import { customerAuthStore } from '@/shared/stores/customer-auth-store';
+import type { User } from '@supabase/supabase-js';
+import type { CustomerProfile } from '@/entities/customer/types';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 
 describe('CartDrawer Component', () => {
   beforeEach(() => {
     cartStore.clear();
+    customerAuthStore._setStateForTesting({ user: null, profile: null });
   });
 
   it('renders nothing when isOpen is false', () => {
@@ -64,7 +68,12 @@ describe('CartDrawer Component', () => {
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
 
-  it('renders volume discount badge and strikethrough price when tier applies', () => {
+  it('renders volume discount badge and strikethrough price when tier applies for wholesale customer', () => {
+    customerAuthStore._setStateForTesting({
+      user: { id: 'usr-ws' } as unknown as User,
+      profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01' } as unknown as CustomerProfile,
+    });
+
     const product = createProduct({
       name: 'Lunea Form No.4',
       retailPrice: 1450,

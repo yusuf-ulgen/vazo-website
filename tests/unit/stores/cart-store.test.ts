@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { cartStore, useCart } from '@/shared/stores/cart-store';
+import { customerAuthStore } from '@/shared/stores/customer-auth-store';
+import type { User } from '@supabase/supabase-js';
+import type { CustomerProfile } from '@/entities/customer/types';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 
 describe('cartStore & useCart', () => {
   beforeEach(() => {
     cartStore.clear();
     localStorage.clear();
+    customerAuthStore._setStateForTesting({ user: null, profile: null });
     vi.restoreAllMocks();
   });
 
@@ -215,7 +219,8 @@ describe('cartStore & useCart', () => {
     expect(result.current.subtotal).toBe(0);
   });
 
-  it('automatically applies volume/wholesale tier pricing when item quantity reaches tier threshold', () => {
+  it('does not apply wholesale tier discounts to unauthenticated or retail customers', () => {
+    customerAuthStore._setStateForTesting({ user: null, profile: null });
     const product = createProduct({
       id: 'p-vazo',
       retailPrice: 1450,
@@ -231,30 +236,95 @@ describe('cartStore & useCart', () => {
     });
     const variant = createVariant({ retailPrice: 1450, stockQuantity: 30 });
 
-    // 1. Add 1 item (normal retail price)
-    cartStore.addItem(product, variant, 1);
-    let items = cartStore.getItems();
+    cartStore.addItem(product, variant, 6);
+    const items = cartStore.getItems();
+    expect(items[0]?.quantity).toBe(6);
     expect(items[0]?.retailPrice).toBe(1450);
     expect(items[0]?.unitPrice).toBe(1450);
     expect(items[0]?.discountPercentage).toBeUndefined();
 
-    // 2. Update quantity to 6 (triggers tier 1: 20% discount => 1160 TL)
+    const { result } = renderHook(() => useCart());
+    expect(result.current.subtotal).toBe(1450 * 6);
+  });
+
+  it('applies volume/wholesale tier pricing to approved wholesale customers and recomputes on auth state change', () => {
+    // 1. Start as approved wholesale customer
+    customerAuthStore._setStateForTesting({
+      user: { id: 'usr-ws-1', email: 'ws@example.com' } as unknown as User,
+      profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01T00:00:00Z' } as unknown as CustomerProfile,
+    });
+
+    const product = createProduct({
+      id: 'p-vazo',
+      retailPrice: 1450,
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 6,
+        tiers: [
+          { minQuantity: 6, maxQuantity: 11, unitPrice: 1160, discountPercentage: 20 },
+          { minQuantity: 12, maxQuantity: 23, unitPrice: 1085, discountPercentage: 25 },
+          { minQuantity: 24, maxQuantity: 49, unitPrice: 1015, discountPercentage: 30 },
+        ],
+      },
+    });
+    const variant = createVariant({ retailPrice: 1450, stockQuantity: 30 });
+
+    // 2. Add 1 item (unitPrice is 1450)
+    cartStore.addItem(product, variant, 1);
+    let items = cartStore.getItems();
+    expect(items[0]?.unitPrice).toBe(1450);
+
+    // 3. Update to 6 (triggers tier 1: 1160)
     const itemId = items[0]!.id;
     cartStore.updateQuantity(itemId, 6);
     items = cartStore.getItems();
-    expect(items[0]?.quantity).toBe(6);
-    expect(items[0]?.retailPrice).toBe(1450);
     expect(items[0]?.unitPrice).toBe(1160);
     expect(items[0]?.discountPercentage).toBe(20);
 
-    // 3. Verify subtotal via hook: 6 * 1160 = 6960
-    const { result } = renderHook(() => useCart());
-    expect(result.current.subtotal).toBe(6960);
-
-    // 4. Update quantity to 12 (triggers tier 2: 25% discount => 1085 TL)
+    // 4. Update to 12 (triggers tier 2: 1085)
     cartStore.updateQuantity(itemId, 12);
     items = cartStore.getItems();
     expect(items[0]?.unitPrice).toBe(1085);
     expect(items[0]?.discountPercentage).toBe(25);
+
+    // 5. Customer signs out -> existing items in cart automatically revert to retail price
+    act(() => {
+      customerAuthStore._setStateForTesting({ user: null, profile: null });
+    });
+    items = cartStore.getItems();
+    expect(items[0]?.unitPrice).toBe(1450);
+    expect(items[0]?.discountPercentage).toBeUndefined();
+
+    // 6. Customer logs back in as approved wholesale -> items re-discount
+    act(() => {
+      customerAuthStore._setStateForTesting({
+        user: { id: 'usr-ws-1' } as unknown as User,
+        profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01' } as unknown as CustomerProfile,
+      });
+    });
+    items = cartStore.getItems();
+    expect(items[0]?.unitPrice).toBe(1085);
+  });
+
+  it('does not synthesize fallback tiers when product has no tiers configured', () => {
+    customerAuthStore._setStateForTesting({
+      user: { id: 'usr-ws-1' } as unknown as User,
+      profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01' } as unknown as CustomerProfile,
+    });
+    const product = createProduct({
+      id: 'p-no-tiers',
+      retailPrice: 2000,
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 1,
+        tiers: [],
+      },
+    });
+    const variant = createVariant({ retailPrice: 2000, stockQuantity: 50 });
+
+    cartStore.addItem(product, variant, 20);
+    const items = cartStore.getItems();
+    expect(items[0]?.unitPrice).toBe(2000);
+    expect(items[0]?.discountPercentage).toBeUndefined();
   });
 });

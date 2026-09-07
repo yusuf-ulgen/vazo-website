@@ -13,18 +13,10 @@ export interface ProductWholesaleTiersProps {
 export function ProductWholesaleTiers({
   tiers,
   productName: _productName,
-  retailPrice,
+  retailPrice: _retailPrice,
   productSlug,
 }: ProductWholesaleTiersProps) {
-  // If product doesn't have custom tiers defined, generate standard tiers matching reference-04
-  const activeTiers: WholesalePricingTier[] = tiers.length > 0
-    ? tiers
-    : [
-        { minQuantity: 6, maxQuantity: 11, unitPrice: Math.round(retailPrice * 0.8), discountPercentage: 20 },
-        { minQuantity: 12, maxQuantity: 23, unitPrice: Math.round(retailPrice * 0.75), discountPercentage: 25 },
-        { minQuantity: 24, maxQuantity: 49, unitPrice: Math.round(retailPrice * 0.7), discountPercentage: 30 },
-        { minQuantity: 50, maxQuantity: undefined, unitPrice: Math.round(retailPrice * 0.6), discountPercentage: 40 },
-      ];
+  const hasTiers = tiers && tiers.length > 0;
 
   return (
     <div className="border border-border-default bg-surface-secondary/40 p-5 space-y-4 text-left">
@@ -39,33 +31,39 @@ export function ProductWholesaleTiers({
         </p>
       </div>
 
-      {/* Tier Pricing Table (Reference 04) */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs font-sans">
-          <thead>
-            <tr className="border-b border-border-default text-[10px] uppercase font-semibold text-text-muted">
-              <th className="py-2 font-medium">ADET ARALIĞI</th>
-              <th className="py-2 font-medium">BİRİM FİYAT</th>
-              <th className="py-2 font-medium text-right">İSKONTO</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle">
-            {activeTiers.map((tier, idx) => (
-              <tr key={idx} className="hover:bg-surface-primary/50 transition-colors">
-                <td className="py-2.5 font-medium text-text-primary">
-                  {tier.maxQuantity ? `${tier.minQuantity} – ${tier.maxQuantity} adet` : `${tier.minQuantity}+ adet`}
-                </td>
-                <td className="py-2.5 text-text-secondary">
-                  {tier.unitPrice ? formatCurrency(tier.unitPrice) : 'Özel fiyat'}
-                </td>
-                <td className="py-2.5 text-right font-medium text-feedback-success">
-                  {tier.discountPercentage ? `-%${tier.discountPercentage}` : 'Teklif alınız'}
-                </td>
+      {/* Tier Pricing Table or Custom Quote Notice */}
+      {hasTiers ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs font-sans">
+            <thead>
+              <tr className="border-b border-border-default text-[10px] uppercase font-semibold text-text-muted">
+                <th className="py-2 font-medium">ADET ARALIĞI</th>
+                <th className="py-2 font-medium">BİRİM FİYAT</th>
+                <th className="py-2 font-medium text-right">İSKONTO</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-border-subtle">
+              {tiers.map((tier, idx) => (
+                <tr key={idx} className="hover:bg-surface-primary/50 transition-colors">
+                  <td className="py-2.5 font-medium text-text-primary">
+                    {tier.maxQuantity ? `${tier.minQuantity} – ${tier.maxQuantity} adet` : `${tier.minQuantity}+ adet`}
+                  </td>
+                  <td className="py-2.5 text-text-secondary">
+                    {tier.unitPrice ? formatCurrency(tier.unitPrice) : 'Özel fiyat'}
+                  </td>
+                  <td className="py-2.5 text-right font-medium text-feedback-success">
+                    {tier.discountPercentage ? `-%${tier.discountPercentage}` : 'Teklif alınız'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="py-3 text-xs text-text-secondary font-sans">
+          Bu ürün için özel toptan fiyatlandırma ve termin bilgisi almak için lütfen teklif talebinde bulununuz.
+        </div>
+      )}
 
       {/* Actions (Reference 04) */}
       <div className="pt-1 space-y-2.5">

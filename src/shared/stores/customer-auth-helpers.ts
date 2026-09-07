@@ -1,26 +1,60 @@
 import type { User } from '@supabase/supabase-js';
+import type { CustomerProfile } from '@/entities/customer/types';
 
 export const MOCK_STORAGE_KEY = 'vazo_mock_customer_user';
 
 /**
- * Determines whether the current client is executing in a remote preview environment
- * where a live Supabase backend is unconfigured or unreachable.
+ * Determines whether mock customer authentication (in-memory/demo users) is permitted.
+ * In a deployed production origin or when live mode is active, mock customer auth
+ * is strictly prohibited.
+ */
+export function isCustomerAuthMockAllowed(params?: {
+  isProd?: boolean;
+  hostname?: string;
+  mockExplicit?: boolean;
+}): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const isProd =
+    params?.isProd !== undefined
+      ? params.isProd
+      : Boolean(import.meta.env.PROD || import.meta.env.MODE === 'production');
+
+  const hostname =
+    params?.hostname !== undefined ? params.hostname : window.location.hostname;
+
+  const isLocalHost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname === '';
+
+  // In production builds or on remote origins, customer mock auth must NEVER exist
+  if (isProd || !isLocalHost) {
+    return false;
+  }
+
+  const mockExplicit =
+    params?.mockExplicit !== undefined
+      ? params.mockExplicit
+      : import.meta.env.VITE_ENABLE_MOCK_DATA === 'true';
+
+  return Boolean(mockExplicit && isLocalHost);
+}
+
+/**
+ * Determines whether the customer profile is an authorized, approved wholesale customer.
+ */
+export function isWholesaleApprovedCustomer(profile?: CustomerProfile | null): boolean {
+  if (!profile) return false;
+  return profile.customer_type === 'wholesale' && Boolean(profile.wholesale_approved_at);
+}
+
+/**
+ * Backwards-compatible alias for demo mode checks, gated by mock customer authorization.
  */
 export function isRemoteEnvironmentWithoutLiveSupabase(): boolean {
-  if (typeof window === 'undefined') return false;
-  const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-  const isLocalhostHost =
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname === '0.0.0.0';
-
-  if (
-    !isLocalhostHost &&
-    (!rawUrl || rawUrl.includes('127.0.0.1') || rawUrl.includes('localhost'))
-  ) {
-    return true;
-  }
-  return false;
+  return isCustomerAuthMockAllowed();
 }
 
 /**

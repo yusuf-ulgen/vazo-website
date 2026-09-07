@@ -61,11 +61,16 @@ export interface Money {
 
 ## 4. Retail & Wholesale Channels
 
-- **Retail (B2C)**: Standard consumer purchasing without quantity restrictions.
+- **Retail (B2C)**: Standard consumer purchasing without quantity restrictions. Retail customers always pay the authoritative retail price regardless of quantity in cart.
 - **Wholesale (B2B)**:
-  - Requires an authenticated user with an approved trade status (`trade_applications.status = 'approved'`).
-  - Enforces Minimum Order Quantity (MOQ) and tiered volume discounts.
+  - Requires an authenticated user with an approved trade status (`profile.customer_type === 'wholesale'` and `profile.wholesale_approved_at`).
+  - Tiered volume discounts in PDP and cart are strictly gated behind verified wholesale approval.
+  - **No Synthetic Fallback Tiers**: When a product has no configured pricing tiers, no arbitrary 20/25/30/40% discounts are synthesized. The UI displays a custom quote inquiry prompt.
   - **Zero Browser Trust**: Wholesale eligibility, tier discounts, and MOQ compliance are re-evaluated server-side on every mutation.
+- **Cart Storage Envelope (Phase 3.12)**:
+  - Local cart persistence is versioned via an envelope: `{ version: 1, catalogMode: 'mock' | 'live', items: CartItem[] }`.
+  - Mock catalog items never leak into live checkout, and live database UUIDs never leak into mock mode.
+  - Cart item unit prices are automatically recomputed when customer authentication status changes.
 
 ---
 

@@ -158,4 +158,29 @@ Direct PostgreSQL `INSERT` by anonymous users is blocked by RLS to prevent datab
 - Admin readiness checks (`get_checkout_readiness` RPC and `admin-readiness` Edge Function) return pure booleans (`paytr_secrets_present`, `gmail_secrets_present`, `seller_legal_complete`, `has_active_shipping`).
 - No raw secrets or partial credentials are ever returned to the browser.
 
+---
+
+## 8. Production Mock Isolation & Auth Boundary Policies (Phase 3.12)
+
+### 8.1 Production Mock Commerce Boundary
+- In production builds (`import.meta.env.PROD` or `MODE === 'production'`), mock repositories are disabled by default. Mock mode can only be activated if explicitly flagged via `VITE_ENABLE_MOCK_DATA === 'true'`.
+- Production builds on non-loopback origins reject loopback URLs (`127.0.0.1`, `localhost`) and default local development demo keys.
+- Live commerce methods (`orderRepository.getQuote`, `createOrder`, `getPayTRToken`, `adminOrderRepository`) fail closed with descriptive configuration errors when live Supabase is unconfigured, preventing silent fake transactions.
+
+### 8.2 Customer Auth Fail-Closed Guarantee
+- Synthetic customer accounts and mock authentication are strictly prohibited on real origins and production builds.
+- If live Supabase credentials are missing or unreachable, customer authentication fails closed with clear error messaging rather than minting synthetic users.
+- Offline mock simulation is strictly confined to loopback hosts (`localhost`, `127.0.0.1`) when `VITE_ENABLE_MOCK_DATA === 'true'`.
+
+### 8.3 Cart Storage Envelope & Mode Isolation
+- Cart storage in browser `localStorage` uses an explicit versioned envelope:
+  `{ version: 1, catalogMode: 'mock' | 'live', items: CartItem[] }`.
+- Incompatible schema versions and cross-mode storage entries (e.g. mock items in live mode or vice-versa) are isolated and reset safely to prevent catalog ID pollution.
+- Malformed JSON in local storage is caught gracefully without causing crash loops or repeated console spam.
+
+### 8.4 Wholesale Price Authorization Gate
+- Wholesale volume discounts in PDP and cart presentation are strictly gated behind verified wholesale approval (`profile.customer_type === 'wholesale'` and `profile.wholesale_approved_at`).
+- Retail customers cannot trigger wholesale tier discounts simply by increasing quantity.
+- Server-authoritative checkout quotes (`calculate_checkout_quote` / `create-paytr-token`) strictly re-verify customer eligibility from the database.
+
 

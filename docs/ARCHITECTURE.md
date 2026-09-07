@@ -206,3 +206,9 @@ PayTR Server                     Supabase Edge Function               PostgreSQL
 - **Critical Rule**: Client redirect URLs are **DISPLAY-ONLY**. They must **NEVER** mark an order as paid or execute fulfillment actions.
 - Only the verified server-to-server PayTR callback executing in Supabase Edge Functions holds payment finalization authority.
 
+### 7.5 Production Mock Isolation & Cart Envelope Boundary (Phase 3.12)
+- **Production Commerce Boundary**: `resolveSupabaseConfig` guarantees that mock commerce is disabled by default in production. Production environments on remote origins reject loopback URLs (`127.0.0.1`, `localhost`) and demo keys. Live checkout repositories fail closed with explicit configuration errors rather than falling back to local simulation.
+- **Customer Auth Boundary**: Synthetic customer generation is strictly forbidden in production builds and on remote origins. In unconfigured or offline remote environments, customer sign-in/sign-up fails closed with translated Turkish errors.
+- **Cart Storage Envelope**: Cart storage is encapsulated in `{ version: 1, catalogMode: 'mock' | 'live', items: CartItem[] }`. Switching between mock mode and live database environments safely drops invalid catalog items and prevents UUID corruption.
+- **Wholesale Price Authorization Gate**: Wholesale volume discounts are strictly authorized: retail customers never receive tier pricing upon reaching quantity thresholds. The server Edge Function re-verifies trade authorization during checkout token generation.
+

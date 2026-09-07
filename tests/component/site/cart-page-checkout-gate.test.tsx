@@ -3,6 +3,9 @@ import { screen } from '@testing-library/react';
 import { CartPage } from '@/site/pages/CartPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { cartStore } from '@/shared/stores/cart-store';
+import { customerAuthStore } from '@/shared/stores/customer-auth-store';
+import type { User } from '@supabase/supabase-js';
+import type { CustomerProfile } from '@/entities/customer/types';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { DEFAULT_PUBLIC_SITE_SETTINGS } from '@/entities/settings/types';
@@ -15,6 +18,7 @@ describe('CartPage Checkout Enablement Gate (Phase 3.10)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cartStore.clear();
+    customerAuthStore._setStateForTesting({ user: null, profile: null });
   });
 
   it('renders disabled checkout button when checkoutEnabled is false', () => {
@@ -64,7 +68,12 @@ describe('CartPage Checkout Enablement Gate (Phase 3.10)', () => {
     expect(screen.queryByRole('button', { name: /Sipariş Sistemi Hazırlık Aşamasında/i })).not.toBeInTheDocument();
   });
 
-  it('renders volume discount badge, strikethrough price, and discount text in CartPage', () => {
+  it('renders volume discount badge, strikethrough price, and discount text in CartPage for wholesale customer', () => {
+    customerAuthStore._setStateForTesting({
+      user: { id: 'usr-ws' } as unknown as User,
+      profile: { customer_type: 'wholesale', wholesale_approved_at: '2026-01-01' } as unknown as CustomerProfile,
+    });
+
     vi.mocked(useSiteSettings).mockReturnValue({
       settings: {
         ...DEFAULT_PUBLIC_SITE_SETTINGS,

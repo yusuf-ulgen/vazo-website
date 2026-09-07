@@ -25,7 +25,7 @@ describe('PDP Supporting Components', () => {
     expect(screen.getByText('-%25')).toBeInTheDocument();
   });
 
-  it('renders ProductWholesaleTiers with fallback generated tiers when tiers array is empty', () => {
+  it('renders ProductWholesaleTiers with custom quote message when tiers array is empty', () => {
     renderWithRouter(
       <ProductWholesaleTiers
         tiers={[]}
@@ -36,9 +36,11 @@ describe('PDP Supporting Components', () => {
     );
 
     expect(screen.getByText('Toptan Alım / Wholesale')).toBeInTheDocument();
-    expect(screen.getByText('6 – 11 adet')).toBeInTheDocument();
-    expect(screen.getByText('-%20')).toBeInTheDocument();
-    expect(screen.getByText('50+ adet')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Bu ürün için özel toptan fiyatlandırma ve termin bilgisi almak için lütfen teklif talebinde bulununuz\./)
+    ).toBeInTheDocument();
+    expect(screen.getByText('TOPTAN FİYAT AL')).toBeInTheDocument();
+    expect(screen.queryByText('ADET ARALIĞI')).not.toBeInTheDocument();
   });
 
   it('renders ProductStoryHighlights with handcrafted story blocks', () => {

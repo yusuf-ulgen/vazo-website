@@ -3,6 +3,7 @@ import { Heart, Truck, ShieldCheck, RefreshCw, Tag } from 'lucide-react';
 import { Product, ProductVariant, WholesalePricingTier } from '@/entities/product/types';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { useCart, resolveCartItemPricing } from '@/shared/stores/cart-store';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { QuantitySelector } from '@/shared/ui/QuantitySelector';
 import { ProductWholesaleTiers } from './ProductWholesaleTiers';
@@ -22,6 +23,7 @@ export function ProductPurchasePanel({
   const [addedNotice, setAddedNotice] = useState(false);
 
   const { addItem } = useCart();
+  const { isWholesaleApproved } = useCustomerAuth();
   const { has, toggle } = useWishlist();
   const isFavorite = has(product.id);
 
@@ -34,19 +36,13 @@ export function ProductPurchasePanel({
   const isOutOfStock = stock <= 0;
   const isRetailAvailable = (product.retailEnabled ?? true) && (activeVariant?.isAvailableForRetail ?? true);
 
+  // Authoritative product configuration tiers only - NO synthetic fallback tiers!
   const activeTiers: WholesalePricingTier[] =
     product.wholesale?.tiers && product.wholesale.tiers.length > 0
       ? product.wholesale.tiers
-      : product.wholesale?.isWholesaleEnabled
-      ? [
-          { minQuantity: 6, maxQuantity: 11, unitPrice: Math.round(activePrice * 0.8), discountPercentage: 20 },
-          { minQuantity: 12, maxQuantity: 23, unitPrice: Math.round(activePrice * 0.75), discountPercentage: 25 },
-          { minQuantity: 24, maxQuantity: 49, unitPrice: Math.round(activePrice * 0.7), discountPercentage: 30 },
-          { minQuantity: 50, maxQuantity: undefined, unitPrice: Math.round(activePrice * 0.6), discountPercentage: 40 },
-        ]
       : [];
 
-  const tierPricing = resolveCartItemPricing(activePrice, quantity, activeTiers);
+  const tierPricing = resolveCartItemPricing(activePrice, quantity, activeTiers, isWholesaleApproved);
 
   const handleAddToCart = () => {
     if (isOutOfStock || !isRetailAvailable) return;
@@ -161,7 +157,7 @@ export function ProductPurchasePanel({
           )}
         </div>
 
-        {tierPricing.discountPercentage && tierPricing.unitPrice < activePrice && (
+        {isWholesaleApproved && tierPricing.discountPercentage && tierPricing.unitPrice < activePrice && (
           <div className="p-2.5 bg-feedback-success/10 border border-feedback-success/20 rounded flex items-center justify-between text-xs text-text-primary animate-fade-in">
             <div className="flex items-center gap-1.5 font-medium text-feedback-success">
               <Tag className="w-3.5 h-3.5" />
