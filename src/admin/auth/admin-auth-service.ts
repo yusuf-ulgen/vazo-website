@@ -48,19 +48,18 @@ async function fetchAdminProfile(user: SupabaseUser): Promise<AdminProfile | nul
   }
 }
 
-export const EMBEDDED_ADMIN_CREDENTIALS = {
-  email: 'admin@vazostudio.com',
-  password: 'VazoAdmin2026!',
-};
+import {
+  EMBEDDED_ADMIN_CREDENTIALS,
+  EMBEDDED_ADMIN_PROFILE,
+  EMBEDDED_ADMIN_SESSION_KEY,
+} from '@/shared/constants/admin-credentials';
+import { translateAuthError } from '@/shared/utils/auth-error-translator';
 
-export const EMBEDDED_ADMIN_PROFILE: AdminProfile = {
-  id: 'a0000000-0000-0000-0000-000000000001',
-  email: 'admin@vazostudio.com',
-  role: 'super_admin',
-  active: true,
+export {
+  EMBEDDED_ADMIN_CREDENTIALS,
+  EMBEDDED_ADMIN_PROFILE,
+  EMBEDDED_ADMIN_SESSION_KEY,
 };
-
-const EMBEDDED_ADMIN_SESSION_KEY = 'vazo_embedded_admin_session';
 
 export const adminAuthService = {
   /**
@@ -98,7 +97,7 @@ export const adminAuthService = {
           }
           return EMBEDDED_ADMIN_PROFILE;
         }
-        throw new Error(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.');
+        throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
       }
 
       const profile = await fetchAdminProfile(data.user);

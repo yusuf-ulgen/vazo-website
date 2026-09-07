@@ -52,7 +52,7 @@ describe('Admin Auth Service (Phase 2.2 Supabase Auth & RBAC)', () => {
 
     await expect(
       adminAuthService.login('wrong@vazostudio.com', 'BadPass')
-    ).rejects.toThrow('Invalid login credentials');
+    ).rejects.toThrow('Geçersiz e-posta adresi veya şifre.');
   });
 
   it('denies access and signs out if user is valid in auth.users but absent from public.admin_users (RBAC denial)', async () => {

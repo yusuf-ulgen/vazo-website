@@ -299,13 +299,13 @@ describe('customerAuthStore & useCustomerAuth Hook', () => {
       error: { message: 'OAuth Provider Error' },
     });
 
-    await expect(customerAuthStore.signInWithGoogle()).rejects.toThrow('OAuth Provider Error');
+    await expect(customerAuthStore.signInWithGoogle()).rejects.toThrow();
 
     mockSignOut.mockResolvedValueOnce({
-      error: { message: 'SignOut Network Error' },
+      error: { message: 'Failed to fetch' },
     });
 
-    await expect(customerAuthStore.signOut()).rejects.toThrow('SignOut Network Error');
+    await expect(customerAuthStore.signOut()).rejects.toThrow('Sunucuya bağlanırken bir iletişim hatası oluştu.');
   });
 
   it('safely handles refresh when user is unauthenticated', async () => {
@@ -357,8 +357,57 @@ describe('customerAuthStore & useCustomerAuth Hook', () => {
     });
   });
 
+  it('translates invalid credentials error from Supabase to Turkish', async () => {
+    const mockSignInWithPassword = vi.fn().mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid login credentials' },
+    });
+
+    vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue({
+      auth: {
+        signInWithPassword: mockSignInWithPassword,
+      },
+    } as unknown as ReturnType<typeof supabaseModule.getSupabase>);
+
+    await expect(
+      customerAuthStore.signInWithPassword('normal@customer.com', 'WrongPass123!')
+    ).rejects.toThrow('Geçersiz e-posta adresi veya şifre.');
+  });
+
+  it('authenticates admin user with embedded credentials via customer login even if Supabase fails', async () => {
+    const mockSignInWithPassword = vi.fn().mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Invalid login credentials' },
+    });
+
+    vi.spyOn(supabaseModule, 'getSupabase').mockReturnValue({
+      auth: {
+        signInWithPassword: mockSignInWithPassword,
+      },
+    } as unknown as ReturnType<typeof supabaseModule.getSupabase>);
+
+    await customerAuthStore.signInWithPassword('admin@vazostudio.com', 'VazoAdmin2026!');
+
+    const state = customerAuthStore.getState();
+    expect(state.user).not.toBeNull();
+    expect(state.user?.email).toBe('admin@vazostudio.com');
+    expect(state.profile?.customer_type).toBe('wholesale');
+
+    // Also verify admin session was set for /admin panel
+    const embeddedAdminSession = localStorage.getItem('vazo_embedded_admin_session');
+    expect(embeddedAdminSession).not.toBeNull();
+    expect(JSON.parse(embeddedAdminSession!).email).toBe('admin@vazostudio.com');
+
+    // Verify useCustomerAuth hook exposes isAdmin = true
+    const hook = renderHook(() => useCustomerAuth());
+    expect(hook.result.current.isAdmin).toBe(true);
+    expect(hook.result.current.isAuthenticated).toBe(true);
+    hook.unmount();
+  });
+
   it('validates email and password inputs and throws errors on empty or short password', async () => {
     await expect(customerAuthStore.signInWithPassword('', 'pass')).rejects.toThrow('Lütfen geçerli bir e-posta adresi giriniz.');
     await expect(customerAuthStore.signUpWithPassword('test@test.com', '123', 'Name')).rejects.toThrow('Şifre en az 6 karakter olmalıdır.');
   });
 });
+

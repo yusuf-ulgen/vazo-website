@@ -11,6 +11,7 @@ import {
   MapPin,
   AlertCircle,
   ShieldCheck,
+  Shield,
   LoaderCircle,
   Mail,
   Lock,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
+import { translateAuthError } from '@/shared/utils/auth-error-translator';
 
 export interface AuthModalProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
     displayName,
     email,
     isAuthenticated,
+    isAdmin,
     signInWithGoogle,
     signInWithPassword,
     signUpWithPassword,
@@ -68,8 +71,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
       }
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'İşlem gerçekleştirilemedi.';
-      setErrorMsg(msg);
+      setErrorMsg(translateAuthError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,8 +84,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
       await signInWithGoogle(returnUrl);
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Google ile giriş başlatılırken bir hata oluştu.';
-      setErrorMsg(msg);
+      setErrorMsg(translateAuthError(err));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -94,8 +95,7 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
       await signOut();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Çıkış yapılamadı.';
-      setErrorMsg(msg);
+      setErrorMsg(translateAuthError(err));
     }
   };
 
@@ -138,18 +138,32 @@ export function AuthModal({ isOpen, onClose, returnUrl = '/account' }: AuthModal
                     {displayName}
                   </span>
                   <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 bg-surface-secondary border border-border-subtle text-text-secondary rounded shrink-0">
-                    {customerType === 'wholesale' ? 'Toptan Müşteri' : 'Bireysel'}
+                    {isAdmin ? 'Yönetici' : customerType === 'wholesale' ? 'Toptan Müşteri' : 'Bireysel'}
                   </span>
                 </div>
                 <p className="text-xs text-text-secondary truncate mt-0.5 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
-                  <span className="truncate">{email || 'Kullanıcı Hesabı'}</span>
+                  <span className="truncate">{email || (isAdmin ? 'admin@vazostudio.com' : 'Kullanıcı Hesabı')}</span>
                 </p>
               </div>
             </div>
 
             {/* Quick Actions List */}
             <div className="space-y-2 text-xs">
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={onClose}
+                  className="w-full flex items-center justify-between p-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 border border-amber-500/30 transition-colors font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-amber-700" />
+                    <span>Yönetim Paneline Git</span>
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-700" />
+                </Link>
+              )}
+
               <Link
                 to="/account"
                 onClick={onClose}

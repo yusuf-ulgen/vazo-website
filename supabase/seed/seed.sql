@@ -233,6 +233,8 @@ VALUES
 DO $$
 DECLARE
     v_admin_id UUID := 'a0000000-0000-0000-0000-000000000001';
+    v_email TEXT := 'admin@vazostudio.com';
+    v_password TEXT := 'VazoAdmin2026!';
 BEGIN
     INSERT INTO auth.users (
         id,
@@ -251,17 +253,64 @@ BEGIN
         '00000000-0000-0000-0000-000000000000',
         'authenticated',
         'authenticated',
-        'admin@vazostudio.com',
-        extensions.crypt('VazoAdmin2026!', extensions.gen_salt('bf')),
+        v_email,
+        extensions.crypt(v_password, extensions.gen_salt('bf')),
         timezone('utc', now()),
         '{"provider":"email","providers":["email"]}'::jsonb,
-        '{"full_name":"Sistem Yöneticisi"}'::jsonb,
+        '{"full_name":"Vazo Studio Yönetici","name":"Vazo Studio Yönetici"}'::jsonb,
         timezone('utc', now()),
         timezone('utc', now())
     ) ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
         encrypted_password = EXCLUDED.encrypted_password,
-        email_confirmed_at = EXCLUDED.email_confirmed_at;
+        email_confirmed_at = EXCLUDED.email_confirmed_at,
+        raw_app_meta_data = EXCLUDED.raw_app_meta_data,
+        raw_user_meta_data = EXCLUDED.raw_user_meta_data,
+        updated_at = timezone('utc', now());
+
+    DELETE FROM auth.identities WHERE user_id = v_admin_id OR (provider = 'email' AND identity_data->>'email' = v_email);
+    INSERT INTO auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_admin_id,
+        v_admin_id,
+        jsonb_build_object('sub', v_admin_id::text, 'email', v_email),
+        'email',
+        v_admin_id::text,
+        timezone('utc', now()),
+        timezone('utc', now()),
+        timezone('utc', now())
+    );
+
+    INSERT INTO public.customer_profiles (
+        user_id,
+        first_name,
+        last_name,
+        customer_type,
+        wholesale_approved_at,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_admin_id,
+        'Vazo Studio',
+        'Yönetici',
+        'wholesale',
+        timezone('utc', now()),
+        timezone('utc', now()),
+        timezone('utc', now())
+    ) ON CONFLICT (user_id) DO UPDATE SET
+        first_name = 'Vazo Studio',
+        last_name = 'Yönetici',
+        customer_type = 'wholesale',
+        wholesale_approved_at = timezone('utc', now()),
+        updated_at = timezone('utc', now());
 
     INSERT INTO public.admin_users (
         user_id,
@@ -277,5 +326,7 @@ BEGIN
         timezone('utc', now())
     ) ON CONFLICT (user_id) DO UPDATE SET
         role = 'super_admin',
-        active = true;
+        active = true,
+        updated_at = timezone('utc', now());
 END $$;
+

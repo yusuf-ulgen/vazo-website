@@ -248,8 +248,8 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     expect(mockSignInWithPassword).toHaveBeenCalledWith('zeynep@vazostudio.com', 'password123');
   });
 
-  it('handles email/password submission failure', async () => {
-    mockSignInWithPassword.mockRejectedValueOnce(new Error('Geçersiz şifre'));
+  it('handles email/password submission failure and translates Invalid login credentials to Turkish', async () => {
+    mockSignInWithPassword.mockRejectedValueOnce(new Error('Invalid login credentials'));
 
     vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue(getBaseAuthMock());
 
@@ -263,6 +263,39 @@ describe('AuthModal Component (Real Google OAuth Customer Sign-In)', () => {
     const loginSubmitBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
     fireEvent.click(loginSubmitBtn);
 
-    expect(await screen.findByText('Geçersiz şifre')).toBeInTheDocument();
+    expect(await screen.findByText('Geçersiz e-posta adresi veya şifre.')).toBeInTheDocument();
+  });
+
+  it('renders Yönetici badge and direct admin panel link when admin user is logged in', () => {
+    const handleClose = vi.fn();
+
+    vi.spyOn(customerAuthModule, 'useCustomerAuth').mockReturnValue({
+      ...getBaseAuthMock(),
+      user: { id: 'admin-1', email: 'admin@vazostudio.com' } as unknown as customerAuthModule.CustomerAuthState['user'],
+      profile: {
+        user_id: 'admin-1',
+        first_name: 'Vazo Studio',
+        last_name: 'Admin',
+        phone: null,
+        customer_type: 'wholesale',
+        wholesale_approved_at: '2026-08-28T00:00:00Z',
+        created_at: '2026-08-28T00:00:00Z',
+        updated_at: '2026-08-28T00:00:00Z',
+      },
+      isAuthenticated: true,
+      isAdmin: true,
+      displayName: 'Vazo Studio Admin',
+      email: 'admin@vazostudio.com',
+      customerType: 'wholesale',
+    });
+
+    renderWithRouter(<AuthModal isOpen={true} onClose={handleClose} />);
+
+    expect(screen.getByText('Yönetici')).toBeInTheDocument();
+    expect(screen.getByText('Yönetim Paneline Git')).toBeInTheDocument();
+
+    const adminLink = screen.getByText('Yönetim Paneline Git');
+    fireEvent.click(adminLink);
+    expect(handleClose).toHaveBeenCalled();
   });
 });

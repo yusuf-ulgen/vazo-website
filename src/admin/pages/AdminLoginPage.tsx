@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Shield, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useAdminAuth } from '../auth/AdminAuthContext';
 import { EMBEDDED_ADMIN_CREDENTIALS } from '../auth/admin-auth-service';
+import { translateAuthError } from '@/shared/utils/auth-error-translator';
 
 export function AdminLoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
@@ -40,11 +41,7 @@ export function AdminLoginPage() {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Yönetici girişi başarısız oldu. Lütfen bilgilerinizi kontrol edin.';
-      setErrorMsg(msg);
+      setErrorMsg(translateAuthError(err));
     } finally {
       setIsSubmitting(false);
     }
