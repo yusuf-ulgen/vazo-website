@@ -129,19 +129,12 @@ export const adminSettingsRepository = {
   async updateCommerceSettings(data: CommerceSettings): Promise<void> {
     const client = requireAdminSupabase();
 
-    const payload = {
-      free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
-      shipping_estimate_text: data.shippingEstimateText.trim(),
-      shipping_summary: data.shippingSummary.trim(),
-      returns_policy_text: data.returnsPolicyText.trim(),
-    };
-
-    const { error } = await client
-      .from('site_settings')
-      .upsert(
-        { key: 'commerce', value: payload, is_public: true, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
-      );
+    const { error } = await client.rpc('admin_update_commerce_settings', {
+      p_free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
+      p_shipping_estimate_text: data.shippingEstimateText.trim(),
+      p_shipping_summary: data.shippingSummary.trim(),
+      p_returns_policy_text: data.returnsPolicyText.trim(),
+    });
 
     if (error) {
       console.error('[adminSettingsRepository.updateCommerceSettings] Error:', error.message);

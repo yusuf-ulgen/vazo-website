@@ -56,17 +56,15 @@ serve(async (req: Request) => {
       );
     }
 
-    // RBAC: Verify admin privileges
-    const { data: isAdmin } = await supabase.rpc('is_admin', {}, { count: 'exact' }).catch(() => ({ data: false, error: null }));
-    
-    // Check customer_profiles role
-    const { data: profile } = await supabase
-      .from('customer_profiles')
-      .select('role')
+    // RBAC: Canonical Admin Authority verified against public.admin_users
+    const { data: adminRecord, error: adminErr } = await supabase
+      .from('admin_users')
+      .select('id, role, active')
       .eq('user_id', user.id)
+      .eq('active', true)
       .maybeSingle();
 
-    const isUserAdmin = profile?.role === 'admin' || profile?.role === 'super_admin' || Boolean(isAdmin);
+    const isUserAdmin = !adminErr && adminRecord && (adminRecord.role === 'admin' || adminRecord.role === 'super_admin');
 
     if (!isUserAdmin) {
       return new Response(
@@ -85,11 +83,18 @@ serve(async (req: Request) => {
       paytrMerchantSalt && paytrMerchantSalt.trim() !== ''
     );
 
-    const gmailUser = Deno.env.get('GMAIL_USER');
-    const gmailAppPassword = Deno.env.get('GMAIL_APP_PASSWORD');
+    // Actual Gmail OAuth secrets used by send-transactional-email
+    const gmailClientId = Deno.env.get('GMAIL_CLIENT_ID');
+    const gmailClientSecret = Deno.env.get('GMAIL_CLIENT_SECRET');
+    const gmailRefreshToken = Deno.env.get('GMAIL_REFRESH_TOKEN');
+    const gmailSenderEmail = Deno.env.get('GMAIL_SENDER_EMAIL');
+    const internalFunctionSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET');
     const hasGmailSecrets = Boolean(
-      gmailUser && gmailUser.trim() !== '' &&
-      gmailAppPassword && gmailAppPassword.trim() !== ''
+      gmailClientId && gmailClientId.trim() !== '' &&
+      gmailClientSecret && gmailClientSecret.trim() !== '' &&
+      gmailRefreshToken && gmailRefreshToken.trim() !== '' &&
+      gmailSenderEmail && gmailSenderEmail.trim() !== '' &&
+      internalFunctionSecret && internalFunctionSecret.trim() !== ''
     );
 
     const hasSupabaseOperational = Boolean(

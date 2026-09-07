@@ -233,6 +233,7 @@ export function createDefaultTestSupabaseClient() {
             shipping_estimate_text: DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingEstimateText,
             shipping_summary: DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingSummary,
             returns_policy_text: DEFAULT_PUBLIC_SITE_SETTINGS.commerce.returnsPolicyText,
+            checkout_enabled: false,
           },
           is_public: true,
         },

@@ -104,9 +104,9 @@ serve(async (req: Request) => {
       .single();
 
     const isCheckoutEnabled = Boolean(commerceSetting?.value?.checkout_enabled);
-    if (!isCheckoutEnabled && testMode !== '1') {
+    if (!isCheckoutEnabled) {
       return new Response(
-        JSON.stringify({ error: 'Ödeme altyapısı şu anda aktif değildir. Lütfen mağaza yönetimi ile iletişime geçiniz.' }),
+        JSON.stringify({ error: 'Ödeme ve sipariş sistemi şu anda kapalıdır.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

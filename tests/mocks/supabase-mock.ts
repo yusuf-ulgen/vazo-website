@@ -295,6 +295,70 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
           error: null,
         });
       }
+      if (fnName === 'admin_update_commerce_settings' && args) {
+        if (!state['site_settings']) state['site_settings'] = [];
+        let existing = state['site_settings'].find((s) => s.key === 'commerce');
+        if (!existing) {
+          existing = {
+            key: 'commerce',
+            value: {
+              free_shipping_threshold: 0,
+              shipping_estimate_text: '',
+              shipping_summary: '',
+              returns_policy_text: '',
+              checkout_enabled: false,
+            },
+            is_public: true,
+            updated_at: new Date().toISOString(),
+          };
+          state['site_settings'].push(existing);
+        }
+        const currentValue = (existing.value as Record<string, unknown>) || {};
+        existing.value = {
+          ...currentValue,
+          free_shipping_threshold: Number(args.p_free_shipping_threshold) || 0,
+          shipping_estimate_text: String(args.p_shipping_estimate_text || ''),
+          shipping_summary: String(args.p_shipping_summary || ''),
+          returns_policy_text: String(args.p_returns_policy_text || ''),
+        };
+        existing.updated_at = new Date().toISOString();
+        return Promise.resolve({ data: existing.value, error: null });
+      }
+      if (fnName === 'admin_enable_checkout' && args) {
+        if (!state['site_settings']) state['site_settings'] = [];
+        let existing = state['site_settings'].find((s) => s.key === 'commerce');
+        if (!existing) {
+          existing = {
+            key: 'commerce',
+            value: { checkout_enabled: Boolean(args.p_enabled) },
+            is_public: true,
+            updated_at: new Date().toISOString(),
+          };
+          state['site_settings'].push(existing);
+        } else {
+          existing.value = {
+            ...((existing.value as Record<string, unknown>) || {}),
+            checkout_enabled: Boolean(args.p_enabled),
+          };
+          existing.updated_at = new Date().toISOString();
+        }
+        return Promise.resolve({ data: { success: true, checkout_enabled: Boolean(args.p_enabled) }, error: null });
+      }
+      if (fnName === 'get_checkout_readiness') {
+        const commerce = (state['site_settings'] || []).find((s) => s.key === 'commerce');
+        const isEnabled = Boolean((commerce?.value as Record<string, unknown>)?.checkout_enabled);
+        return Promise.resolve({
+          data: {
+            seller_legal_complete: true,
+            checkout_enabled: isEnabled,
+            has_active_shipping: true,
+            paytr_secrets_present: true,
+            gmail_secrets_present: true,
+            seller_fields_summary: {},
+          },
+          error: null,
+        });
+      }
       return Promise.resolve({ data: true, error: null });
     }),
     functions: {

@@ -74,6 +74,21 @@ serve(async (req: Request) => {
     const currency = body.currency || 'TRY';
     const destinationCountry = (body.destination_country || 'TR').trim().toUpperCase();
 
+    // Kill Switch: Check if checkout is globally enabled
+    const { data: commerceSetting } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'commerce')
+      .single();
+
+    const isCheckoutEnabled = Boolean(commerceSetting?.value?.checkout_enabled);
+    if (!isCheckoutEnabled) {
+      return new Response(
+        JSON.stringify({ error: 'Ödeme ve sipariş sistemi şu anda kapalıdır.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Invoke authoritative quote calculator RPC
     const { data, error } = await supabase.rpc('calculate_checkout_quote', {
       p_customer_id: user.id,
