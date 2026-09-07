@@ -1,4 +1,4 @@
-import { getSupabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { requireAdminSupabase } from '@/admin/shared/api/require-admin-supabase';
 import {
   AdminOrderListQuery,
   AdminOrderListResponse,
@@ -12,79 +12,19 @@ import {
   OrderStatus,
   CurrencyCode,
 } from '../types';
-import { mockAdminOrders } from './admin-order-mocks';
-
-function requireLiveAdminDb(): void {
-  if (!isSupabaseConfigured) {
-    throw new Error(
-      'Supabase client is not configured. Live admin mode requires valid Supabase environment variables.'
-    );
-  }
-}
 
 export const adminOrderRepository = {
   /**
-   * Fetch paginated list of orders with filters
+   * Fetch paginated list of orders with filters from live Supabase
    */
   async getAdminOrders(query: AdminOrderListQuery = {}): Promise<AdminOrderListResponse> {
+    const supabase = requireAdminSupabase();
     const page = Math.max(1, query.page || 1);
     const pageSize = Math.max(1, Math.min(100, query.pageSize || 20));
 
-    if (isStorefrontMockEnabled) {
-      let filtered = [...mockAdminOrders];
-
-      if (query.status && query.status !== 'all') {
-        filtered = filtered.filter((o) => o.status === query.status);
-      }
-      if (query.channel && query.channel !== 'all') {
-        filtered = filtered.filter((o) => o.channel === query.channel);
-      }
-      if (query.search) {
-        const q = query.search.toLowerCase();
-        filtered = filtered.filter(
-          (o) =>
-            o.order_number.toLowerCase().includes(q) ||
-            o.customer_name.toLowerCase().includes(q) ||
-            o.customer_email.toLowerCase().includes(q)
-        );
-      }
-
-      const totalCount = filtered.length;
-      const totalPages = Math.ceil(totalCount / pageSize) || 1;
-      const start = (page - 1) * pageSize;
-      const paginated = filtered.slice(start, start + pageSize);
-
-      const summaries: AdminOrderSummary[] = paginated.map((o) => ({
-        id: o.id,
-        order_number: o.order_number,
-        customer_id: o.customer_id,
-        customer_name: o.customer_name,
-        customer_email: o.customer_email,
-        channel: o.channel,
-        status: o.status,
-        currency: o.currency,
-        total_minor: o.total_minor,
-        item_count: o.items.reduce((sum, item) => sum + item.quantity, 0),
-        payment_status: o.payments[0]?.status || (o.status === 'paid' ? 'paid' : 'initiated'),
-        shipping_carrier: o.shipping_carrier || null,
-        shipping_tracking_number: o.shipping_tracking_number || null,
-        created_at: o.created_at,
-        paid_at: o.paid_at || null,
-      }));
-
-      return {
-        orders: summaries,
-        total_count: totalCount,
-        page,
-        page_size: pageSize,
-        total_pages: totalPages,
-      };
-    }
-
-    const supabase = getSupabase();
     let dbQuery = supabase
       .from('orders')
-      .select('*, customer_profiles:customer_id(full_name, email, phone), order_items(id, quantity), payments(status)', {
+      .select('*, order_items(id, quantity), payments(status)', {
         count: 'exact',
       });
 
@@ -95,8 +35,13 @@ export const adminOrderRepository = {
       dbQuery = dbQuery.eq('channel', query.channel);
     }
     if (query.search) {
-      const q = `%${query.search.trim()}%`;
-      dbQuery = dbQuery.or(`order_number.ilike.${q}`);
+      // Sanitize search query to prevent PostgREST filter injection and syntax errors
+      const cleanSearch = query.search.trim().replace(/[,()"'\\;%]/g, '');
+      if (cleanSearch) {
+        dbQuery = dbQuery.or(
+          `order_number.ilike.%${cleanSearch}%,shipping_address->>recipient_name.ilike.%${cleanSearch}%,customer_legal_snapshot->>email.ilike.%${cleanSearch}%`
+        );
+      }
     }
 
     const start = (page - 1) * pageSize;
@@ -119,9 +64,9 @@ export const adminOrderRepository = {
         id: string;
         order_number: string;
         customer_id: string;
-        customer_profiles?: { full_name?: string; email?: string; phone?: string };
         customer_legal_snapshot?: Record<string, unknown>;
         shipping_address?: Record<string, unknown>;
+        billing_address?: Record<string, unknown>;
         channel: 'retail' | 'wholesale';
         status: OrderStatus;
         currency: CurrencyCode;
@@ -134,17 +79,26 @@ export const adminOrderRepository = {
         paid_at?: string | null;
       };
 
-      const profile = row.customer_profiles;
       const legalSnap = row.customer_legal_snapshot || {};
       const shipAddr = row.shipping_address || {};
+      const billAddr = row.billing_address || {};
 
+      // Build customer identity strictly from immutable order snapshots
       const customerName = String(
-        legalSnap.full_name ||
-        profile?.full_name ||
+        legalSnap.customer_name ||
         shipAddr.recipient_name ||
-        'Bilinmeyen Müşteri'
+        billAddr.recipient_name ||
+        legalSnap.full_name ||
+        'Müşteri'
       );
-      const customerEmail = String(legalSnap.email || profile?.email || '—');
+      const customerEmail = String(
+        legalSnap.customer_email ||
+        legalSnap.email ||
+        shipAddr.recipient_email ||
+        shipAddr.email ||
+        billAddr.email ||
+        '—'
+      );
 
       const items = Array.isArray(row.order_items) ? row.order_items : [];
       const itemCount = items.reduce((sum: number, it) => sum + (it.quantity || 1), 0);
@@ -181,21 +135,15 @@ export const adminOrderRepository = {
   },
 
   /**
-   * Fetch complete order detail for admin inspection
+   * Fetch complete order detail for admin inspection from live Supabase
    */
   async getAdminOrderById(orderId: string): Promise<AdminOrderDetail | null> {
-    if (isStorefrontMockEnabled) {
-      const found = mockAdminOrders.find((o) => o.id === orderId || o.order_number === orderId);
-      return found ? { ...found } : null;
-    }
+    const supabase = requireAdminSupabase();
 
-    requireLiveAdminDb();
-    const supabase = getSupabase();
     const { data: order, error } = await supabase
       .from('orders')
       .select(`
         *,
-        customer_profiles:customer_id(full_name, email, phone),
         order_items(*),
         payments(*),
         refunds(*),
@@ -213,24 +161,37 @@ export const adminOrderRepository = {
     if (!order) return null;
 
     const row = order as unknown as AdminOrderDetail & {
-      customer_profiles?: { full_name?: string; email?: string; phone?: string };
       order_items?: AdminOrderDetail['items'];
       order_status_history?: AdminOrderDetail['status_history'];
       order_legal_acceptances?: AdminOrderDetail['legal_acceptances'];
     };
 
-    const profile = row.customer_profiles;
     const legalSnap = (row.customer_legal_snapshot as Record<string, unknown>) || {};
     const shipAddr = (row.shipping_address as unknown as Record<string, unknown>) || {};
+    const billAddr = (row.billing_address as unknown as Record<string, unknown>) || {};
 
+    // Build customer identity strictly from immutable order snapshots
     const customerName = String(
-      legalSnap.full_name ||
-      profile?.full_name ||
+      legalSnap.customer_name ||
       shipAddr.recipient_name ||
+      billAddr.recipient_name ||
+      legalSnap.full_name ||
       'Müşteri'
     );
-    const customerEmail = String(legalSnap.email || profile?.email || '—');
-    const customerPhone = legalSnap.phone ? String(legalSnap.phone) : profile?.phone ? String(profile.phone) : shipAddr.phone ? String(shipAddr.phone) : undefined;
+    const customerEmail = String(
+      legalSnap.customer_email ||
+      legalSnap.email ||
+      shipAddr.recipient_email ||
+      shipAddr.email ||
+      billAddr.email ||
+      '—'
+    );
+    const customerPhone =
+      (legalSnap.customer_phone ? String(legalSnap.customer_phone) : null) ||
+      (legalSnap.phone ? String(legalSnap.phone) : null) ||
+      (shipAddr.phone ? String(shipAddr.phone) : null) ||
+      (billAddr.phone ? String(billAddr.phone) : null) ||
+      undefined;
 
     return {
       id: row.id,
@@ -278,36 +239,8 @@ export const adminOrderRepository = {
     orderId: string,
     request: OrderFulfillmentRequest
   ): Promise<{ success: boolean; from_status: string; to_status: string }> {
-    if (isStorefrontMockEnabled) {
-      const order = mockAdminOrders.find((o) => o.id === orderId);
-      if (!order) throw new Error('Sipariş bulunamadı.');
+    const supabase = requireAdminSupabase();
 
-      const fromStatus = order.status;
-      order.status = request.target_status;
-      if (request.target_status === 'shipped') {
-        order.shipping_carrier = request.carrier || 'Kargo';
-        order.shipping_tracking_number = request.tracking_number || 'TRK123';
-        order.shipping_tracking_url = request.tracking_url || null;
-        order.shipped_at = new Date().toISOString();
-      } else if (request.target_status === 'delivered') {
-        order.delivered_at = new Date().toISOString();
-      }
-      order.status_history.push({
-        id: `hist-${Date.now()}`,
-        order_id: orderId,
-        from_status: fromStatus,
-        to_status: request.target_status,
-        actor_type: 'admin',
-        actor_id: 'admin-mock',
-        note: request.note || `Durum güncellendi: ${request.target_status}`,
-        created_at: new Date().toISOString(),
-      });
-
-      return { success: true, from_status: fromStatus, to_status: request.target_status };
-    }
-
-    requireLiveAdminDb();
-    const supabase = getSupabase();
     const { data, error } = await supabase.rpc('admin_update_order_fulfillment', {
       p_order_id: orderId,
       p_target_status: request.target_status,
@@ -332,34 +265,8 @@ export const adminOrderRepository = {
     orderId: string,
     request: AdminCancelOrderRequest
   ): Promise<{ success: boolean; from_status: string; to_status: string }> {
-    if (isStorefrontMockEnabled) {
-      const order = mockAdminOrders.find((o) => o.id === orderId);
-      if (!order) throw new Error('Sipariş bulunamadı.');
+    const supabase = requireAdminSupabase();
 
-      if (['paid', 'shipped', 'delivered'].includes(order.status)) {
-        throw new Error('Ödenmiş sipariş doğrudan iptal edilemez. Lütfen İade (Refund) sürecini kullanın.');
-      }
-
-      const fromStatus = order.status;
-      order.status = 'cancelled';
-      order.cancellation_reason = request.reason;
-      order.cancelled_at = new Date().toISOString();
-      order.status_history.push({
-        id: `hist-${Date.now()}`,
-        order_id: orderId,
-        from_status: fromStatus,
-        to_status: 'cancelled',
-        actor_type: 'admin',
-        actor_id: 'admin-mock',
-        note: `İptal edildi: ${request.reason}`,
-        created_at: new Date().toISOString(),
-      });
-
-      return { success: true, from_status: fromStatus, to_status: 'cancelled' };
-    }
-
-    requireLiveAdminDb();
-    const supabase = getSupabase();
     const { data, error } = await supabase.rpc('admin_cancel_order', {
       p_order_id: orderId,
       p_reason: request.reason,
@@ -374,34 +281,15 @@ export const adminOrderRepository = {
   },
 
   /**
-   * Fetch list of PayTR payment attempts and records
+   * Fetch list of PayTR payment attempts and records from live Supabase
    */
   async getAdminPayments(
     query: { search?: string; status?: string; page?: number; pageSize?: number } = {}
   ): Promise<{ payments: PaymentRecord[]; total_count: number }> {
+    const supabase = requireAdminSupabase();
     const page = Math.max(1, query.page || 1);
     const pageSize = Math.max(1, Math.min(100, query.pageSize || 20));
 
-    if (isStorefrontMockEnabled) {
-      const allPayments: PaymentRecord[] = mockAdminOrders.flatMap((o) => o.payments);
-      let filtered = [...allPayments];
-
-      if (query.status && query.status !== 'all') {
-        filtered = filtered.filter((p) => p.status === query.status);
-      }
-      if (query.search) {
-        const q = query.search.toLowerCase();
-        filtered = filtered.filter((p) => p.merchant_oid.toLowerCase().includes(q));
-      }
-
-      return {
-        payments: filtered.slice((page - 1) * pageSize, page * pageSize),
-        total_count: filtered.length,
-      };
-    }
-
-    requireLiveAdminDb();
-    const supabase = getSupabase();
     let dbQuery = supabase
       .from('payments')
       .select('*, orders:order_id(order_number, customer_legal_snapshot, shipping_address)', {
@@ -412,8 +300,11 @@ export const adminOrderRepository = {
       dbQuery = dbQuery.eq('status', query.status);
     }
     if (query.search) {
-      const q = `%${query.search.trim()}%`;
-      dbQuery = dbQuery.ilike('merchant_oid', q);
+      // Sanitize search query to prevent PostgREST filter injection
+      const cleanSearch = query.search.trim().replace(/[,()"'\\;%]/g, '');
+      if (cleanSearch) {
+        dbQuery = dbQuery.ilike('merchant_oid', `%${cleanSearch}%`);
+      }
     }
 
     const start = (page - 1) * pageSize;
@@ -435,7 +326,7 @@ export const adminOrderRepository = {
         orders?: {
           order_number?: string;
           customer_legal_snapshot?: Record<string, unknown>;
-          shipping_address?: { recipient_email?: string };
+          shipping_address?: { recipient_email?: string; email?: string };
         };
         provider: 'paytr';
         merchant_oid: string;
@@ -455,7 +346,7 @@ export const adminOrderRepository = {
       const order = row.orders;
       const legalSnap = (order?.customer_legal_snapshot as Record<string, string>) || {};
       const shipAddr = order?.shipping_address || {};
-      const customerEmail = legalSnap.email || shipAddr.recipient_email || '—';
+      const customerEmail = legalSnap.customer_email || legalSnap.email || shipAddr.recipient_email || shipAddr.email || '—';
 
       return {
         id: row.id,
@@ -488,54 +379,8 @@ export const adminOrderRepository = {
    * Dispatch PayTR refund request through paytr-refund Edge Function
    */
   async processPayTRRefund(request: AdminRefundRequest): Promise<AdminRefundResponse> {
-    if (isStorefrontMockEnabled) {
-      const order = mockAdminOrders.find((o) => o.payments.some((p) => p.id === request.payment_id));
-      if (!order) throw new Error('Ödeme kaydı bulunamadı.');
+    const supabase = requireAdminSupabase();
 
-      const payment = order.payments.find((p) => p.id === request.payment_id)!;
-      const remaining = payment.expected_amount_minor - payment.refunded_amount_minor;
-
-      if (request.refund_amount_minor > remaining) {
-        throw new Error('İade tutarı kalan iade edilebilir bakiyeyi aşamaz.');
-      }
-
-      payment.refunded_amount_minor += request.refund_amount_minor;
-      const newStatus: OrderStatus =
-        payment.refunded_amount_minor >= payment.expected_amount_minor ? 'refunded' : 'partially_refunded';
-      payment.status = newStatus;
-      order.status = newStatus;
-
-      const refRecord = {
-        id: `ref-${Date.now()}`,
-        order_id: order.id,
-        payment_id: payment.id,
-        request_id: request.idempotency_key || `req-${Date.now()}`,
-        reference_no: `RF${Date.now()}`,
-        amount_minor: request.refund_amount_minor,
-        currency: payment.currency,
-        status: 'succeeded' as const,
-        requested_by: 'admin-mock',
-        safe_reason: request.reason || null,
-        provider_reference: `mock_paytr_ret_${Date.now()}`,
-        provider_error_code: null,
-        provider_error_message: null,
-        requested_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-      };
-      order.refunds.push(refRecord);
-
-      return {
-        success: true,
-        refund_id: refRecord.id,
-        reference_no: refRecord.reference_no,
-        provider_reference: refRecord.provider_reference,
-        status: 'succeeded',
-      };
-    }
-
-    requireLiveAdminDb();
-    const supabase = getSupabase();
     const { data, error } = await supabase.functions.invoke('paytr-refund', {
       body: {
         payment_id: request.payment_id,
@@ -550,8 +395,8 @@ export const adminOrderRepository = {
       throw new Error(error.message || 'İade işlemi başlatılamadı.');
     }
 
-    if (!data.success) {
-      throw new Error(data.error || 'İade işlemi PayTR tarafından reddedildi.');
+    if (!data || !data.success) {
+      throw new Error((data && data.error) || 'İade işlemi PayTR tarafından reddedildi.');
     }
 
     return data;

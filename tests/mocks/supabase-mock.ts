@@ -190,7 +190,14 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
           return clauses.some(([col, _op, pattern]) => {
             if (!col || !pattern) return false;
             const cleanPattern = pattern.replace(/%/g, '').toLowerCase();
-            const val = String(item[col] || '').toLowerCase();
+            let val = '';
+            if (col.includes('->>')) {
+              const [parent, child] = col.split('->>');
+              const parentObj = item[parent] as Record<string, unknown> | undefined;
+              val = String(parentObj?.[child] || '').toLowerCase();
+            } else {
+              val = String(item[col] || '').toLowerCase();
+            }
             return val.includes(cleanPattern);
           });
         });
@@ -243,11 +250,93 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
           safe_metadata: args.p_safe_metadata || args.p_metadata || null,
           created_at: new Date().toISOString(),
         });
+        return Promise.resolve({ data: true, error: null });
+      }
+      if (fnName === 'admin_update_order_fulfillment' && args) {
+        const orderId = args.p_order_id as string;
+        const targetOrder = (state['orders'] || []).find((o) => o.id === orderId);
+        if (!targetOrder) {
+          return Promise.resolve({ data: null, error: { message: `Sipariş bulunamadı: ${orderId}` } });
+        }
+        const fromStatus = targetOrder.status as string;
+        const toStatus = args.p_target_status as string;
+        targetOrder.status = toStatus;
+        if (toStatus === 'shipped') {
+          targetOrder.shipping_carrier = args.p_carrier || 'Kargo';
+          targetOrder.shipping_tracking_number = args.p_tracking_number || 'TRK123';
+          targetOrder.shipping_tracking_url = args.p_tracking_url || null;
+          targetOrder.shipped_at = new Date().toISOString();
+        } else if (toStatus === 'delivered') {
+          targetOrder.delivered_at = new Date().toISOString();
+        }
+        return Promise.resolve({
+          data: { success: true, from_status: fromStatus, to_status: toStatus },
+          error: null,
+        });
+      }
+      if (fnName === 'admin_cancel_order' && args) {
+        const orderId = args.p_order_id as string;
+        const targetOrder = (state['orders'] || []).find((o) => o.id === orderId);
+        if (!targetOrder) {
+          return Promise.resolve({ data: null, error: { message: `Sipariş bulunamadı: ${orderId}` } });
+        }
+        if (['paid', 'shipped', 'delivered', 'partially_refunded', 'refunded'].includes(targetOrder.status as string)) {
+          return Promise.resolve({
+            data: null,
+            error: { message: 'Ödenmiş sipariş doğrudan iptal edilemez. Lütfen İade (Refund) sürecini kullanın.' },
+          });
+        }
+        const fromStatus = targetOrder.status as string;
+        targetOrder.status = 'cancelled';
+        targetOrder.cancellation_reason = args.p_reason as string;
+        targetOrder.cancelled_at = new Date().toISOString();
+        return Promise.resolve({
+          data: { success: true, from_status: fromStatus, to_status: 'cancelled' },
+          error: null,
+        });
       }
       return Promise.resolve({ data: true, error: null });
     }),
     functions: {
-      invoke: vi.fn().mockResolvedValue({ data: { success: true }, error: null }),
+      invoke: vi.fn().mockImplementation((fnName: string, options?: { body?: Record<string, unknown> }) => {
+        if (fnName === 'paytr-refund') {
+          const body = options?.body || {};
+          const paymentId = body.payment_id as string;
+          const refundAmount = (body.refund_amount_minor as number) || 0;
+          const payments = state['payments'] || [];
+          const payment = payments.find((p) => p.id === paymentId);
+          if (!payment) {
+            return Promise.resolve({ data: null, error: { message: 'Ödeme kaydı bulunamadı.' } });
+          }
+          const expected = (payment.expected_amount_minor as number) || 0;
+          const refunded = (payment.refunded_amount_minor as number) || 0;
+          const remaining = expected - refunded;
+          if (refundAmount > remaining) {
+            return Promise.resolve({
+              data: { success: false, error: 'İade tutarı kalan iade edilebilir bakiyeyi aşamaz.' },
+              error: null,
+            });
+          }
+          payment.refunded_amount_minor = refunded + refundAmount;
+          const newStatus = payment.refunded_amount_minor >= expected ? 'refunded' : 'partially_refunded';
+          payment.status = newStatus;
+          const orders = state['orders'] || [];
+          const order = orders.find((o) => o.id === payment.order_id);
+          if (order) {
+            order.status = newStatus;
+          }
+          return Promise.resolve({
+            data: {
+              success: true,
+              refund_id: `ref-${Date.now()}`,
+              reference_no: `RF${Date.now()}`,
+              status: 'succeeded',
+            },
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: { success: true }, error: null });
+      }),
     },
     auth: {
       signInWithPassword: vi.fn().mockResolvedValue({

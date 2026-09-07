@@ -4,11 +4,10 @@ import { Routes, Route } from 'react-router-dom';
 import { AdminOrderDetailPage } from '@/admin/orders/pages/AdminOrderDetailPage';
 import { renderWithRouter } from 'tests/utils/render-utils';
 import { adminOrderRepository } from '@/entities/order/api/admin-order-repository';
-import { mockAdminOrders } from '@/entities/order/api/admin-order-mocks';
 
 describe('AdminOrderDetailPage Component (Phase 3.7)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   const renderComponent = (orderId = 'ord-test-001') => {
@@ -138,13 +137,9 @@ describe('AdminOrderDetailPage Component (Phase 3.7)', () => {
   it('handles cancellation flow for unpaid order', async () => {
     const cancelSpy = vi.spyOn(adminOrderRepository, 'cancelOrder');
 
-    // Make mock order unpaid
-    const target = mockAdminOrders.find((o) => o.id === 'ord-test-001')!;
-    target.status = 'pending_payment';
+    renderComponent('ord-test-003');
 
-    renderComponent('ord-test-001');
-
-    expect(await screen.findByText('VZ-20260829-001')).toBeInTheDocument();
+    expect(await screen.findByText('VZ-20260829-003')).toBeInTheDocument();
 
     const cancelBtn = screen.getByRole('button', { name: /Siparişi İptal Et/ });
     fireEvent.click(cancelBtn);
@@ -158,7 +153,7 @@ describe('AdminOrderDetailPage Component (Phase 3.7)', () => {
     fireEvent.click(confirmCancelBtn);
 
     expect(cancelSpy).toHaveBeenCalledWith(
-      'ord-test-001',
+      'ord-test-003',
       expect.objectContaining({ reason: 'Müşteri yanıt vermedi' })
     );
   });

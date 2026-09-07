@@ -6,7 +6,7 @@ import { adminOrderRepository } from '@/entities/order/api/admin-order-repositor
 
 describe('AdminOrdersPage Component (Phase 3.7)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders page header and order list table headers', async () => {

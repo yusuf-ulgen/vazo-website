@@ -277,6 +277,112 @@ async function mockAdminEnvironment(
       ]),
     });
   });
+
+  await page.route('**/rest/v1/orders*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-range': '0-0/1' },
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'ord-00000000-0000-0000-0000-000000000001',
+          order_number: 'VZ-20260829-001',
+          customer_id: 'c0000000-0000-0000-0000-000000000001',
+          channel: 'retail',
+          status: 'paid',
+          currency: 'TRY',
+          tax_included: true,
+          subtotal_minor: 450000,
+          shipping_minor: 15000,
+          discount_minor: 0,
+          tax_included_minor: 78750,
+          total_minor: 465000,
+          shipping_address: {
+            recipient_name: 'Ayşe Yılmaz',
+            phone: '5551234567',
+            address_line1: 'Karaköy Kemankeş Mah. No: 42',
+            city: 'İstanbul',
+            country_name: 'Türkiye',
+          },
+          billing_address: {
+            recipient_name: 'Ayşe Yılmaz',
+          },
+          customer_legal_snapshot: {
+            customer_id: 'c0000000-0000-0000-0000-000000000001',
+            email: 'ayse@example.com',
+            customer_name: 'Ayşe Yılmaz',
+          },
+          order_items: [
+            {
+              id: 'it-1',
+              sku_snapshot: 'VZ-TERRA-S',
+              product_name_snapshot: 'Terra Seramik Vazo',
+              variant_name_snapshot: 'Terracotta / Küçük',
+              unit_price_minor: 450000,
+              quantity: 1,
+              line_total_minor: 450000,
+              currency: 'TRY',
+            },
+          ],
+          payments: [
+            {
+              id: 'pay-001',
+              provider: 'paytr',
+              merchant_oid: 'VZ20260829001TX1',
+              status: 'paid',
+              expected_amount_minor: 465000,
+              refunded_amount_minor: 0,
+              currency: 'TRY',
+              test_mode: true,
+            },
+          ],
+          refunds: [],
+          order_status_history: [
+            {
+              id: 'hist-1',
+              order_id: 'ord-00000000-0000-0000-0000-000000000001',
+              from_status: null,
+              to_status: 'paid',
+              actor_type: 'system',
+              note: 'Ödeme alındı',
+              created_at: new Date().toISOString(),
+            },
+          ],
+          order_legal_acceptances: [],
+          created_at: new Date().toISOString(),
+          paid_at: new Date().toISOString(),
+        },
+      ]),
+    });
+  });
+
+  await page.route('**/rest/v1/payments*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: { 'content-range': '0-0/1' },
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          id: 'pay-00000000-0000-0000-0000-000000000001',
+          order_id: 'ord-00000000-0000-0000-0000-000000000001',
+          provider: 'paytr',
+          merchant_oid: 'VZ20260829001TX1',
+          status: 'paid',
+          expected_amount_minor: 465000,
+          refunded_amount_minor: 0,
+          currency: 'TRY',
+          test_mode: true,
+          orders: {
+            order_number: 'VZ-20260829-001',
+            customer_legal_snapshot: { email: 'ayse@example.com' },
+            shipping_address: { recipient_name: 'Ayşe Yılmaz' },
+          },
+          created_at: new Date().toISOString(),
+          paid_at: new Date().toISOString(),
+        },
+      ]),
+    });
+  });
 }
 
 async function loginAsAdmin(page: Page) {
@@ -401,7 +507,33 @@ test.describe('Real Admin Panel E2E Workflows & CRUD Operations', () => {
     await expect(page.locator('body')).toContainText('admin@vazostudio.com');
   });
 
-  test('11. Admin Logout clears session and redirects to login', async ({ page }) => {
+  test('11. Admin Orders: lists real orders and navigates to order detail with zero mark-paid button', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/admin/orders');
+    await expect(page.locator('body')).toContainText('Sipariş Yönetimi');
+    await expect(page.locator('body')).toContainText('VZ-20260829-001');
+    await expect(page.locator('body')).toContainText('Ayşe Yılmaz');
+
+    // Click into order detail
+    await page.click('text=VZ-20260829-001');
+    await expect(page).toHaveURL(/\/admin\/orders\/ord-00000000-0000-0000-0000-000000000001/);
+    await expect(page.locator('body')).toContainText('Terra Seramik Vazo');
+    await expect(page.locator('body')).toContainText('Sevkiyat & Gönderi Yönetimi');
+
+    // Confirm that no generic "mark paid" button exists
+    const markPaidBtn = page.getByRole('button', { name: /Ödendi Olarak İşaretle|Mark Paid/i });
+    await expect(markPaidBtn).toHaveCount(0);
+  });
+
+  test('12. Admin Payments: lists PayTR records with merchant OID and test badge', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/admin/payments');
+    await expect(page.locator('body')).toContainText('Ödemeler & İadeler (PayTR)');
+    await expect(page.locator('body')).toContainText('VZ20260829001TX1');
+    await expect(page.locator('body')).toContainText('TEST');
+  });
+
+  test('13. Admin Logout clears session and redirects to login', async ({ page }) => {
     await loginAsAdmin(page);
     await page.goto('/admin');
     await expect(page).toHaveURL(/\/admin$/);

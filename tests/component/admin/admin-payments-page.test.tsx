@@ -6,7 +6,7 @@ import { adminOrderRepository } from '@/entities/order/api/admin-order-repositor
 
 describe('AdminPaymentsPage Component (Phase 3.7)', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('renders payments table, merchant OID, and test badge', async () => {

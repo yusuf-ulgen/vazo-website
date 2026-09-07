@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { adminOrderRepository } from '@/entities/order/api/admin-order-repository';
-import { mockAdminOrders } from '@/entities/order/api/admin-order-mocks';
 
 describe('adminOrderRepository Unit Tests (Phase 3.7)', () => {
   beforeEach(() => {
@@ -108,18 +107,16 @@ describe('adminOrderRepository Unit Tests (Phase 3.7)', () => {
     });
 
     it('cancels unpaid order successfully', async () => {
-      // Temporarily mark order as pending_payment for cancellation test
-      const targetOrder = mockAdminOrders.find((o) => o.id === 'ord-test-001')!;
-      targetOrder.status = 'pending_payment';
-
-      const res = await adminOrderRepository.cancelOrder('ord-test-001', {
+      const res = await adminOrderRepository.cancelOrder('ord-test-003', {
         reason: 'Zaman aşımı',
       });
 
       expect(res.success).toBe(true);
       expect(res.to_status).toBe('cancelled');
-      expect(targetOrder.status).toBe('cancelled');
-      expect(targetOrder.cancellation_reason).toBe('Zaman aşımı');
+
+      const updated = await adminOrderRepository.getAdminOrderById('ord-test-003');
+      expect(updated?.status).toBe('cancelled');
+      expect(updated?.cancellation_reason).toBe('Zaman aşımı');
     });
 
     it('throws error when order to cancel is not found', async () => {

@@ -18,6 +18,7 @@ import { mockMenuGroups, mockMenuItems } from './mocks/navigation-mock';
 import { DEFAULT_PUBLIC_SITE_SETTINGS } from '@/entities/settings/types';
 import { mockCategories } from '@/entities/category/api/category-repository';
 import { mockCollections } from '@/entities/collection/api/collection-repository';
+import { mockAdminOrders } from '@/entities/order/api/admin-order-mocks';
 
 
 
@@ -245,6 +246,75 @@ export function createDefaultTestSupabaseClient() {
           is_public: true,
         },
       ],
+      error: null,
+    },
+    orders: {
+      data: mockAdminOrders.map((o) => ({
+        id: o.id,
+        order_number: o.order_number,
+        customer_id: o.customer_id,
+        channel: o.channel,
+        status: o.status,
+        currency: o.currency,
+        tax_included: o.tax_included,
+        subtotal_minor: o.subtotal_minor,
+        shipping_minor: o.shipping_minor,
+        discount_minor: o.discount_minor,
+        tax_included_minor: o.tax_included_minor,
+        total_minor: o.total_minor,
+        shipping_address: o.shipping_address,
+        billing_address: o.billing_address,
+        customer_legal_snapshot: o.customer_legal_snapshot || {
+          customer_id: o.customer_id,
+          email: o.customer_email,
+          customer_name: o.customer_name,
+        },
+        shipping_carrier: o.shipping_carrier,
+        shipping_tracking_number: o.shipping_tracking_number,
+        shipping_tracking_url: o.shipping_tracking_url,
+        cancellation_reason: o.cancellation_reason,
+        admin_notes: o.admin_notes,
+        created_at: o.created_at,
+        updated_at: o.updated_at,
+        paid_at: o.paid_at,
+        cancelled_at: o.cancelled_at,
+        shipped_at: o.shipped_at,
+        delivered_at: o.delivered_at,
+        order_items: o.items,
+        payments: o.payments,
+        refunds: o.refunds,
+        order_status_history: o.status_history,
+        order_legal_acceptances: o.legal_acceptances,
+      })),
+      error: null,
+    },
+    order_items: {
+      data: mockAdminOrders.flatMap((o) => o.items),
+      error: null,
+    },
+    payments: {
+      data: mockAdminOrders.flatMap((o) =>
+        o.payments.map((p) => ({
+          ...p,
+          orders: {
+            order_number: o.order_number,
+            customer_legal_snapshot: { email: o.customer_email },
+            shipping_address: o.shipping_address,
+          },
+        }))
+      ),
+      error: null,
+    },
+    refunds: {
+      data: mockAdminOrders.flatMap((o) => o.refunds),
+      error: null,
+    },
+    order_status_history: {
+      data: mockAdminOrders.flatMap((o) => o.status_history),
+      error: null,
+    },
+    order_legal_acceptances: {
+      data: mockAdminOrders.flatMap((o) => o.legal_acceptances),
       error: null,
     },
   };
