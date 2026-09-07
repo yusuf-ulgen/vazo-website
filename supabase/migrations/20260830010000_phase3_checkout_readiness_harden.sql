@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- Migration: 20260830010000_phase3_checkout_readiness_harden.sql
 -- Description: Phase 3.15 — Checkout State Atomicity, Kill Switch & Readiness Hardening
 -- Author: Yusuf Ulgen / Vazo Platform Engineering
@@ -82,7 +82,7 @@ AS $$
 DECLARE
     v_checkout_enabled BOOLEAN;
     v_subtotal_minor BIGINT := 0;
-    v_shipping_res JSONB;
+    v_shipping_res RECORD;
     v_shipping_minor BIGINT := 0;
     v_total_minor BIGINT := 0;
     v_tax_included_minor BIGINT := 0;
@@ -215,17 +215,19 @@ BEGIN
     END LOOP;
 
     -- 5. Calculate Server-Authoritative Shipping
-    v_shipping_res := public.calculate_shipping_rate(
+    SELECT * INTO v_shipping_res
+    FROM public.resolve_shipping_rate(
         p_destination_country,
+        p_channel,
         v_subtotal_minor,
-        p_items
+        p_currency
     );
 
-    IF (v_shipping_res->>'is_available')::BOOLEAN = false THEN
+    IF NOT FOUND OR NOT COALESCE(v_shipping_res.supported, false) THEN
         RAISE EXCEPTION 'Belirtilen teslimat adresi için aktif kargo seçeneği bulunamadı.';
     END IF;
 
-    v_shipping_minor := (v_shipping_res->>'rate_minor')::BIGINT;
+    v_shipping_minor := COALESCE(v_shipping_res.shipping_minor, 0);
     v_total_minor := v_subtotal_minor + v_shipping_minor;
     v_tax_included_minor := ROUND(v_subtotal_minor - (v_subtotal_minor / 1.20));
 
@@ -238,7 +240,16 @@ BEGIN
         'total_minor', v_total_minor,
         'tax_included_minor', v_tax_included_minor,
         'items', v_quote_items,
-        'shipping_option', v_shipping_res
+        'shipping_option', jsonb_build_object(
+            'zone_id', v_shipping_res.zone_id,
+            'zone_name', v_shipping_res.zone_name,
+            'rate_id', v_shipping_res.rate_id,
+            'rate_name', v_shipping_res.rate_name,
+            'shipping_minor', v_shipping_minor,
+            'free_shipping_applied', v_shipping_res.free_shipping_applied,
+            'estimated_delivery_text', v_shipping_res.estimated_delivery_text,
+            'is_available', v_shipping_res.supported
+        )
     );
 END;
 $$;
