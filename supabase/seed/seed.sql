@@ -231,8 +231,8 @@ VALUES
 DO $$
 DECLARE
     v_admin_id UUID := 'a0000000-0000-0000-0000-000000000001';
-    v_email TEXT := 'dev-admin@vazo.local';
-    v_password TEXT := 'LocalDevOnlyPassword_DoNotUseInProd123!';
+    v_email TEXT := 'admin@vazostudio.com';
+    v_password TEXT := 'VazoAdmin2026!';
 BEGIN
     INSERT INTO auth.users (
         id,

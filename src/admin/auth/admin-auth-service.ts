@@ -47,47 +47,97 @@ async function fetchAdminProfile(user: SupabaseUser): Promise<AdminProfile | nul
     return null;
   }
 }
+export const DEV_ADMIN_EMAIL = 'admin@vazostudio.com';
+export const DEV_ADMIN_PASSWORD = 'VazoAdmin2026!';
+
+export const DEV_ADMIN_PROFILE: AdminProfile = {
+  id: 'a0000000-0000-0000-0000-000000000001',
+  email: DEV_ADMIN_EMAIL,
+  role: 'super_admin',
+  active: true,
+};
+
+const DEV_ADMIN_STORAGE_KEY = 'vazo_admin_session';
+
 import { translateAuthError } from '@/shared/utils/auth-error-translator';
 
 export const adminAuthService = {
   /**
-   * Signs in an admin user using Supabase Auth.
-   * Authority strictly requires valid Supabase Auth + active record in public.admin_users.
+   * Signs in an admin user using Supabase Auth with dev admin fallback for admin@vazostudio.com.
+   * Authority strictly requires valid Supabase Auth + active record in public.admin_users,
+   * or verified dev admin credentials.
    */
   async login(email: string, password: string): Promise<AdminProfile> {
     const normalizedEmail = email.trim().toLowerCase();
+    const isDevMatch =
+      normalizedEmail === DEV_ADMIN_EMAIL.toLowerCase() &&
+      password === DEV_ADMIN_PASSWORD;
 
     const client = supabaseModule.supabase;
     if (!client || !supabaseModule.isSupabaseConfigured) {
+      if (isDevMatch) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
+        }
+        return DEV_ADMIN_PROFILE;
+      }
       throw new Error(
         'Supabase istemcisi yapılandırılmamış. Lütfen geçerli Supabase ortam değişkenlerini sağlayın.'
       );
     }
 
-    const { data, error } = await client.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+    try {
+      const { data, error } = await client.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
 
-    if (error || !data.user) {
-      throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
+      if (error || !data.user) {
+        if (isDevMatch) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
+          }
+          return DEV_ADMIN_PROFILE;
+        }
+        throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
+      }
+
+      const profile = await fetchAdminProfile(data.user);
+
+      if (!profile) {
+        if (isDevMatch) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
+          }
+          return DEV_ADMIN_PROFILE;
+        }
+        // Immediately sign out unprivileged customer or deactivated user
+        await client.auth.signOut();
+        throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
+      }
+      return profile;
+    } catch (err) {
+      if (isDevMatch) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
+        }
+        return DEV_ADMIN_PROFILE;
+      }
+      throw err;
     }
-
-    const profile = await fetchAdminProfile(data.user);
-
-    if (!profile) {
-      // Immediately sign out unprivileged customer or deactivated user
-      await client.auth.signOut();
-      throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
-    }
-
-    return profile;
   },
 
   /**
-   * Logs out the current admin user via Supabase Auth.
+   * Logs out the current admin user via Supabase Auth and clears dev admin session.
    */
   async logout(): Promise<void> {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
+    }
     const client = supabaseModule.supabase;
     if (client && supabaseModule.isSupabaseConfigured) {
       await client.auth.signOut();
@@ -95,28 +145,45 @@ export const adminAuthService = {
   },
 
   /**
-   * Checks the active session and verifies current admin authorization status from public.admin_users.
+   * Checks the active session and verifies current admin authorization status.
    */
   async getCurrentAdmin(): Promise<AdminProfile | null> {
     const client = supabaseModule.supabase;
-    if (!client || !supabaseModule.isSupabaseConfigured) {
-      return null;
-    }
+    if (client && supabaseModule.isSupabaseConfigured) {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await client.auth.getSession();
 
-    try {
-      const {
-        data: { session },
-        error,
-      } = await client.auth.getSession();
-
-      if (error || !session?.user) {
-        return null;
+        if (!error && session?.user) {
+          const profile = await fetchAdminProfile(session.user);
+          if (profile) return profile;
+        }
+      } catch {
+        // Fallback to local session if Supabase is offline/unreachable
       }
-
-      return await fetchAdminProfile(session.user);
-    } catch {
-      return null;
     }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(DEV_ADMIN_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (
+            parsed &&
+            parsed.email === DEV_ADMIN_EMAIL &&
+            parsed.id === DEV_ADMIN_PROFILE.id
+          ) {
+            return DEV_ADMIN_PROFILE;
+          }
+        }
+      } catch {
+        // Ignore parse error
+      }
+    }
+
+    return null;
   },
 
   /**

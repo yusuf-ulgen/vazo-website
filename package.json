@@ -22,6 +22,7 @@
     "test:watch": "vitest",
     "check:lines": "node scripts/check-file-length.mjs",
     "check:repo": "node scripts/check-repository-safety.mjs",
+    "seed:admin": "node scripts/provision-admin.mjs",
     "verify": "npm run check:repo && npm run check:lines && npm run lint && npm run typecheck && npm run test:coverage && npm run test:db:static && npm run build"
   },
   "dependencies": {
