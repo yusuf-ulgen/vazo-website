@@ -855,6 +855,12 @@ SET LOCAL "request.jwt.claim.sub" = '';
 SET LOCAL "request.jwt.claim.role" = '';
 SET LOCAL "request.jwt.claims" = '';
 
+-- Ensure commerce checkout is enabled for checkout RPC validation
+INSERT INTO public.site_settings (key, value, is_public)
+VALUES ('commerce', '{"checkout_enabled": true}'::jsonb, true)
+ON CONFLICT (key) DO UPDATE
+SET value = public.site_settings.value || '{"checkout_enabled": true}'::jsonb;
+
 -- ------------------------------------------------------------------------------
 -- 13. Phase 3.4 Checkout Quote, Order Creation RPC & Concurrency Assertions
 -- ------------------------------------------------------------------------------
