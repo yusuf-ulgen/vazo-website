@@ -149,7 +149,7 @@ BEGIN
 
         SELECT * INTO v_variant
         FROM public.product_variants
-        WHERE id = v_variant_id AND is_active = true;
+        WHERE id = v_variant_id AND active = true;
 
         IF NOT FOUND THEN
             RAISE EXCEPTION 'Varyant bulunamadı veya aktif değil: %', v_variant_id;
@@ -157,7 +157,7 @@ BEGIN
 
         SELECT * INTO v_product
         FROM public.products
-        WHERE id = v_variant.product_id AND is_active = true;
+        WHERE id = v_variant.product_id AND status = 'published';
 
         IF NOT FOUND THEN
             RAISE EXCEPTION 'Ürün bulunamadı veya satışta değil: %', v_variant.product_id;

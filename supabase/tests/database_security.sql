@@ -901,7 +901,7 @@ SELECT throws_ok(
         '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB
     ) $$,
     NULL,
-    'Toptan kanal için onaylı kurumsal hesap gereklidir.',
+    'Toptan fiyat ve sipariş için onaylı kurumsal hesap gereklidir.',
     'calculate_checkout_quote rejects wholesale channel for non-approved customer'
 );
 
@@ -915,7 +915,7 @@ SELECT throws_ok(
         '[]'::JSONB
     ) $$,
     NULL,
-    'Sepetinizde ürün bulunmamaktadır.',
+    'Sepet boş olamaz.',
     'calculate_checkout_quote rejects empty items'
 );
 

@@ -119,7 +119,7 @@ BEGIN
     SELECT EXISTS (
         SELECT 1 FROM public.shipping_zones sz
         JOIN public.shipping_rates sr ON sr.zone_id = sz.id
-        WHERE sz.is_active = true AND sr.is_active = true
+        WHERE sz.active = true AND sr.active = true
         LIMIT 1
     ) INTO v_has_shipping;
 
