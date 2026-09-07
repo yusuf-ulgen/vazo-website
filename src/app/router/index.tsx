@@ -25,6 +25,7 @@ import { DistanceSalesPolicyPage } from '@/site/pages/policies/DistanceSalesPoli
 import { SellerInformationPage } from '@/site/pages/SellerInformationPage';
 import { PaymentSuccessPage } from '@/site/pages/payment/PaymentSuccessPage';
 import { PaymentFailurePage } from '@/site/pages/payment/PaymentFailurePage';
+import { PaymentResumePage } from '@/site/pages/payment/PaymentResumePage';
 import { AuthCallbackPage } from '@/site/pages/AuthCallbackPage';
 import { AccountOverviewPage } from '@/site/pages/AccountOverviewPage';
 import { AccountAddressesPage } from '@/site/pages/AccountAddressesPage';
@@ -193,6 +194,10 @@ export const router = createBrowserRouter([
       {
         path: 'payment/failure',
         element: <PaymentFailurePage />,
+      },
+      {
+        path: 'payment/resume/:orderId',
+        element: <PaymentResumePage />,
       },
       {
         path: 'about',

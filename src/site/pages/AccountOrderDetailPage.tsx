@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Loader2,
   ExternalLink,
+  CreditCard,
 } from 'lucide-react';
 import { Section } from '@/shared/ui/Section';
 import { Container } from '@/shared/ui/Container';
@@ -37,6 +38,7 @@ function AccountOrderDetailContent() {
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isResumable, setIsResumable] = useState(false);
 
   useSEO({
     title: order ? `Sipariş ${order.order_number} | Vazo Studio` : 'Sipariş Detayı',
@@ -44,7 +46,10 @@ function AccountOrderDetailContent() {
   });
 
   useEffect(() => {
-    if (!orderId) return;
+    if (!orderId) {
+      setIsLoading(false);
+      return;
+    }
 
     let isMounted = true;
     orderRepository
@@ -66,6 +71,29 @@ function AccountOrderDetailContent() {
       isMounted = false;
     };
   }, [orderId]);
+
+  useEffect(() => {
+    if (!order || order.status !== 'pending_payment') {
+      setIsResumable(false);
+      return;
+    }
+
+    let isMounted = true;
+    orderRepository
+      .getPaymentResumeEligibility(order.id)
+      .then((res) => {
+        if (isMounted) {
+          setIsResumable(Boolean(res.eligible));
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsResumable(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [order]);
 
   if (isLoading) {
     return (
@@ -269,6 +297,19 @@ function AccountOrderDetailContent() {
                   {formatMoneyMinor(order.total_minor, order.currency)}
                 </span>
               </div>
+
+              {/* Resumable Pending Payment Action */}
+              {isResumable && (
+                <div className="pt-3 border-t border-border-subtle">
+                  <Link
+                    to={`/payment/resume/${order.id}`}
+                    className="inline-flex items-center justify-center gap-2 w-full py-3 bg-action-primary text-action-primary-text text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs rounded-xs"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Ödemeyi Tamamla</span>
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Delivery Address */}

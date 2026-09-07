@@ -34,6 +34,37 @@ export interface CartStorageEnvelope {
   items: CartItem[];
 }
 
+export const PENDING_CHECKOUT_KEY = 'vazo_pending_checkout';
+
+export interface PendingCheckoutInfo {
+  orderId: string;
+  orderNumber: string;
+  createdAt: number;
+}
+
+export function getPendingCheckoutInfo(): PendingCheckoutInfo | null {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(PENDING_CHECKOUT_KEY) : null;
+    if (!raw) return null;
+    return JSON.parse(raw) as PendingCheckoutInfo;
+  } catch {
+    return null;
+  }
+}
+
+export function savePendingCheckoutInfo(info: PendingCheckoutInfo | null): void {
+  try {
+    if (typeof window === 'undefined') return;
+    if (info) {
+      localStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify(info));
+    } else {
+      localStorage.removeItem(PENDING_CHECKOUT_KEY);
+    }
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
 type CartListener = (items: CartItem[]) => void;
 const listeners = new Set<CartListener>();
 
@@ -356,7 +387,24 @@ export const cartStore = {
 
   clear() {
     cartItems = [];
+    savePendingCheckoutInfo(null);
     notify();
+  },
+
+  getPendingOrder(): PendingCheckoutInfo | null {
+    return getPendingCheckoutInfo();
+  },
+
+  setPendingOrder(orderId: string, orderNumber: string): void {
+    savePendingCheckoutInfo({
+      orderId,
+      orderNumber,
+      createdAt: Date.now(),
+    });
+  },
+
+  clearPendingOrder(): void {
+    savePendingCheckoutInfo(null);
   },
 
   subscribe(listener: CartListener): () => void {

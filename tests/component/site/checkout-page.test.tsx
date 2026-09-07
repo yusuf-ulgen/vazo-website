@@ -263,7 +263,9 @@ describe('CheckoutPage Component', () => {
     // Step 5: Payment Boundary Reached with PayTR iFrame
     expect(await screen.findByText('Sipariş Kaydı Oluşturuldu')).toBeInTheDocument();
     expect(await screen.findByTitle('Güvenli PayTR ödeme formu')).toBeInTheDocument();
-    expect(cartStore.getItems()).toHaveLength(0); // Cart cleared
+    // Phase 3.16: Cart is preserved until authoritative payment success, and pending order is tracked
+    expect(cartStore.getPendingOrder()?.orderId).toBeTruthy();
+    expect(cartStore.getItems()).toHaveLength(1);
   });
 
   it('allows unchecking same-as-shipping and selecting a distinct billing address', async () => {

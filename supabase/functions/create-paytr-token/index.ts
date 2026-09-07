@@ -146,6 +146,29 @@ serve(async (req: Request) => {
       );
     }
 
+    // Reservation & Payment Expiration Check: server-authoritative guard
+    const reservations = (order.inventory_reservations || []) as Array<{ expires_at?: string; status?: string }>;
+    const now = new Date();
+    const paymentExpiresAt = order.metadata?.payment_expires_at ? new Date(order.metadata.payment_expires_at as string) : null;
+
+    const isReservationExpired = reservations.length > 0 && reservations.every((r) => {
+      if (r.status !== 'active') return true;
+      return r.expires_at ? new Date(r.expires_at) <= now : false;
+    });
+
+    const isPaymentTimeExpired = paymentExpiresAt ? paymentExpiresAt <= now : false;
+
+    if (isReservationExpired || isPaymentTimeExpired) {
+      return new Response(
+        JSON.stringify({
+          error: 'Sipariş için ayrılan stok rezervasyon süresi dolmuştur. Lütfen yeni bir sipariş oluşturun.',
+          code: 'RESERVATION_EXPIRED',
+          is_expired: true,
+        }),
+        { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 2. Derive User IP safely
     const clientIpHeader = req.headers.get('cf-connecting-ip')
       || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()

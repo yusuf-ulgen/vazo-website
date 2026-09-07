@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Container } from '@/shared/ui/Container';
 import { useCustomerAuth, customerAuthStore } from '@/shared/stores/customer-auth-store';
-import { useCart } from '@/shared/stores/cart-store';
+import { useCart, cartStore } from '@/shared/stores/cart-store';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 import { orderRepository } from '@/entities/order/api/order-repository';
 import { CustomerAddress } from '@/entities/customer/types';
@@ -35,7 +35,7 @@ const CHECKOUT_STEPS: StepItem[] = [
 
 export function CheckoutPage() {
   const { user, addresses, isLoading: isAuthLoading, isWholesaleApproved } = useCustomerAuth();
-  const { items: cartItems, clear: clearCart } = useCart();
+  const { items: cartItems } = useCart();
   const { settings } = useSiteSettings();
   const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
   const [checkoutAuthModalOpen, setCheckoutAuthModalOpen] = useState(false);
@@ -72,6 +72,41 @@ export function CheckoutPage() {
       setBillingAddress(defaultBill);
     }
   }, [addresses, shippingAddress]);
+
+  // Check for active recoverable pending order on mount
+  useEffect(() => {
+    const pending = cartStore.getPendingOrder();
+    if (!pending || createdOrder) return;
+
+    let isMounted = true;
+    orderRepository
+      .getPaymentResumeEligibility(pending.orderId)
+      .then((eligibility) => {
+        if (!isMounted) return;
+        if (eligibility.eligible && eligibility.order_id) {
+          setCreatedOrder({
+            order_id: eligibility.order_id,
+            order_number: eligibility.order_number || pending.orderNumber,
+            status: 'pending_payment',
+            subtotal_minor: eligibility.subtotal_minor || eligibility.total_minor || 0,
+            shipping_minor: eligibility.shipping_minor || 0,
+            total_minor: eligibility.total_minor || 0,
+            currency: eligibility.currency || 'TRY',
+            expires_at: eligibility.expires_at || '',
+            payment_timeout_minutes: 15,
+            reservation_timeout_minutes: 15,
+          });
+          setCurrentStep(5);
+        } else if (eligibility.is_expired || eligibility.status === 'paid' || eligibility.status === 'cancelled') {
+          cartStore.clearPendingOrder();
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [createdOrder]);
 
   const cartSignature = useMemo(
     () => cartItems.map((ci) => `${ci.variantId}:${ci.quantity}`).join(','),
@@ -272,8 +307,8 @@ export function CheckoutPage() {
         accepted_distance_sales: acceptedDistanceSales,
       });
 
-      // Clear cart on successful order creation
-      clearCart();
+      // Preserve recovery state for pending order until authoritative payment success
+      cartStore.setPendingOrder(response.order_id, response.order_number);
       setCreatedOrder(response);
       setCurrentStep(5);
     } catch (err: unknown) {

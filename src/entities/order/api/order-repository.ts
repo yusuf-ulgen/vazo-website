@@ -6,6 +6,7 @@ import {
   CreateOrderRequest,
   CreateOrderResponse,
   PayTRTokenResponse,
+  PaymentResumeEligibility,
 } from '../types';
 import { shippingRepository } from '@/entities/shipping/api/shipping-repository';
 
@@ -331,6 +332,116 @@ export const orderRepository = {
     }
 
     return data as PayTRTokenResponse;
+  },
+
+  /**
+   * Evaluates server authority for whether an order can safely resume payment.
+   */
+  async getPaymentResumeEligibility(orderId: string): Promise<PaymentResumeEligibility> {
+    if (!orderId) {
+      return {
+        eligible: false,
+        reason: 'Geçersiz sipariş kimliği.',
+        code: 'ORDER_NOT_FOUND',
+      };
+    }
+
+    if (isStorefrontMockEnabled) {
+      return this._simulateLocalResumeEligibility(orderId);
+    }
+
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+      );
+    }
+
+    const client = getSupabase();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      return {
+        eligible: false,
+        is_owner: false,
+        reason: 'Ödemeye devam etmek için giriş yapmanız gerekmektedir.',
+        code: 'FORBIDDEN',
+      };
+    }
+
+    const { data, error } = await client.rpc('check_payment_resume_eligibility', {
+      p_order_id: orderId,
+      p_customer_id: user.id,
+    });
+
+    if (error) {
+      console.error('[orderRepository.getPaymentResumeEligibility] RPC error:', error.message);
+      return {
+        eligible: false,
+        reason: error.message,
+      };
+    }
+
+    return (data as PaymentResumeEligibility) || {
+      eligible: false,
+      reason: 'Hazırlık durumu değerlendirilemedi.',
+    };
+  },
+
+  _simulateLocalResumeEligibility(orderId: string): PaymentResumeEligibility {
+    const order = mockOrders.find((o) => o.id === orderId || o.order_number === orderId);
+    if (!order) {
+      return {
+        eligible: false,
+        reason: 'Sipariş bulunamadı.',
+        code: 'ORDER_NOT_FOUND',
+      };
+    }
+
+    if (order.status === 'paid') {
+      return {
+        eligible: false,
+        is_owner: true,
+        status: order.status,
+        reason: 'Bu siparişin ödemesi zaten tamamlanmıştır.',
+        code: 'ALREADY_PAID',
+      };
+    }
+
+    if (order.status === 'cancelled') {
+      return {
+        eligible: false,
+        is_owner: true,
+        status: order.status,
+        reason: 'Bu sipariş iptal edilmiştir.',
+        code: 'ORDER_CANCELLED',
+      };
+    }
+
+    if (order.status !== 'pending_payment') {
+      return {
+        eligible: false,
+        is_owner: true,
+        status: order.status,
+        reason: 'Sipariş ödeme aşamasında değil.',
+        code: 'INVALID_STATUS',
+      };
+    }
+
+    return {
+      eligible: true,
+      is_owner: true,
+      is_expired: false,
+      status: order.status,
+      order_id: order.id,
+      order_number: order.order_number,
+      subtotal_minor: order.subtotal_minor,
+      shipping_minor: order.shipping_minor,
+      total_minor: order.total_minor,
+      currency: order.currency,
+      order,
+    };
   },
 
   /**

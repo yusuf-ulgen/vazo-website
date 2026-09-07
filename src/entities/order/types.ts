@@ -300,6 +300,30 @@ export interface PayTRTokenResponse {
   error?: string;
 }
 
+export interface PaymentResumeEligibility {
+  eligible: boolean;
+  order_id?: string;
+  order_number?: string;
+  subtotal_minor?: number;
+  shipping_minor?: number;
+  total_minor?: number;
+  currency?: CurrencyCode;
+  status?: OrderStatus;
+  is_owner?: boolean;
+  is_expired?: boolean;
+  expires_at?: string | null;
+  reason?: string;
+  code?:
+    | 'CHECKOUT_DISABLED'
+    | 'ORDER_NOT_FOUND'
+    | 'FORBIDDEN'
+    | 'ALREADY_PAID'
+    | 'ORDER_CANCELLED'
+    | 'INVALID_STATUS'
+    | 'RESERVATION_EXPIRED';
+  order?: Order;
+}
+
 // ------------------------------------------------------------------------------
 // Phase 3.7 Admin Orders, Payments, Fulfillment & Refunds Types
 // ------------------------------------------------------------------------------

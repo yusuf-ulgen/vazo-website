@@ -359,10 +359,118 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
           error: null,
         });
       }
+      if (fnName === 'check_payment_resume_eligibility' && args) {
+        const orderId = args.p_order_id as string;
+        const customerId = args.p_customer_id as string;
+
+        const commerce = (state['site_settings'] || []).find((s) => s.key === 'commerce');
+        const isCheckoutEnabled = (commerce?.value as Record<string, unknown>)?.checkout_enabled !== false;
+        if (!isCheckoutEnabled) {
+          return Promise.resolve({
+            data: { eligible: false, reason: 'Ödeme ve sipariş sistemi şu anda kapalıdır.', code: 'CHECKOUT_DISABLED' },
+            error: null,
+          });
+        }
+
+        const orders = state['orders'] || [];
+        const order = orders.find((o) => o.id === orderId || o.order_number === orderId);
+        if (!order) {
+          return Promise.resolve({
+            data: { eligible: false, reason: 'Sipariş bulunamadı.', code: 'ORDER_NOT_FOUND' },
+            error: null,
+          });
+        }
+
+        if (order.customer_id && customerId && order.customer_id !== customerId) {
+          return Promise.resolve({
+            data: { eligible: false, is_owner: false, reason: 'Bu siparişe erişim yetkiniz bulunmamaktadır.', code: 'FORBIDDEN' },
+            error: null,
+          });
+        }
+
+        if (order.status === 'paid') {
+          return Promise.resolve({
+            data: { eligible: false, is_owner: true, status: 'paid', reason: 'Bu siparişin ödemesi zaten tamamlanmıştır.', code: 'ALREADY_PAID' },
+            error: null,
+          });
+        }
+
+        if (order.status === 'cancelled') {
+          return Promise.resolve({
+            data: { eligible: false, is_owner: true, status: 'cancelled', reason: 'Bu sipariş iptal edilmiştir.', code: 'ORDER_CANCELLED' },
+            error: null,
+          });
+        }
+
+        if (order.status !== 'pending_payment') {
+          return Promise.resolve({
+            data: { eligible: false, is_owner: true, status: order.status, reason: 'Sipariş ödeme aşamasında değil.', code: 'INVALID_STATUS' },
+            error: null,
+          });
+        }
+
+        const isExpired = order.is_expired === true;
+        if (isExpired) {
+          return Promise.resolve({
+            data: {
+              eligible: false,
+              is_owner: true,
+              is_expired: true,
+              status: order.status,
+              order_id: order.id,
+              order_number: order.order_number,
+              reason: 'Sipariş için ayrılan stok rezervasyon süresi dolmuştur.',
+              code: 'RESERVATION_EXPIRED',
+            },
+            error: null,
+          });
+        }
+
+        return Promise.resolve({
+          data: {
+            eligible: true,
+            is_owner: true,
+            is_expired: false,
+            status: order.status,
+            order_id: order.id,
+            order_number: order.order_number,
+            subtotal_minor: order.subtotal_minor || order.total_minor,
+            shipping_minor: order.shipping_minor || 0,
+            total_minor: order.total_minor,
+            currency: order.currency || 'TRY',
+          },
+          error: null,
+        });
+      }
       return Promise.resolve({ data: true, error: null });
     }),
     functions: {
       invoke: vi.fn().mockImplementation((fnName: string, options?: { body?: Record<string, unknown> }) => {
+        if (fnName === 'create-paytr-token') {
+          const body = options?.body || {};
+          const orderId = body.order_id as string;
+          const orders = state['orders'] || [];
+          const order = orders.find((o) => o.id === orderId);
+          if (!order) {
+            return Promise.resolve({ data: null, error: { message: 'Sipariş bulunamadı.' } });
+          }
+          if (order.is_expired) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Sipariş için ayrılan stok rezervasyon süresi dolmuştur.' },
+            });
+          }
+          return Promise.resolve({
+            data: {
+              success: true,
+              token: `mock_token_${orderId}`,
+              iframe_url: `https://www.paytr.com/odeme/guvenli/mock_token_${orderId}`,
+              merchant_oid: `VZ${Date.now()}`,
+              is_test_mode: true,
+            },
+            error: null,
+          });
+        }
         if (fnName === 'paytr-refund') {
           const body = options?.body || {};
           const paymentId = body.payment_id as string;

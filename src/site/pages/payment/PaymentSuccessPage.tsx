@@ -7,6 +7,7 @@ import { orderRepository } from '@/entities/order/api/order-repository';
 import { Order } from '@/entities/order/types';
 import { formatMoneyMinor } from '@/shared/lib/money';
 import { useSEO } from '@/shared/lib/seo';
+import { cartStore } from '@/shared/stores/cart-store';
 
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -38,7 +39,13 @@ export function PaymentSuccessPage() {
 
         if (fetchedOrder) {
           setOrder(fetchedOrder);
-          // If status is terminal (paid, payment_review, payment_failed), stop polling
+          // Only backend verified 'paid' status authoritatively clears cart
+          if (fetchedOrder.status === 'paid') {
+            cartStore.clear();
+            setIsVerifying(false);
+            return;
+          }
+          // If status is other terminal state (payment_review, payment_failed), stop polling
           if (fetchedOrder.status !== 'pending_payment') {
             setIsVerifying(false);
             return;
