@@ -14,11 +14,17 @@ test.describe('Homepage E2E User Journey', () => {
     await expect(announcement).not.toBeVisible();
   });
 
-  test('renders Split Hero section with Retail and Wholesale channels', async ({ page }) => {
+  test('renders Split Hero section with Retail and Wholesale channels', async ({ page, isMobile }) => {
     // Both retail and wholesale CTAs and eyebrows are displayed in split hero
     await expect(page.getByRole('link', { name: /Alışverişe Başla|Koleksiyonu Keşfet/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Toptan Alışverişe Geç|Toptan Kataloğu/i }).first()).toBeVisible();
     await expect(page.getByText('BİREYSEL ALIŞVERİŞ').first()).toBeVisible();
+
+    if (isMobile) {
+      // On mobile viewports, wholesale channel is accessible via segmented switcher
+      const toptanTab = page.getByRole('button', { name: 'Toptan' }).first();
+      await toptanTab.click();
+    }
+    await expect(page.getByRole('link', { name: /Toptan Alışverişe Geç|Toptan Kataloğu/i }).first()).toBeVisible();
     await expect(page.getByText('PROFESYONEL ALIŞVERİŞ').first()).toBeVisible();
   });
 

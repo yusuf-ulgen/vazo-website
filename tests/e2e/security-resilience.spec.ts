@@ -22,6 +22,10 @@ test.describe('Security & Resilience Verification', () => {
       'VITE_SUPABASE_SERVICE_ROLE_KEY',
       'service_role',
       'SUPABASE_SECRET_KEY',
+      'PAYTR_MERCHANT_KEY',
+      'PAYTR_MERCHANT_SALT',
+      'GMAIL_CLIENT_SECRET',
+      'GMAIL_REFRESH_TOKEN',
     ];
 
     for (const file of jsFiles) {

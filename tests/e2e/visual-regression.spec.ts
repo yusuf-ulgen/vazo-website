@@ -17,9 +17,13 @@ test.describe('Visual Regression & Approved Reference Verification', () => {
     await expect(page.locator('body')).toBeVisible();
   });
 
-  test('Reference 03: Retail / Wholesale Split Section consistency', async ({ page }) => {
+  test('Reference 03: Retail / Wholesale Split Section consistency', async ({ page, isMobile }) => {
     await page.goto('/');
     await expect(page.getByText('BİREYSEL ALIŞVERİŞ').first()).toBeVisible();
+    if (isMobile) {
+      const toptanTab = page.getByRole('button', { name: 'Toptan' }).first();
+      await toptanTab.click();
+    }
     await expect(page.getByText('PROFESYONEL ALIŞVERİŞ').first()).toBeVisible();
   });
 
