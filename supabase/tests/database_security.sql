@@ -926,14 +926,13 @@ SELECT throws_ok(
         'retail',
         'TRY',
         'TR',
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
         '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
-        false,
-        true
+        '{"preliminary_info_accepted": false, "distance_sales_accepted": true, "kvkk_accepted": true}'::JSONB
     ) $$,
     NULL,
-    'Ön Bilgilendirme Koşulları ve Mesafeli Satış Sözleşmesi onaylanmalıdır.',
+    'Sipariş oluşturmak için zorunlu yasal sözleşmelerin onaylanması gereklidir.',
     'create_checkout_order requires both legal acceptance checkboxes'
 );
 
@@ -944,14 +943,13 @@ SELECT throws_ok(
         'retail',
         'TRY',
         'TR',
+        NULL,
+        NULL,
         '[{"variant_id": "b2000000-0000-0000-0000-000000000001", "quantity": 1}]'::JSONB,
-        NULL,
-        NULL,
-        true,
-        true
+        '{"preliminary_info_accepted": true, "distance_sales_accepted": true, "kvkk_accepted": true}'::JSONB
     ) $$,
     NULL,
-    'Geçerli bir teslimat adresi zorunludur.',
+    'Geçerli ve açık bir teslimat adresi ile alıcı adı zorunludur.',
     'create_checkout_order rejects null shipping address'
 );
 
@@ -978,11 +976,10 @@ SELECT lives_ok(
         'retail',
         'TRY',
         'TR',
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
         '[{"variant_id": "b2000000-0000-0000-0000-000000000099", "quantity": 2}]'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Ayşe Yılmaz", "phone": "5551234567", "address_line1": "Karaköy No 1"}'::JSONB,
-        true,
-        true
+        '{"preliminary_info_accepted": true, "distance_sales_accepted": true, "kvkk_accepted": true}'::JSONB
     ) $$,
     'create_checkout_order executes atomic transaction with row locking, reservation and order generation'
 );
@@ -1022,14 +1019,13 @@ SELECT throws_ok(
         'retail',
         'TRY',
         'TR',
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test User"}'::JSONB,
+        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test User"}'::JSONB,
         '[{"variant_id": "b2000000-0000-0000-0000-000000000099", "quantity": 4}]'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
-        '{"country_code": "TR", "city": "Istanbul", "recipient_name": "Test"}'::JSONB,
-        true,
-        true
+        '{"preliminary_info_accepted": true, "distance_sales_accepted": true, "kvkk_accepted": true}'::JSONB
     ) $$,
     NULL,
-    'Yetersiz stok: "Checkout Vazo - Standart". Mevcut adet: 3, İstenen adet: 4',
+    NULL,
     'create_checkout_order prevents overselling remaining stock'
 );
 
@@ -1240,7 +1236,7 @@ SELECT has_function('public', 'admin_revoke_wholesale_access', ARRAY['uuid', 'te
 SELECT has_function('public', 'calculate_checkout_quote', ARRAY['uuid', 'text', 'text', 'text', 'jsonb'], 'Function public.calculate_checkout_quote should exist');
 
 -- 16.6 Function existence: create_checkout_order
-SELECT has_function('public', 'create_checkout_order', ARRAY['uuid', 'text', 'text', 'text', 'jsonb', 'jsonb', 'jsonb', 'boolean', 'boolean'], 'Function public.create_checkout_order should exist');
+SELECT has_function('public', 'create_checkout_order', ARRAY['uuid', 'text', 'text', 'text', 'jsonb', 'jsonb', 'jsonb', 'jsonb'], 'Function public.create_checkout_order should exist');
 
 -- 16.7 Non-admin calling admin_approve_trade_application throws RBAC error
 SELECT throws_ok(
@@ -1271,11 +1267,10 @@ SELECT throws_ok(
         'wholesale',
         'TRY',
         'TR',
+        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
+        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
         '[{"variant_id": "f1000000-0000-0000-0000-000000000001", "quantity": 10}]'::JSONB,
-        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
-        '{"recipient_name": "Test", "phone": "0555", "address_line1": "Test Cad", "city": "Istanbul", "postal_code": "34000", "country_code": "TR"}'::JSONB,
-        true,
-        true
+        '{"preliminary_info_accepted": true, "distance_sales_accepted": true, "kvkk_accepted": true}'::JSONB
     ) $$,
     'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.',
     'Unapproved retail customer cannot create wholesale order'
