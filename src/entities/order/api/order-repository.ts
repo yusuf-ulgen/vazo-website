@@ -86,11 +86,14 @@ export const orderRepository = {
       p_channel: request.channel || 'retail',
       p_currency: request.currency || 'TRY',
       p_destination_country: targetCountry,
-      p_items: request.items,
       p_shipping_address: request.shipping_address,
       p_billing_address: request.billing_address || request.shipping_address,
-      p_accepted_preliminary_info: request.accepted_preliminary_info,
-      p_accepted_distance_sales: request.accepted_distance_sales,
+      p_items: request.items,
+      p_legal_consent: {
+        preliminary_info_accepted: Boolean(request.accepted_preliminary_info),
+        distance_sales_accepted: Boolean(request.accepted_distance_sales),
+        kvkk_accepted: true,
+      },
     });
 
     if (error) {

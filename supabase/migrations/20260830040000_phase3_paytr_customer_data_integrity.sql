@@ -18,7 +18,7 @@ CREATE OR REPLACE FUNCTION public.create_checkout_order(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, auth, pg_temp
 AS $$
 DECLARE
     v_is_checkout_enabled BOOLEAN;
@@ -38,8 +38,8 @@ DECLARE
     v_distance_page JSONB;
     v_reservation_expires_at TIMESTAMPTZ;
     v_payment_expires_at TIMESTAMPTZ;
-    v_item RECORD;
-    v_variant RECORD;
+    v_item JSONB;
+    v_is_wholesale_approved BOOLEAN := false;
 BEGIN
     -- 1. Check Commerce Kill Switch
     SELECT COALESCE((value->>'checkout_enabled')::BOOLEAN, false) INTO v_is_checkout_enabled
@@ -51,17 +51,31 @@ BEGIN
     END IF;
 
     -- 2. Validate Customer Authentication & Session
-    IF p_customer_id IS NULL OR p_customer_id != auth.uid() THEN
+    IF p_customer_id IS NULL THEN
         RAISE EXCEPTION 'Yetkisiz erişim: Sipariş oluşturan kullanıcı kimliği doğrulanamadı.';
     END IF;
 
-    -- 3. Validate Channel & Currency
+    IF auth.uid() IS NOT NULL AND p_customer_id != auth.uid() THEN
+        RAISE EXCEPTION 'Yetkisiz erişim: Sipariş oluşturan kullanıcı kimliği doğrulanamadı.';
+    END IF;
+
+    -- 3. Validate Channel, Currency & Wholesale Entitlement
     IF p_channel NOT IN ('retail', 'wholesale') THEN
         RAISE EXCEPTION 'Geçersiz sipariş kanalı: %', p_channel;
     END IF;
 
     IF p_currency NOT IN ('TRY', 'USD', 'EUR', 'GBP') THEN
         RAISE EXCEPTION 'Geçersiz para birimi: %', p_currency;
+    END IF;
+
+    IF p_channel = 'wholesale' THEN
+        SELECT (customer_type = 'wholesale' AND wholesale_approved_at IS NOT NULL) INTO v_is_wholesale_approved
+        FROM public.customer_profiles
+        WHERE user_id = p_customer_id;
+
+        IF NOT COALESCE(v_is_wholesale_approved, false) THEN
+            RAISE EXCEPTION 'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.';
+        END IF;
     END IF;
 
     -- 4. Validate Legal Consents
@@ -75,18 +89,29 @@ BEGIN
     IF p_shipping_address IS NULL OR
        trim(COALESCE(p_shipping_address->>'recipient_name', '')) = '' OR
        length(trim(COALESCE(p_shipping_address->>'recipient_name', ''))) < 2 OR
-       trim(COALESCE(p_shipping_address->>'address_line1', '')) = '' OR
-       length(trim(COALESCE(p_shipping_address->>'address_line1', ''))) < 5 OR
        trim(COALESCE(p_shipping_address->>'city', '')) = '' THEN
         RAISE EXCEPTION 'Geçerli ve açık bir teslimat adresi ile alıcı adı zorunludur.';
     END IF;
 
-    -- 6. Validate Items Non-Empty
+    IF p_billing_address IS NULL THEN
+        p_billing_address := p_shipping_address;
+    END IF;
+
+    -- 6. Validate Items Non-Empty & Pessimistic Row Locking
     IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
         RAISE EXCEPTION 'Sipariş için en az bir ürün seçilmelidir.';
     END IF;
 
-    -- 7. Calculate Server-Authoritative Quote & Lock Inventory
+    PERFORM id
+    FROM public.product_variants
+    WHERE id IN (
+        SELECT (elem->>'variant_id')::UUID
+        FROM jsonb_array_elements(p_items) AS elem
+    )
+    ORDER BY id
+    FOR UPDATE;
+
+    -- 7. Calculate Server-Authoritative Quote
     v_quote := public.calculate_checkout_quote(
         p_customer_id,
         p_channel,
@@ -140,11 +165,11 @@ BEGIN
         'g'
     );
 
-    IF v_clean_phone IS NULL OR length(v_clean_phone) < 10 OR v_clean_phone = '5550000000' OR v_clean_phone ~ '^(\d)\1+$' THEN
+    IF v_clean_phone IS NOT NULL AND (length(v_clean_phone) < 10 OR v_clean_phone = '5550000000' OR v_clean_phone ~ '^(\d)\1+$') THEN
         RAISE EXCEPTION 'Teslimat ve SMS bilgilendirmesi için geçerli bir telefon numarası zorunludur. Lütfen adresinizdeki telefon bilgisini güncelleyin.';
     END IF;
 
-    v_customer_phone := v_clean_phone;
+    v_customer_phone := COALESCE(v_clean_phone, '');
 
     -- 9. Fetch Legal Page Snapshots
     SELECT jsonb_build_object('id', id, 'title', title, 'sections', COALESCE(
@@ -165,8 +190,8 @@ BEGIN
 
     -- Generate order number and expiration timestamps
     v_order_number := public.generate_order_number();
-    v_reservation_expires_at := timezone('utc', now()) + INTERVAL '15 minutes';
-    v_payment_expires_at := timezone('utc', now()) + INTERVAL '15 minutes';
+    v_reservation_expires_at := timezone('utc', now()) + INTERVAL '40 minutes';
+    v_payment_expires_at := timezone('utc', now()) + INTERVAL '30 minutes';
 
     -- 10. Insert Order Record
     INSERT INTO public.orders (
@@ -181,13 +206,11 @@ BEGIN
         discount_minor,
         tax_included_minor,
         total_minor,
+        shipping_carrier,
         shipping_address,
         billing_address,
+        seller_legal_snapshot,
         customer_legal_snapshot,
-        preliminary_info_snapshot,
-        distance_sales_snapshot,
-        kvkk_consent_snapshot,
-        metadata,
         created_at,
         updated_at
     ) VALUES (
@@ -202,80 +225,119 @@ BEGIN
         0,
         v_tax_included_minor,
         v_total_minor,
+        COALESCE(v_quote->'shipping_option'->>'carrier', 'Yurtiçi Kargo'),
         p_shipping_address,
-        COALESCE(p_billing_address, p_shipping_address),
+        p_billing_address,
+        (SELECT value FROM public.site_settings WHERE key = 'seller_legal'),
         jsonb_build_object(
+            'customer_id', p_customer_id,
             'customer_name', v_customer_name,
             'email', v_customer_email,
             'phone', v_customer_phone,
             'channel', p_channel,
-            'is_tax_exempt', COALESCE(v_customer_record.tax_exempt, false)
+            'is_tax_exempt', COALESCE(v_customer_record.tax_exempt, false),
+            'legal_preliminary_accepted_at', timezone('utc', now()),
+            'legal_distance_sales_accepted_at', timezone('utc', now()),
+            'kvkk_accepted_at', timezone('utc', now()),
+            'payment_expires_at', v_payment_expires_at,
+            'preliminary_info', v_preliminary_page,
+            'distance_sales', v_distance_page
         ),
-        v_preliminary_page,
-        v_distance_page,
-        jsonb_build_object('accepted', true, 'timestamp', timezone('utc', now())),
-        jsonb_build_object('payment_expires_at', v_payment_expires_at),
         timezone('utc', now()),
         timezone('utc', now())
     )
     RETURNING id INTO v_order_id;
 
-    -- 11. Insert Order Items and Stock Reservations
-    FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS (
-        variant_id UUID,
-        quantity INT
-    )
+    -- 11. Insert Order Line Items & Inventory Reservations
+    FOR v_item IN SELECT * FROM jsonb_array_elements(v_quote->'items')
     LOOP
-        SELECT pv.*, p.name as product_title
-        INTO v_variant
-        FROM public.product_variants pv
-        JOIN public.products p ON p.id = pv.product_id
-        WHERE pv.id = v_item.variant_id;
-
         INSERT INTO public.order_items (
             order_id,
             product_id,
             variant_id,
+            sku_snapshot,
             product_name_snapshot,
             variant_name_snapshot,
-            sku_snapshot,
+            image_url_snapshot,
             unit_price_minor,
             quantity,
-            total_minor,
-            created_at,
-            updated_at
+            line_total_minor,
+            currency,
+            channel,
+            metadata_snapshot,
+            created_at
         ) VALUES (
             v_order_id,
-            v_variant.product_id,
-            v_variant.id,
-            v_variant.product_title,
-            v_variant.variant_name,
-            v_variant.sku,
-            v_variant.retail_price_minor,
-            v_item.quantity,
-            v_variant.retail_price_minor * v_item.quantity,
-            timezone('utc', now()),
+            (v_item->>'product_id')::UUID,
+            (v_item->>'variant_id')::UUID,
+            COALESCE(v_item->>'sku', ''),
+            COALESCE(v_item->>'product_name', ''),
+            COALESCE(v_item->>'variant_name', ''),
+            v_item->>'image_url',
+            (v_item->>'unit_price_minor')::BIGINT,
+            (v_item->>'quantity')::INTEGER,
+            (v_item->>'line_total_minor')::BIGINT,
+            p_currency,
+            p_channel,
+            jsonb_build_object('source', p_channel || '_checkout'),
             timezone('utc', now())
         );
 
-        INSERT INTO public.stock_reservations (
+        INSERT INTO public.inventory_reservations (
             order_id,
             variant_id,
             quantity,
             status,
             expires_at,
+            reserved_at,
             created_at
         ) VALUES (
             v_order_id,
-            v_variant.id,
-            v_item.quantity,
-            'active',
+            (v_item->>'variant_id')::UUID,
+            (v_item->>'quantity')::INTEGER,
+            'reserved',
             v_reservation_expires_at,
+            timezone('utc', now()),
             timezone('utc', now())
         );
     END LOOP;
 
-    -- 12. Record Initial Order Status History
+    -- 12. Insert Immutable Legal Acceptances
+    INSERT INTO public.order_legal_acceptances (
+        order_id,
+        document_key,
+        document_version,
+        content_snapshot,
+        accepted_at
+    ) VALUES
+    (
+        v_order_id,
+        'preliminary_information_form',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'preliminary_info',
+            'title', COALESCE(v_preliminary_page->>'title', 'Ön Bilgilendirme Formu'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now()),
+            'content', v_preliminary_page
+        ),
+        timezone('utc', now())
+    ),
+    (
+        v_order_id,
+        'distance_sales_agreement',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'distance_sales',
+            'title', COALESCE(v_distance_page->>'title', 'Mesafeli Satış Sözleşmesi'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now()),
+            'content', v_distance_page
+        ),
+        timezone('utc', now())
+    );
+
+    -- 13. Record Initial Order Status History
     INSERT INTO public.order_status_history (
         order_id,
         from_status,
@@ -294,15 +356,22 @@ BEGIN
         timezone('utc', now())
     );
 
+    -- 14. Return Order Creation Payload
     RETURN jsonb_build_object(
         'success', true,
         'order_id', v_order_id,
         'order_number', v_order_number,
+        'status', 'pending_payment',
+        'subtotal_minor', v_subtotal_minor,
+        'shipping_minor', v_shipping_minor,
         'total_minor', v_total_minor,
         'currency', p_currency,
-        'reservation_timeout_minutes', 15
+        'expires_at', v_payment_expires_at,
+        'payment_timeout_minutes', 30,
+        'reservation_timeout_minutes', 40
     );
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.create_checkout_order(UUID, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_checkout_order(UUID, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB, JSONB) TO service_role;

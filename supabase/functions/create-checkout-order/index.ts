@@ -127,11 +127,14 @@ serve(async (req: Request) => {
       p_channel: channel === 'wholesale' ? 'wholesale' : 'retail',
       p_currency: currency,
       p_destination_country: targetCountry,
-      p_items: items,
       p_shipping_address: shipping_address,
       p_billing_address: billing_address || shipping_address,
-      p_accepted_preliminary_info: Boolean(accepted_preliminary_info),
-      p_accepted_distance_sales: Boolean(accepted_distance_sales),
+      p_items: items,
+      p_legal_consent: {
+        preliminary_info_accepted: Boolean(accepted_preliminary_info),
+        distance_sales_accepted: Boolean(accepted_distance_sales),
+        kvkk_accepted: true,
+      },
     });
 
     if (error) {
