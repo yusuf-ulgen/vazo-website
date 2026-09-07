@@ -1,6 +1,7 @@
 // Supabase Edge Function: create-paytr-token
 // Authenticated server-authoritative PayTR inline token generator.
-// Generates official PayTR HMAC-SHA256 signature, records payment attempt, and retrieves iframe token.
+// Enforces strict customer data integrity (no dummy/fake values), origin safety,
+// reservation validation, and truthful failed payment state transitions upon provider errors.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -48,6 +49,9 @@ serve(async (req: Request) => {
     );
   }
 
+  let createdMerchantOid: string | null = null;
+  let supabaseAdminClient: ReturnType<typeof createClient> | null = null;
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -62,7 +66,34 @@ serve(async (req: Request) => {
     const merchantSalt = Deno.env.get('PAYTR_MERCHANT_SALT');
     const testMode = Deno.env.get('PAYTR_TEST_MODE') || '1';
     const debugOn = Deno.env.get('PAYTR_DEBUG_ON') || '1';
-    const appOrigin = Deno.env.get('APP_ORIGIN') || 'https://shop.monocactus.com';
+    const rawAppOrigin = Deno.env.get('APP_ORIGIN');
+
+    // Origin Safety: Production missing APP_ORIGIN must fail clearly
+    if (!rawAppOrigin && testMode !== '1') {
+      console.error('[create-paytr-token] Missing APP_ORIGIN in production environment.');
+      return new Response(
+        JSON.stringify({ error: 'Sunucu yapılandırma hatası: APP_ORIGIN tanımlanmamış.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const baseOrigin = (rawAppOrigin || 'https://shop.monocactus.com').trim().replace(/\/+$/, '');
+    let safeOrigin = baseOrigin;
+    if (safeOrigin.startsWith('http://shop.monocactus.com')) {
+      safeOrigin = safeOrigin.replace('http://', 'https://');
+    }
+
+    try {
+      const parsedUrl = new URL(safeOrigin);
+      if (parsedUrl.protocol !== 'https:' && parsedUrl.protocol !== 'http:') {
+        throw new Error('Geçersiz protokol');
+      }
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Sunucu yapılandırma hatası: APP_ORIGIN geçersiz bir URL.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -77,7 +108,9 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
+    supabaseAdminClient = supabase;
 
+    // 1. Authenticate Request
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
@@ -96,7 +129,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // 1. Check if checkout is enabled in site settings
+    // 2. Kill Switch Validation
     const { data: commerceSetting } = await supabase
       .from('site_settings')
       .select('value')
@@ -111,7 +144,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // 2. Fetch Order and verify ownership
+    // 3. Fetch Order and verify ownership & business validity
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*, order_items(*), inventory_reservations(*)')
@@ -146,7 +179,21 @@ serve(async (req: Request) => {
       );
     }
 
-    // Reservation & Payment Expiration Check: server-authoritative guard
+    if (!order.total_minor || order.total_minor <= 0) {
+      return new Response(
+        JSON.stringify({ error: 'Sipariş toplam tutarı 0\'dan büyük olmalıdır.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!['TRY', 'USD', 'EUR', 'GBP'].includes(order.currency)) {
+      return new Response(
+        JSON.stringify({ error: `Desteklenmeyen para birimi: ${order.currency}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 4. Reservation & Payment Expiration Check
     const reservations = (order.inventory_reservations || []) as Array<{ expires_at?: string; status?: string }>;
     const now = new Date();
     const paymentExpiresAt = order.metadata?.payment_expires_at ? new Date(order.metadata.payment_expires_at as string) : null;
@@ -155,7 +202,6 @@ serve(async (req: Request) => {
       if (r.status !== 'active') return true;
       return r.expires_at ? new Date(r.expires_at) <= now : false;
     });
-
     const isPaymentTimeExpired = paymentExpiresAt ? paymentExpiresAt <= now : false;
 
     if (isReservationExpired || isPaymentTimeExpired) {
@@ -169,19 +215,93 @@ serve(async (req: Request) => {
       );
     }
 
-    // 2. Derive User IP safely
+    // 5. Strict Customer Data Integrity Validation (No Fake / Dummy Values)
+    const shippingAddr = order.shipping_address || {};
+    const legalSnapshot = order.customer_legal_snapshot || {};
+
+    // 5a. Real Email
+    const rawEmail = (legalSnapshot.email || user.email || shippingAddr.email || '').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isFakeEmail = !rawEmail ||
+      rawEmail.includes('musteri@vazostudio.com') ||
+      rawEmail.includes('placeholder') ||
+      rawEmail.endsWith('@example.com') ||
+      rawEmail === 'test@test.com';
+
+    if (!emailRegex.test(rawEmail) || isFakeEmail) {
+      return new Response(
+        JSON.stringify({
+          error: 'Geçerli bir müşteri e-posta adresi zorunludur. Lütfen profilinizdeki e-posta adresinizi doğrulayın.',
+          code: 'INVALID_CUSTOMER_EMAIL',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const email = sanitizeEmail(rawEmail);
+
+    // 5b. Real Name
+    const rawName = (shippingAddr.recipient_name || legalSnapshot.customer_name || '').trim();
+    const isFakeName = !rawName || rawName.length < 2 || rawName === 'Müşteri' || rawName === 'Değerli Müşterimiz';
+    if (isFakeName) {
+      return new Response(
+        JSON.stringify({
+          error: 'Teslimat için geçerli bir alıcı ad-soyad bilgisi zorunludur. Lütfen adresinizi güncelleyin.',
+          code: 'INVALID_RECIPIENT_NAME',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const userName = rawName.slice(0, 60);
+
+    // 5c. Real Phone
+    const rawPhone = (shippingAddr.phone || legalSnapshot.phone || '').replace(/\D/g, '');
+    const isFakePhone = !rawPhone ||
+      rawPhone.length < 10 ||
+      rawPhone === '5550000000' ||
+      rawPhone === '1234567890' ||
+      /^(\d)\1+$/.test(rawPhone);
+
+    if (isFakePhone) {
+      return new Response(
+        JSON.stringify({
+          error: 'Teslimat ve SMS bilgilendirmesi için geçerli bir telefon numarası zorunludur. Lütfen adresinizdeki telefon bilgisini güncelleyin.',
+          code: 'INVALID_PHONE_NUMBER',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const userPhone = rawPhone.slice(0, 20);
+
+    // 5d. Real Shipping Address
+    const line1 = (shippingAddr.address_line1 || '').trim();
+    const city = (shippingAddr.city || '').trim();
+    const district = (shippingAddr.district || '').trim();
+    const country = (shippingAddr.country_name || 'Türkiye').trim();
+    const userAddress = `${line1} ${district} ${city} ${country}`.trim();
+
+    if (!line1 || line1.length < 5 || !city || userAddress.length < 10) {
+      return new Response(
+        JSON.stringify({
+          error: 'Geçerli ve açık bir teslimat adresi zorunludur. Lütfen adres bilgilerinizi eksiksiz doldurun.',
+          code: 'INVALID_SHIPPING_ADDRESS',
+        }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 6. User IP & Unique merchant_oid Generation
     const clientIpHeader = req.headers.get('cf-connecting-ip')
       || req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || req.headers.get('x-real-ip')
       || '127.0.0.1';
     const userIp = clientIpHeader.slice(0, 39);
 
-    // 3. Generate unique alphanumeric merchant_oid (strictly no hyphens, <= 64 chars)
     const cleanOrderNumber = order.order_number.replace(/[^a-zA-Z0-9]/g, '');
     const uniqueSuffix = Date.now().toString(36).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
     const merchantOid = `VZ${cleanOrderNumber}${uniqueSuffix}`.slice(0, 64);
+    createdMerchantOid = merchantOid;
 
-    // 4. Record Payment Attempt in DB
+    // 7. Record Payment Attempt in DB (Initial Status: initiated)
     const { error: initiateError } = await supabase.rpc('initiate_order_payment', {
       p_order_id: order.id,
       p_merchant_oid: merchantOid,
@@ -197,7 +317,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // 5. Build user_basket
+    // 8. Build user_basket
     const basketItems: [string, string, number][] = order.order_items.map((item: { product_name_snapshot: string; unit_price_minor: number; quantity: number }) => [
       item.product_name_snapshot,
       (item.unit_price_minor / 100).toFixed(2),
@@ -209,27 +329,15 @@ serve(async (req: Request) => {
     }
 
     const userBasket = utf8ToBase64(JSON.stringify(basketItems));
-
-    // 6. User details with field constraint safety
-    const shippingAddr = order.shipping_address || {};
-    const email = sanitizeEmail(user.email || 'musteri@vazostudio.com');
-    const userName = (shippingAddr.recipient_name || user.email || 'Müşteri').slice(0, 60);
-    const userAddress = `${shippingAddr.address_line1 || ''} ${shippingAddr.district || ''} ${shippingAddr.city || ''} ${shippingAddr.country_name || ''}`.trim().slice(0, 400);
-    const userPhone = (shippingAddr.phone || '5550000000').replace(/\s+/g, '').slice(0, 20);
-
     const paymentAmount = order.total_minor.toString();
     const noInstallment = '1';
     const maxInstallment = '0';
     const currency = order.currency === 'TRY' ? 'TL' : order.currency;
     const timeoutLimit = '30';
-    let safeOrigin = appOrigin.trim().replace(/\/+$/, '');
-    if (safeOrigin.startsWith('http://shop.monocactus.com')) {
-      safeOrigin = safeOrigin.replace('http://', 'https://');
-    }
     const merchantOkUrl = `${safeOrigin}/payment/success?order_id=${order.id}`;
     const merchantFailUrl = `${safeOrigin}/payment/failure?order_id=${order.id}`;
 
-    // 7. Official PayTR HMAC-SHA256 Hash Generation
+    // 9. Official PayTR HMAC-SHA256 Token
     const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}${merchantSalt}`;
 
     const encoder = new TextEncoder();
@@ -243,7 +351,7 @@ serve(async (req: Request) => {
     const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(hashStr));
     const paytrToken = btoa(String.fromCharCode(...new Uint8Array(signature)));
 
-    // 8. Dispatch request to PayTR Token API
+    // 10. Dispatch request to PayTR Token API
     const params = new URLSearchParams();
     params.append('merchant_id', merchantId);
     params.append('user_ip', userIp);
@@ -265,20 +373,56 @@ serve(async (req: Request) => {
     params.append('test_mode', testMode);
     params.append('lang', 'tr');
 
-    const paytrResponse = await fetch('https://www.paytr.com/odeme/api/get-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
+    let paytrResponse: Response;
+    try {
+      paytrResponse = await fetch('https://www.paytr.com/odeme/api/get-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      });
+    } catch (networkErr: unknown) {
+      console.error('[create-paytr-token] PayTR network error:', networkErr);
+      await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_code: 'PAYTR_NETWORK_ERROR',
+          failure_message_safe: 'PayTR servisine bağlanırken ağ hatası oluştu.',
+          failed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('merchant_oid', merchantOid);
 
-    const paytrData = await paytrResponse.json();
+      return new Response(
+        JSON.stringify({ error: 'PayTR servisi ile iletişim kurulamadı.', code: 'PAYTR_NETWORK_ERROR' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const paytrData = await paytrResponse.json().catch(() => ({ status: 'error', reason: 'Geçersiz JSON yanıtı' }));
 
     if (paytrData.status !== 'success') {
+      const failureReason = paytrData.reason || 'Bilinmeyen PayTR hatası';
+      console.error('[create-paytr-token] PayTR rejected token creation:', failureReason);
+
+      // Truthfully update payment attempt state from initiated to failed
+      await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_code: 'PAYTR_TOKEN_REJECTED',
+          failure_message_safe: failureReason,
+          failed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('merchant_oid', merchantOid);
+
       return new Response(
         JSON.stringify({
-          error: `PayTR ödeme başlatılamadı: ${paytrData.reason || 'Bilinmeyen hata'}`,
+          error: `PayTR ödeme başlatılamadı: ${failureReason}`,
+          code: 'PAYTR_TOKEN_REJECTED',
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -296,6 +440,22 @@ serve(async (req: Request) => {
     );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Bilinmeyen hata';
+    console.error('[create-paytr-token] Exception:', msg);
+
+    if (createdMerchantOid && supabaseAdminClient) {
+      await supabaseAdminClient
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_code: 'SERVER_EXCEPTION',
+          failure_message_safe: msg,
+          failed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('merchant_oid', createdMerchantOid)
+        .catch(() => {});
+    }
+
     return new Response(
       JSON.stringify({ error: `PayTR token hatası: ${msg}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -256,17 +256,94 @@ export function createMockSupabaseClient(tableResponses: Record<string, MockSupa
         if (fnName === 'create-paytr-token') {
           const body = options?.body || {};
           const orderId = body.order_id as string;
+
+          const commerce = (state['site_settings'] || []).find((s) => s.key === 'commerce');
+          const isCheckoutEnabled = (commerce?.value as Record<string, unknown>)?.checkout_enabled !== false;
+          if (!isCheckoutEnabled || body.simulateDisabledCheckout) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Ödeme ve sipariş sistemi şu anda kapalıdır.' },
+            });
+          }
+
+          if (body.simulateMissingAppOrigin) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Sunucu yapılandırma hatası: APP_ORIGIN tanımlanmamış.' },
+            });
+          }
+
+          if (body.simulatePaytrHttpError) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'PayTR servisi ile iletişim kurulamadı.' },
+            });
+          }
+
           const orders = state['orders'] || [];
           const order = orders.find((o) => o.id === orderId);
           if (!order) {
             return Promise.resolve({ data: null, error: { message: 'Sipariş bulunamadı.' } });
           }
+
+          if (body.simulateWrongOwner) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Bu siparişe erişim yetkiniz bulunmamaktadır.' },
+            });
+          }
+
+          if (order.status !== 'pending_payment' || body.simulateWrongStatus) {
+            return Promise.resolve({
+              data: null,
+              error: { message: `Sipariş ödeme aşamasında değil (Mevcut Durum: ${order.status}).` },
+            });
+          }
+
           if (order.is_expired) {
             return Promise.resolve({
               data: null,
               error: { message: 'Sipariş için ayrılan stok rezervasyon süresi dolmuştur.' },
             });
           }
+
+          // Customer Data Integrity Validations
+          const shippingAddr = (order.shipping_address as Record<string, unknown>) || {};
+          const customerEmail = (order.customer_email as string) || (shippingAddr.email as string) || '';
+          const customerName = (order.customer_name as string) || (shippingAddr.recipient_name as string) || '';
+          const customerPhone = (order.customer_phone as string) || (shippingAddr.phone as string) || '';
+
+          if (body.simulateInvalidEmail || !customerEmail || customerEmail.includes('musteri@vazostudio.com') || customerEmail.includes('placeholder') || customerEmail === 'test@test.com') {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Geçerli bir müşteri e-posta adresi zorunludur. Lütfen profilinizdeki e-posta adresinizi doğrulayın.' },
+            });
+          }
+
+          if (body.simulateInvalidName || !customerName || customerName === 'Müşteri' || customerName === 'Değerli Müşterimiz' || customerName.length < 2) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Teslimat için geçerli bir alıcı ad-soyad bilgisi zorunludur. Lütfen adresinizi güncelleyin.' },
+            });
+          }
+
+          const cleanPhone = customerPhone.replace(/\D/g, '');
+          if (body.simulateInvalidPhone || !cleanPhone || cleanPhone.length < 10 || cleanPhone === '5550000000') {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Teslimat ve SMS bilgilendirmesi için geçerli bir telefon numarası zorunludur. Lütfen adresinizdeki telefon bilgisini güncelleyin.' },
+            });
+          }
+
+          const addressLine = (shippingAddr.address_line1 as string) || '';
+          const city = (shippingAddr.city as string) || '';
+          if (body.simulateInvalidAddress || !addressLine || addressLine.length < 5 || !city) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Geçerli ve açık bir teslimat adresi zorunludur. Lütfen adres bilgilerinizi eksiksiz doldurun.' },
+            });
+          }
+
           return Promise.resolve({
             data: {
               success: true,

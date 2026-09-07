@@ -80,14 +80,27 @@ export function PaymentBoundaryStep({ orderResponse }: PaymentBoundaryStepProps)
             <span>Ödeme Başlatılamadı</span>
           </div>
           <p className="text-xs text-text-secondary leading-relaxed">{error}</p>
-          <button
-            type="button"
-            onClick={fetchToken}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Yeniden Dene</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={fetchToken}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Yeniden Dene</span>
+            </button>
+            {(error.toLowerCase().includes('adres') ||
+              error.toLowerCase().includes('telefon') ||
+              error.toLowerCase().includes('e-posta') ||
+              error.toLowerCase().includes('profil')) && (
+              <a
+                href="/account/addresses"
+                className="inline-flex items-center gap-1.5 px-4 py-2 border border-border-default bg-surface-primary text-text-primary text-xs font-semibold rounded-xs hover:bg-surface-secondary transition-colors"
+              >
+                <span>Adres & Profil Bilgilerini Güncelle</span>
+              </a>
+            )}
+          </div>
         </div>
       ) : tokenResponse ? (
         <PayTRPaymentFrame

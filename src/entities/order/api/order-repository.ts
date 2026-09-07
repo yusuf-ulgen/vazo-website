@@ -238,6 +238,16 @@ export const orderRepository = {
     const orderNumber = `VZ-${dateStr}-${randomSuffix}`;
     const orderId = `order-${Date.now()}`;
     const expiresAt = new Date(Date.now() + 40 * 60 * 1000).toISOString();
+    let userEmail = '';
+    try {
+      const client = getSupabase();
+      if (client?.auth) {
+        const { data } = await client.auth.getUser();
+        userEmail = data?.user?.email || '';
+      }
+    } catch {
+      // ignore
+    }
 
     const createdOrder: Order = {
       id: orderId,
@@ -254,6 +264,11 @@ export const orderRepository = {
       total_minor: quote.total_minor,
       shipping_address: request.shipping_address,
       billing_address: request.billing_address || request.shipping_address,
+      customer_legal_snapshot: {
+        customer_name: request.shipping_address?.recipient_name || '',
+        email: userEmail || (request.shipping_address as unknown as Record<string, unknown>)?.email || '',
+        phone: request.shipping_address?.phone || '',
+      },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       items: quote.items.map((item, idx) => ({
@@ -446,8 +461,37 @@ export const orderRepository = {
 
   /**
    * Local deterministic simulator for PayTR token in mock mode.
+   * Enforces the same customer data integrity invariants (no dummy data).
    */
   async _simulateLocalPayTRToken(orderId: string): Promise<PayTRTokenResponse> {
+    const order = mockOrders.find((o) => o.id === orderId || o.order_number === orderId);
+    if (order) {
+      let authUserEmail = '';
+      try {
+        const client = getSupabase();
+        if (client?.auth) {
+          const { data } = await client.auth.getUser();
+          authUserEmail = data?.user?.email || '';
+        }
+      } catch {
+        // ignore
+      }
+      const legalSnapshot = (order.customer_legal_snapshot || {}) as Record<string, unknown>;
+      const shippingRecord = (order.shipping_address || {}) as unknown as Record<string, unknown>;
+      const email = String(legalSnapshot.email || shippingRecord.email || authUserEmail || '');
+      if (!email || email.includes('musteri@vazostudio.com') || email.includes('placeholder') || email === 'test@test.com') {
+        throw new Error('Geçerli bir müşteri e-posta adresi zorunludur. Lütfen profilinizdeki e-posta adresinizi doğrulayın.');
+      }
+      const name = String(order.shipping_address?.recipient_name || legalSnapshot.customer_name || '');
+      if (!name || name === 'Müşteri' || name === 'Değerli Müşterimiz' || name.length < 2) {
+        throw new Error('Teslimat için geçerli bir alıcı ad-soyad bilgisi zorunludur. Lütfen adresinizi güncelleyin.');
+      }
+      const phone = String(order.shipping_address?.phone || legalSnapshot.phone || '').replace(/\D/g, '');
+      if (!phone || phone.length < 10 || phone === '5550000000') {
+        throw new Error('Teslimat ve SMS bilgilendirmesi için geçerli bir telefon numarası zorunludur. Lütfen adresinizdeki telefon bilgisini güncelleyin.');
+      }
+    }
+
     const mockToken = `mock_paytr_token_${orderId}_${Date.now().toString(36)}`;
     const merchantOid = `VZMOCK${Date.now().toString(36).toUpperCase()}`;
 
