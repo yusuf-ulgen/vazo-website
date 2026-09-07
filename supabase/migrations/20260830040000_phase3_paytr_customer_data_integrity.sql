@@ -227,7 +227,7 @@ BEGIN
         quantity INT
     )
     LOOP
-        SELECT pv.*, p.title as product_title
+        SELECT pv.*, p.name as product_title
         INTO v_variant
         FROM public.product_variants pv
         JOIN public.products p ON p.id = pv.product_id
@@ -250,7 +250,7 @@ BEGIN
             v_variant.product_id,
             v_variant.id,
             v_variant.product_title,
-            v_variant.title,
+            v_variant.variant_name,
             v_variant.sku,
             v_variant.retail_price_minor,
             v_item.quantity,

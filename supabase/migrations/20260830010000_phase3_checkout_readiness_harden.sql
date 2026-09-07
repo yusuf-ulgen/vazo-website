@@ -169,14 +169,14 @@ BEGIN
 
         IF v_requested_qty > v_available_stock THEN
             RAISE EXCEPTION 'Yetersiz stok: "%" için talep edilen % adet mevcut değil (Mevcut: % adet).',
-                v_product.title, v_requested_qty, GREATEST(0, v_available_stock);
+                v_product.name, v_requested_qty, GREATEST(0, v_available_stock);
         END IF;
 
         IF p_channel = 'wholesale' THEN
             v_moq := COALESCE(v_product.wholesale_moq, 1);
             IF v_requested_qty < v_moq THEN
                 RAISE EXCEPTION 'Minimum toptan sipariş adedi karşılanmadı: "%" için en az % adet sipariş verilmelidir.',
-                    v_product.title, v_moq;
+                    v_product.name, v_moq;
             END IF;
 
             SELECT unit_price INTO v_tier_unit_price
@@ -203,8 +203,8 @@ BEGIN
         v_quote_items := v_quote_items || jsonb_build_object(
             'variant_id', v_variant.id,
             'product_id', v_product.id,
-            'product_name', v_product.title,
-            'variant_name', v_variant.title,
+            'product_name', v_product.name,
+            'variant_name', v_variant.variant_name,
             'sku', v_variant.sku,
             'image_url', v_product.primary_image_url,
             'quantity', v_requested_qty,
