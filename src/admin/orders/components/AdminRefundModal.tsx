@@ -33,6 +33,14 @@ export function AdminRefundModal({
   const [reason, setReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(() => `ref_${payment.id}_${Date.now()}`);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIdempotencyKey(`ref_${payment.id}_${Date.now()}`);
+      setError(null);
+    }
+  }, [isOpen, payment.id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,6 +69,11 @@ export function AdminRefundModal({
     }
 
     const requestedMinor = Math.round(parsedMajor * 100);
+    if (requestedMinor <= 0) {
+      setError('Lütfen sıfırdan büyük geçerli bir iade tutarı girin.');
+      return;
+    }
+
     if (requestedMinor > remainingMinor) {
       setError(`İade tutarı kalan iade edilebilir bakiyeyi (${formatMoneyMinor(remainingMinor, payment.currency)}) aşamaz.`);
       return;
@@ -72,7 +85,7 @@ export function AdminRefundModal({
         payment_id: payment.id,
         refund_amount_minor: requestedMinor,
         reason: reason.trim() || undefined,
-        idempotency_key: `ref_${payment.id}_${requestedMinor}_${Date.now()}`,
+        idempotency_key: idempotencyKey,
       });
       onSuccess();
       onClose();

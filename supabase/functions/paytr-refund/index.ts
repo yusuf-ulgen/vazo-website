@@ -1,7 +1,12 @@
 // Supabase Edge Function: paytr-refund
 // Authenticated admin-only server-authoritative PayTR refund processor.
 // Validates admin RBAC, executes pessimistic row-locking preparation, computes HMAC-SHA256 signature,
-// calls PayTR Refund API, and atomically finalizes financial records and status history.
+// calls PayTR Refund API with timeout/fail-closed semantics, and atomically finalizes financial records.
+//
+// FAIL-CLOSED ABSOLUTE INVARIANT:
+// Database records NEVER transition to refunded unless PayTR authoritatively confirms success.
+// Missing credentials, timeouts, network failures, malformed JSON, and provider rejections
+// strictly record failed attempts without altering order status, payment status, or inventory.
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -87,9 +92,13 @@ serve(async (req: Request) => {
       );
     }
 
-    if (!refund_amount_minor || typeof refund_amount_minor !== 'number' || refund_amount_minor <= 0) {
+    if (
+      typeof refund_amount_minor !== 'number' ||
+      !Number.isInteger(refund_amount_minor) ||
+      refund_amount_minor <= 0
+    ) {
       return new Response(
-        JSON.stringify({ error: 'refund_amount_minor 0\'dan büyük geçerli bir tamsayı kuruş olmalıdır.' }),
+        JSON.stringify({ error: 'refund_amount_minor 0\'dan büyük geçerli bir tamsayı kuruş değeri olmalıdır.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -118,44 +127,62 @@ serve(async (req: Request) => {
       );
     }
 
-    // If already finalized/prepared in idempotent state
-    if (prepareRes.already_prepared && prepareRes.status === 'succeeded') {
+    // Idempotency check on already prepared record
+    if (prepareRes.already_prepared) {
+      if (prepareRes.status === 'succeeded') {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            already_finalized: true,
+            refund_id: prepareRes.refund_id,
+            reference_no: prepareRes.reference_no,
+            status: 'succeeded',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (prepareRes.status === 'pending') {
+        return new Response(
+          JSON.stringify({
+            error: 'Bu iade talebi zaten işleme alınmış ve devam ediyor.',
+            error_code: 'REFUND_IN_PROGRESS',
+            refund_id: prepareRes.refund_id,
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
         JSON.stringify({
-          success: true,
-          already_finalized: true,
+          error: 'Bu idempotency anahtarıyla yapılan iade denemesi daha önce başarısızlıkla sonuçlandı. Lütfen yeni bir işlem başlatın.',
+          error_code: 'REFUND_ALREADY_FAILED',
           refund_id: prepareRes.refund_id,
-          reference_no: prepareRes.reference_no,
-          status: 'succeeded',
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { refund_id, reference_no, merchant_oid, amount_minor } = prepareRes;
 
-    // 5. Check PayTR Secrets
+    // 5. Fail-Closed Check on PayTR Secrets: Missing config is a hard error, NEVER simulate success!
     if (!merchantId || !merchantKey || !merchantSalt) {
-      console.warn('[paytr-refund] Missing PayTR merchant secrets. Simulating mock refund in sandbox.');
+      console.error('[paytr-refund] Missing PayTR merchant secrets. Failing closed.');
       
-      // Finalize mock refund
-      const { data: finalizeRes } = await supabaseAdmin.rpc('finalize_admin_refund', {
+      await supabaseAdmin.rpc('finalize_admin_refund', {
         p_refund_id: refund_id,
-        p_is_success: true,
-        p_provider_reference: `mock_ref_${reference_no}`,
-        p_error_code: null,
-        p_error_message: null,
+        p_is_success: false,
+        p_provider_reference: null,
+        p_error_code: 'CONFIGURATION_ERROR',
+        p_error_message: 'PayTR mağaza kimlik bilgileri yapılandırılmamış (PAYTR_MERCHANT_ID, KEY veya SALT eksik).',
       });
 
       return new Response(
         JSON.stringify({
-          success: true,
+          success: false,
           refund_id,
-          reference_no,
-          is_simulated: true,
-          status: finalizeRes?.status || 'succeeded',
+          error: 'PayTR yapılandırması eksik. İade işlemi gerçekleştirilemez.',
+          error_code: 'CONFIGURATION_ERROR',
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -184,36 +211,79 @@ serve(async (req: Request) => {
     }
     const paytrToken = btoa(binary);
 
-    // 7. Dispatch HTTP POST to PayTR Refund API
+    // 7. Dispatch HTTP POST to PayTR with strict 15s timeout
     const refundFormData = new URLSearchParams();
     refundFormData.set('merchant_id', merchantId);
     refundFormData.set('merchant_oid', merchant_oid);
     refundFormData.set('return_amount', returnAmountStr);
     refundFormData.set('paytr_token', paytrToken);
 
-    const paytrResponse = await fetch('https://www.paytr.com/odeme/iade', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: refundFormData.toString(),
-    });
+    let paytrResponse: Response;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+    try {
+      paytrResponse = await fetch('https://www.paytr.com/odeme/iade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: refundFormData.toString(),
+        signal: controller.signal,
+      });
+    } catch (fetchErr: unknown) {
+      clearTimeout(timeoutId);
+      const isTimeout = fetchErr instanceof Error && fetchErr.name === 'AbortError';
+      const errorCode = isTimeout ? 'PROVIDER_TIMEOUT' : 'NETWORK_ERROR';
+      const errorMessage = isTimeout
+        ? 'PayTR iade servisine bağlanırken 15 saniyelik zaman aşımı oluştu.'
+        : (fetchErr instanceof Error ? fetchErr.message : 'PayTR ağına bağlanılamadı.');
+
+      console.error(`[paytr-refund] ${errorCode}:`, errorMessage);
+
+      await supabaseAdmin.rpc('finalize_admin_refund', {
+        p_refund_id: refund_id,
+        p_is_success: false,
+        p_provider_reference: null,
+        p_error_code: errorCode,
+        p_error_message: errorMessage,
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          refund_id,
+          error: errorMessage,
+          error_code: errorCode,
+        }),
+        { status: isTimeout ? 504 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    // 8. Parse PayTR Response & Validate Integrity
     const responseText = await paytrResponse.text();
     let paytrData: Record<string, unknown> = {};
+    let isMalformed = false;
+
     try {
       paytrData = JSON.parse(responseText);
     } catch {
-      console.error('[paytr-refund] Non-JSON response from PayTR:', responseText);
-      paytrData = { status: 'error', err_msg: `Geçersiz sağlayıcı yanıtı: ${responseText.slice(0, 100)}` };
+      isMalformed = true;
+      console.error('[paytr-refund] Non-JSON or malformed response from PayTR:', responseText);
     }
 
-    const isSuccess = paytrData.status === 'success';
+    const isSuccess = !isMalformed && paytrResponse.ok && paytrData.status === 'success';
     const providerRef = typeof paytrData.reference_no === 'string' ? paytrData.reference_no : null;
-    const errNo = typeof paytrData.err_no === 'string' ? paytrData.err_no : null;
-    const errMsg = typeof paytrData.err_msg === 'string' ? paytrData.err_msg : null;
+    const errNo = isMalformed
+      ? 'MALFORMED_PROVIDER_RESPONSE'
+      : (typeof paytrData.err_no === 'string' ? paytrData.err_no : (!isSuccess ? 'PROVIDER_REJECTED' : null));
+    const errMsg = isMalformed
+      ? `Geçersiz sağlayıcı yanıtı: ${responseText.slice(0, 100)}`
+      : (typeof paytrData.err_msg === 'string' ? paytrData.err_msg : (!isSuccess ? 'PayTR iade talebini reddetti.' : null));
 
-    // 8. Atomically Finalize in Database
+    // 9. Fail-Closed Finalization in Database
     const { data: finalizeRes, error: finalizeError } = await supabaseAdmin.rpc('finalize_admin_refund', {
       p_refund_id: refund_id,
       p_is_success: isSuccess,

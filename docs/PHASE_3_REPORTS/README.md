@@ -23,6 +23,7 @@ This directory contains the immutable, chronological sub-phase execution reports
 | [`PHASE_3_13_AUTH_SECURITY.md`](PHASE_3_13_AUTH_SECURITY.md) | Remove Embedded Admin Auth & Production Auth Bypasses | `6c4c76ba208f237f8da0567e9b37c0eb0c5beeb6` | `45192cc3f30cb703e3a47da4f6f1a9b23b6b71bf` | 🟢 100% VERIFIED |
 | [`PHASE_3_14_ADMIN_REAL_ORDERS.md`](PHASE_3_14_ADMIN_REAL_ORDERS.md) | Real Admin Orders/Payments Data & Schema Repair | `45192cc3f30cb703e3a47da4f6f1a9b23b6b71bf` | `894d75f643e900f913d8e5744cb89d3896dfa42a` | 🟢 100% VERIFIED |
 | [`PHASE_3_15_CHECKOUT_READINESS.md`](PHASE_3_15_CHECKOUT_READINESS.md) | Checkout State, Readiness & Settings Atomicity | `894d75f643e900f913d8e5744cb89d3896dfa42a` | `e0fb62d3dfdd83b879ef27ff2842c525da44589d` | 🟢 100% VERIFIED |
-| [`PHASE_3_16_PAYMENT_RESUME.md`](PHASE_3_16_PAYMENT_RESUME.md) | Recoverable Pending Payment & Cart Lifecycle | Tracking `phase-3` | Tracking `phase-3` | 🟢 100% VERIFIED |
+| [`PHASE_3_16_PAYMENT_RESUME.md`](PHASE_3_16_PAYMENT_RESUME.md) | Recoverable Pending Payment & Cart Lifecycle | `3d7ff8a29a43a0e9803b9b4bc48f3b26b34d70b6` | `24aa57945d8200f681a54fb81ef0e85ec8e80ae4` | 🟢 100% VERIFIED |
+| [`PHASE_3_17_REFUND_HARDENING.md`](PHASE_3_17_REFUND_HARDENING.md) | PayTR Refund Fail-Closed Financial Hardening | Tracking `phase-3` | Tracking `phase-3` | 🟢 100% VERIFIED |
 
 

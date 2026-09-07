@@ -383,6 +383,7 @@ export const adminOrderRepository = {
 
     const { data, error } = await supabase.functions.invoke('paytr-refund', {
       body: {
+        ...request,
         payment_id: request.payment_id,
         refund_amount_minor: request.refund_amount_minor,
         reason: request.reason,

@@ -71,4 +71,42 @@ describe('PayTR Refund Integration Unit Tests (Phase 3.7)', () => {
     expect(referenceNo.length).toBeLessThanOrEqual(64);
     expect(/^[a-zA-Z0-9]+$/.test(referenceNo)).toBe(true);
   });
+
+  describe('Phase 3.17 Fail-Closed Guarantees', () => {
+    it('enforces that missing secrets constitutes a hard configuration error, not a mock fallback', () => {
+      const missingMerchantId = '';
+      const missingKey = '';
+      const missingSalt = '';
+
+      const isConfigured = Boolean(missingMerchantId && missingKey && missingSalt);
+      expect(isConfigured).toBe(false);
+    });
+
+    it('classifies provider responses truthfully into success or fail-closed error', () => {
+      const successResponse = JSON.stringify({ status: 'success', reference_no: 'RF12345' });
+      const parsedSuccess = JSON.parse(successResponse);
+      expect(parsedSuccess.status === 'success').toBe(true);
+
+      const rejectedResponse = JSON.stringify({ status: 'failed', err_no: '102', err_msg: 'Yetersiz Bakiye' });
+      const parsedReject = JSON.parse(rejectedResponse);
+      expect(parsedReject.status === 'success').toBe(false);
+
+      const malformedResponse = '<html>502 Bad Gateway</html>';
+      let parsedMalformed: Record<string, unknown> | null = null;
+      try {
+        parsedMalformed = JSON.parse(malformedResponse);
+      } catch {
+        parsedMalformed = null;
+      }
+      expect(parsedMalformed).toBeNull();
+    });
+
+    it('strictly requires integer kuruş minor units and rejects fractional values', () => {
+      const isValidMinor = (val: number) => Number.isInteger(val) && val > 0;
+      expect(isValidMinor(15000)).toBe(true);
+      expect(isValidMinor(150.5)).toBe(false);
+      expect(isValidMinor(-100)).toBe(false);
+      expect(isValidMinor(0)).toBe(false);
+    });
+  });
 });

@@ -452,6 +452,7 @@ export interface AdminRefundRequest {
   refund_amount_minor: number;
   reason?: string;
   idempotency_key?: string;
+  [key: string]: unknown;
 }
 
 export interface AdminRefundResponse {
