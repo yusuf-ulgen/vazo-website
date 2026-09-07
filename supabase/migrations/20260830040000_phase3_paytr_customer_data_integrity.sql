@@ -110,7 +110,6 @@ BEGIN
     WHERE user_id = p_customer_id;
 
     v_customer_name := COALESCE(
-        v_customer_record.company_name,
         NULLIF(TRIM(COALESCE(v_customer_record.first_name, '') || ' ' || COALESCE(v_customer_record.last_name, '')), ''),
         NULLIF(TRIM(COALESCE(p_shipping_address->>'recipient_name', '')), '')
     );
@@ -120,7 +119,7 @@ BEGIN
     END IF;
 
     v_customer_email := COALESCE(
-        NULLIF(TRIM(COALESCE(v_customer_record.email, '')), ''),
+        NULLIF(TRIM(COALESCE((SELECT email FROM auth.users WHERE id = p_customer_id), '')), ''),
         NULLIF(TRIM(COALESCE(p_shipping_address->>'email', '')), ''),
         NULLIF(TRIM(COALESCE(auth.jwt()->>'email', '')), '')
     );
