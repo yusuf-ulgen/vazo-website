@@ -97,9 +97,17 @@ describe('ProductPurchasePanel Component', () => {
     expect(handleSelectVariant).toHaveBeenCalledWith(variant2);
   });
 
-  it('toggles wishlist status', () => {
-    const product = createProduct({ id: 'p-wish' });
-    const variant = createVariant();
+  it('displays volume tier discount banner when selecting quantity 6 or more', () => {
+    const variant = createVariant({ retailPrice: 1450, stockQuantity: 20 });
+    const product = createProduct({
+      retailPrice: 1450,
+      variants: [variant],
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 6,
+        tiers: [{ minQuantity: 6, maxQuantity: 11, unitPrice: 1160, discountPercentage: 20 }],
+      },
+    });
 
     renderWithRouter(
       <ProductPurchasePanel
@@ -109,9 +117,13 @@ describe('ProductPurchasePanel Component', () => {
       />
     );
 
-    const wishBtn = screen.getByRole('button', { name: 'Favorilere Ekle' });
-    fireEvent.click(wishBtn);
+    const incrementBtn = screen.getByRole('button', { name: 'Adet Artır' });
+    // Increase to 6
+    for (let i = 0; i < 5; i++) {
+      fireEvent.click(incrementBtn);
+    }
 
-    expect(wishlistStore.has('p-wish')).toBe(true);
+    expect(screen.getByText(/%20 Toplu Alım İndirimi/)).toBeInTheDocument();
+    expect(screen.getAllByText(/1\.160/).length).toBeGreaterThan(0);
   });
 });

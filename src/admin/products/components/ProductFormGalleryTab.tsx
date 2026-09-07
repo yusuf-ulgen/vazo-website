@@ -234,7 +234,7 @@ export const ProductFormGalleryTab: React.FC<ProductFormGalleryTabProps> = ({
             Ürün Medya Galerisi ({mediaList.length} Görsel)
           </span>
           <span className="text-[11px] text-text-muted">
-            Supabase Storage tabanlı yüksek çözünürlüklü ürün fotoğrafları (JPEG, PNG, WebP — Maks 5 MB).
+            Supabase Storage tabanlı yüksek çözünürlüklü ürün fotoğrafları (Önerilen format: 3:4 Dikey Portre — örn. 1200x1600px. Vitrinde otomatik hizalanır).
           </span>
         </div>
         <button
@@ -297,7 +297,7 @@ export const ProductFormGalleryTab: React.FC<ProductFormGalleryTabProps> = ({
               Görselleri buraya sürükleyin veya <span className="text-accent-primary underline">dosya seçin</span>
             </p>
             <p className="text-[11px] text-text-muted mt-0.5">
-              Desteklenen formatlar: JPG, PNG, WebP (Maksimum 5 MB / dosya)
+              Standart Oran: 3:4 Dikey Portre (Farklı boyutlar vitrinde otomatik 3:4 pencereye sığdırılır) • Maks 5 MB / dosya
             </p>
           </div>
         </div>

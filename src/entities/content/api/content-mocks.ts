@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import { siteConfig } from '@/shared/config/site-config';
 import type { MegaMenuData } from '@/shared/mocks/navigation';
+import { mockPolicyPages } from './policy-mocks';
 
 export const mockAnnouncement: AnnouncementBarConfig = {
   isEnabled: true,
@@ -282,90 +283,7 @@ export const mockContentPages: Record<string, {
       },
     ],
   },
-  shipping_returns: {
-    id: 'cp-shipping',
-    pageKey: 'shipping_returns',
-    title: 'Teslimat & İade Koşulları',
-    seoTitle: 'Teslimat & İade Koşulları | Vazo Studio',
-    seoDescription: 'Vazo Studio sigortalı kargo teslimatı, darbe sönümleyici ambalaj ve 14 gün koşulsuz iade süreci.',
-    published: true,
-    sections: [
-      {
-        id: 'cs-ship-1',
-        pageId: 'cp-shipping',
-        sectionKey: 'delivery_guarantee',
-        title: '1. Kırılmaya Karşı %100 Güvenli Sevkiyat',
-        content: 'Tüm siparişlerimiz, yüksek yoğunluklu özel kesim darbe sönümleyici süngerler ve çift oluklu kraft mukavva kutularda sevk edilir.\n\nKargo taşıma sürecinde oluşabilecek her türlü hasar stüdyomuzun tam güvencesi altındadır. Kargonuz hasarlı ulaştığında fotoğraf iletmeniz halinde derhal ücretsiz yeni ürün gönderilir.',
-        sortOrder: 1,
-        active: true,
-      },
-      {
-        id: 'cs-ship-2',
-        pageId: 'cp-shipping',
-        sectionKey: 'return_policy',
-        title: '2. 14 Gün Koşulsuz İade Hakkı',
-        content: 'Satın aldığınız ürünleri teslim aldığınız tarihten itibaren 14 gün içinde herhangi bir gerekçe göstermeksizin orijinal ambalajında iade edebilirsiniz.\n\nİade edilen ürünler incelendikten sonra 3 iş günü içerisinde ödeme tutarınız kartınıza kesintisiz iade edilir.',
-        sortOrder: 2,
-        active: true,
-      },
-    ],
-  },
-  privacy_kvkk: {
-    id: 'cp-privacy',
-    pageKey: 'privacy_kvkk',
-    title: 'Gizlilik Politikası & KVKK Aydınlatma Metni',
-    seoTitle: 'Gizlilik Politikası & KVKK | Vazo Studio',
-    seoDescription: '6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) uyarınca aydınlatma ve veri gizliliği bildirimi.',
-    published: true,
-    sections: [
-      {
-        id: 'cs-priv-1',
-        pageId: 'cp-privacy',
-        sectionKey: 'data_controller',
-        title: '1. Veri Sorumlusu',
-        content: '6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, Vazo Studio ("Şirket") olarak veri sorumlusu sıfatıyla kişisel verilerinizi kanuna uygun şekilde işlemekte ve korumaktayız.',
-        sortOrder: 1,
-        active: true,
-      },
-      {
-        id: 'cs-priv-2',
-        pageId: 'cp-privacy',
-        sectionKey: 'processed_data',
-        title: '2. İşlenen Kişisel Veriler & Güvenlik',
-        content: 'Web sitemizi ziyaretiniz ve sipariş süreçleriniz kapsamında; ad-soyad, teslimat ve fatura adresi, e-posta adresi, telefon numarası ve IP adresi verileriniz işlenir.\n\nKredi kartı ve ödeme bilgileri doğrudan lisanslı ödeme kuruluşunun PCI-DSS standartlarındaki güvenli altyapısında işlenir; stüdyomuz sunucularında kart bilgisi tutulmaz.',
-        sortOrder: 2,
-        active: true,
-      },
-    ],
-  },
-  terms: {
-    id: 'cp-terms',
-    pageKey: 'terms',
-    title: 'Mesafeli Satış & Kullanım Koşulları',
-    seoTitle: 'Kullanım Koşulları | Vazo Studio',
-    seoDescription: 'Vazo Studio web sitesi kullanım şartları, fikri mülkiyet ve mesafeli satış sözleşmesi detayları.',
-    published: true,
-    sections: [
-      {
-        id: 'cs-terms-1',
-        pageId: 'cp-terms',
-        sectionKey: 'intellectual_property',
-        title: '1. Fikri Mülkiyet & Telif Hakları',
-        content: 'Bu web sitesinde yer alan tüm heykelsi seramik form tasarımları, ürün fotoğrafları, metinler, grafikler ve marka logosu Vazo Studio mülkiyetindedir. İzinsiz kopyalanamaz ve ticari amaçla kullanılamaz.',
-        sortOrder: 1,
-        active: true,
-      },
-      {
-        id: 'cs-terms-2',
-        pageId: 'cp-terms',
-        sectionKey: 'distance_sales',
-        title: '2. Mesafeli Satış & Sipariş Koşulları',
-        content: 'Web sitemiz üzerinden verilen siparişler 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümlerine tabidir.',
-        sortOrder: 2,
-        active: true,
-      },
-    ],
-  },
+  ...mockPolicyPages,
 };
 
 export const mockFaqGroups = [

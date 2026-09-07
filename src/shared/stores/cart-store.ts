@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Product, ProductVariant } from '@/entities/product/types';
+import { Product, ProductVariant, WholesalePricingTier } from '@/entities/product/types';
 
 export interface CartItem {
   id: string; // product_id + variant_id
@@ -11,15 +11,56 @@ export interface CartItem {
   colorName: string;
   sku: string;
   retailPrice: number;
+  unitPrice: number; // Effective unit price after tier discount
+  discountPercentage?: number;
   quantity: number;
   maxStock?: number;
   imageUrl?: string;
+  wholesaleTiers?: WholesalePricingTier[];
 }
 
 const CART_STORAGE_KEY = 'vazo_cart_items';
 
 type CartListener = (items: CartItem[]) => void;
 const listeners = new Set<CartListener>();
+
+export function resolveCartItemPricing(
+  basePrice: number,
+  quantity: number,
+  tiers?: WholesalePricingTier[]
+): {
+  unitPrice: number;
+  discountPercentage?: number;
+} {
+  if (!tiers || tiers.length === 0 || quantity < 1) {
+    return { unitPrice: basePrice, discountPercentage: undefined };
+  }
+
+  // Find matching tier
+  const matchingTier = tiers.find(
+    (t) => quantity >= t.minQuantity && (t.maxQuantity === undefined || quantity <= t.maxQuantity)
+  );
+
+  if (matchingTier) {
+    const unitPrice =
+      matchingTier.unitPrice && matchingTier.unitPrice > 0
+        ? matchingTier.unitPrice
+        : matchingTier.discountPercentage
+        ? Math.round(basePrice * (1 - matchingTier.discountPercentage / 100))
+        : basePrice;
+
+    const discountPercentage =
+      matchingTier.discountPercentage ||
+      (basePrice > 0 && unitPrice < basePrice ? Math.round(((basePrice - unitPrice) / basePrice) * 100) : undefined);
+
+    return {
+      unitPrice,
+      discountPercentage,
+    };
+  }
+
+  return { unitPrice: basePrice, discountPercentage: undefined };
+}
 
 function sanitizeCartItem(raw: unknown): CartItem | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -40,6 +81,11 @@ function sanitizeCartItem(raw: unknown): CartItem | null {
     return null;
   }
 
+  const basePrice = item.retailPrice;
+  const qty = Math.floor(item.quantity);
+  const rawTiers = Array.isArray(item.wholesaleTiers) ? (item.wholesaleTiers as WholesalePricingTier[]) : undefined;
+  const pricing = resolveCartItemPricing(basePrice, qty, rawTiers);
+
   return {
     id: item.id,
     productId: item.productId,
@@ -49,10 +95,13 @@ function sanitizeCartItem(raw: unknown): CartItem | null {
     variantName: typeof item.variantName === 'string' ? item.variantName : 'Standart',
     colorName: typeof item.colorName === 'string' ? item.colorName : '',
     sku: typeof item.sku === 'string' ? item.sku : item.productSlug,
-    retailPrice: item.retailPrice,
-    quantity: Math.floor(item.quantity),
+    retailPrice: basePrice,
+    unitPrice: pricing.unitPrice,
+    discountPercentage: pricing.discountPercentage,
+    quantity: qty,
     maxStock: typeof item.maxStock === 'number' && Number.isFinite(item.maxStock) ? item.maxStock : undefined,
     imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : undefined,
+    wholesaleTiers: rawTiers,
   };
 }
 
@@ -100,19 +149,37 @@ export const cartStore = {
     const rawQty = Math.floor(Number(quantity));
     if (!Number.isFinite(rawQty) || rawQty <= 0) return;
 
+    const baseRetailPrice = chosenVariant?.retailPrice ?? product.retailPrice;
+    const tiers: WholesalePricingTier[] =
+      product.wholesale?.tiers && product.wholesale.tiers.length > 0
+        ? product.wholesale.tiers
+        : product.wholesale?.isWholesaleEnabled
+        ? [
+            { minQuantity: 6, maxQuantity: 11, unitPrice: Math.round(baseRetailPrice * 0.8), discountPercentage: 20 },
+            { minQuantity: 12, maxQuantity: 23, unitPrice: Math.round(baseRetailPrice * 0.75), discountPercentage: 25 },
+            { minQuantity: 24, maxQuantity: 49, unitPrice: Math.round(baseRetailPrice * 0.7), discountPercentage: 30 },
+            { minQuantity: 50, maxQuantity: undefined, unitPrice: Math.round(baseRetailPrice * 0.6), discountPercentage: 40 },
+          ]
+        : [];
+
     const itemId = `${product.id}_${chosenVariant?.id || 'default'}`;
     const existingIndex = cartItems.findIndex((item) => item.id === itemId);
 
     if (existingIndex > -1) {
       const existing = cartItems[existingIndex]!;
       const newQuantity = Math.min(availableStock, existing.quantity + rawQty);
+      const pricing = resolveCartItemPricing(existing.retailPrice, newQuantity, existing.wholesaleTiers || tiers);
       cartItems[existingIndex] = {
         ...existing,
         quantity: newQuantity,
+        unitPrice: pricing.unitPrice,
+        discountPercentage: pricing.discountPercentage,
+        wholesaleTiers: existing.wholesaleTiers || (tiers.length > 0 ? tiers : undefined),
         maxStock: availableStock,
       };
     } else {
       const initialQuantity = Math.min(availableStock, rawQty);
+      const pricing = resolveCartItemPricing(baseRetailPrice, initialQuantity, tiers);
       cartItems.push({
         id: itemId,
         productId: product.id,
@@ -122,7 +189,10 @@ export const cartStore = {
         variantName: chosenVariant?.name || 'Standart',
         colorName: chosenVariant?.colorName || '',
         sku: chosenVariant?.sku || product.slug,
-        retailPrice: chosenVariant?.retailPrice ?? product.retailPrice,
+        retailPrice: baseRetailPrice,
+        unitPrice: pricing.unitPrice,
+        discountPercentage: pricing.discountPercentage,
+        wholesaleTiers: tiers.length > 0 ? tiers : undefined,
         quantity: initialQuantity,
         maxStock: availableStock,
         imageUrl: chosenVariant?.imageUrl || product.images[0]?.url,
@@ -142,7 +212,13 @@ export const cartStore = {
     cartItems = cartItems.map((item) => {
       if (item.id !== itemId) return item;
       const targetQty = item.maxStock ? Math.min(item.maxStock, rawQty) : rawQty;
-      return { ...item, quantity: targetQty };
+      const pricing = resolveCartItemPricing(item.retailPrice, targetQty, item.wholesaleTiers);
+      return {
+        ...item,
+        quantity: targetQty,
+        unitPrice: pricing.unitPrice,
+        discountPercentage: pricing.discountPercentage,
+      };
     });
     notify();
   },
@@ -174,7 +250,7 @@ export function useCart() {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce(
-    (sum, item) => sum + item.retailPrice * item.quantity,
+    (sum, item) => sum + (item.unitPrice ?? item.retailPrice) * item.quantity,
     0
   );
   const freeShippingThreshold = 5000;

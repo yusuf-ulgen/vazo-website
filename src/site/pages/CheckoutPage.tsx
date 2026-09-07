@@ -23,6 +23,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useSEO } from '@/shared/lib/seo';
+import { AuthModal } from '@/site/components/AuthModal';
 
 const CHECKOUT_STEPS: StepItem[] = [
   { id: 1, label: 'Teslimat Adresi' },
@@ -37,6 +38,7 @@ export function CheckoutPage() {
   const { items: cartItems, clear: clearCart } = useCart();
   const { settings } = useSiteSettings();
   const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
+  const [checkoutAuthModalOpen, setCheckoutAuthModalOpen] = useState(false);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingAddress, setShippingAddress] = useState<CustomerAddress | null>(null);
@@ -140,22 +142,36 @@ export function CheckoutPage() {
               <h1 className="font-display text-2xl text-text-primary">Ödeme İçin Giriş Yapın</h1>
               <p className="text-xs text-text-secondary max-w-sm mx-auto leading-relaxed">
                 Siparişinizi güvenle oluşturabilmemiz ve teslimatınızı takip edebilmeniz için lütfen
-                hesabınıza giriş yapın. Sepetiniz korunacaktır.
+                hesabınıza giriş yapın veya yeni hesap oluşturun. Sepetiniz korunacaktır.
               </p>
             </div>
 
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-2 max-w-xs mx-auto">
+              <button
+                type="button"
+                onClick={() => setCheckoutAuthModalOpen(true)}
+                className="w-full py-3 px-4 bg-action-primary text-action-primary-text text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                Giriş Yap / Kayıt Ol
+              </button>
+
               <button
                 type="button"
                 onClick={() => customerAuthStore.signInWithGoogle('/checkout')}
-                className="w-full py-3 px-4 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 bg-surface-primary border border-border-default text-text-primary text-xs font-medium hover:bg-surface-secondary transition-colors flex items-center justify-center gap-2"
               >
-                <LogIn className="w-4 h-4" />
                 Google ile Giriş Yap & Devam Et
               </button>
             </div>
           </div>
         </Container>
+
+        <AuthModal
+          isOpen={checkoutAuthModalOpen}
+          onClose={() => setCheckoutAuthModalOpen(false)}
+          returnUrl="/checkout"
+        />
       </div>
     );
   }

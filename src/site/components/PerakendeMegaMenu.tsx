@@ -7,9 +7,10 @@ import { MegaMenuData } from '@/shared/mocks/navigation';
 export interface PerakendeMegaMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onMouseEnter?: () => void;
 }
 
-export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
+export function PerakendeMegaMenu({ isOpen, onClose, onMouseEnter }: PerakendeMegaMenuProps) {
   const [menuData, setMenuData] = useState<MegaMenuData | null>(null);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export function PerakendeMegaMenu({ isOpen, onClose }: PerakendeMegaMenuProps) {
 
   return (
     <div
-      onMouseEnter={() => {}}
+      onMouseEnter={onMouseEnter}
       onMouseLeave={onClose}
       role="region"
       aria-label="Perakende Menüsü"

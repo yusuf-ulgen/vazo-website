@@ -35,7 +35,7 @@ export function BestSellersRailReference03() {
 
   const handleScroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = 320;
+      const scrollAmount = 360;
       if (typeof scrollRef.current.scrollBy === 'function') {
         scrollRef.current.scrollBy({
           left: direction === 'left' ? -scrollAmount : scrollAmount,
@@ -48,7 +48,7 @@ export function BestSellersRailReference03() {
   if (errorMessage) {
     return (
       <section className="w-full bg-canvas-default py-12 md:py-16 border-b border-border-subtle">
-        <Container size="lg">
+        <Container size="full" className="max-w-[1536px] px-4 sm:px-8 lg:px-12">
           <div className="max-w-md mx-auto p-6 bg-feedback-error/10 border border-feedback-error/20 rounded-lg text-feedback-error text-center space-y-3">
             <AlertCircle className="w-6 h-6 mx-auto" />
             <p className="text-xs">{errorMessage}</p>
@@ -68,7 +68,7 @@ export function BestSellersRailReference03() {
 
   return (
     <section className="w-full bg-canvas-default py-12 md:py-20 border-b border-border-subtle">
-      <Container size="lg">
+      <Container size="full" className="max-w-[1536px] px-4 sm:px-8 lg:px-12">
         {/* Section Header (Reference 03) */}
         <div className="flex items-center justify-between gap-4 mb-8">
           <div className="text-center sm:text-left mx-auto sm:mx-0">
@@ -91,7 +91,7 @@ export function BestSellersRailReference03() {
 
         {/* Carousel Container with Left/Right Buttons */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="aspect-3/4 bg-surface-secondary/40 animate-pulse rounded-sm" />
             ))}
@@ -107,15 +107,15 @@ export function BestSellersRailReference03() {
               type="button"
               onClick={() => handleScroll('left')}
               aria-label="Önceki Ürünler"
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary transition-colors"
+              className="absolute -left-3 sm:-left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary hover:scale-105 active:scale-95 transition-all"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
 
             {/* Scrollable Rail */}
             <div
               ref={scrollRef}
-              className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
+              className="flex gap-5 sm:gap-6 md:gap-7 lg:gap-8 overflow-x-auto scroll-smooth pb-4 pt-1 px-1 scrollbar-none snap-x snap-mandatory"
             >
               {products.map((p) => {
                 const primaryImage = p.images.find((img) => img.isPrimary)?.url || p.images[0]?.url || '/placeholder-vase.jpg';
@@ -124,10 +124,10 @@ export function BestSellersRailReference03() {
                 return (
                   <div
                     key={p.id}
-                    className="w-[240px] sm:w-[260px] md:w-[280px] shrink-0 snap-start flex flex-col group/card bg-surface-primary border border-border-subtle overflow-hidden transition-all duration-300 hover:shadow-card"
+                    className="w-[270px] sm:w-[300px] md:w-[320px] lg:w-[340px] shrink-0 snap-start flex flex-col group/card bg-surface-primary border border-border-subtle overflow-hidden transition-all duration-300 hover:shadow-card"
                   >
                     {/* Image Area */}
-                    <div className="relative aspect-3/4 overflow-hidden bg-surface-secondary">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-surface-secondary">
                       <Link to={`/products/${p.slug}`} className="block w-full h-full">
                         <img
                           src={primaryImage}
@@ -182,9 +182,9 @@ export function BestSellersRailReference03() {
               type="button"
               onClick={() => handleScroll('right')}
               aria-label="Sonraki Ürünler"
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary transition-colors"
+              className="absolute -right-3 sm:-right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-surface-primary border border-border-default shadow-card text-text-primary flex items-center justify-center hover:bg-surface-secondary hover:scale-105 active:scale-95 transition-all"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         )}

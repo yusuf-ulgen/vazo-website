@@ -1,17 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { contentRepository } from '@/entities/content/api/content-repository';
 import { HeroBannerConfig } from '@/entities/content/types';
 import { Container } from '@/shared/ui/Container';
 
+const TABS = ['retail', 'wholesale'] as const;
+type Tab = (typeof TABS)[number];
+const SLIDE_INTERVAL_MS = 5000;
+
 export function HeroSection() {
   const [hero, setHero] = useState<HeroBannerConfig | null>(null);
-  const [activeTab, setActiveTab] = useState<'retail' | 'wholesale'>('retail');
+  const [activeTab, setActiveTab] = useState<Tab>('retail');
+  const [isMobile, setIsMobile] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     contentRepository.getHero().then((data) => setHero(data));
   }, []);
+
+  // Detect mobile breakpoint (below lg = 1024px)
+  useEffect(() => {
+    const mq = window.matchMedia?.('(max-width: 1023px)');
+    if (!mq) return;
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Auto-rotate on mobile only
+  const startInterval = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      setActiveTab((prev) => (prev === 'retail' ? 'wholesale' : 'retail'));
+    }, SLIDE_INTERVAL_MS);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+    startInterval();
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isMobile, startInterval]);
+
+  const goToTab = (tab: Tab) => {
+    setActiveTab(tab);
+    if (isMobile) startInterval(); // reset timer on manual dot tap
+  };
 
   if (!hero) {
     return (
@@ -29,11 +69,11 @@ export function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Text Content (Left Column) */}
           <div className="lg:col-span-6 space-y-6 md:space-y-8 text-left z-10">
-            {/* Dual Mode Switcher */}
-            <div className="inline-flex p-1 bg-surface-secondary border border-border-default select-none rounded">
+            {/* Dual Mode Switcher — desktop only */}
+            <div className="hidden lg:inline-flex p-1 bg-surface-secondary border border-border-default select-none rounded">
               <button
                 type="button"
-                onClick={() => setActiveTab('retail')}
+                onClick={() => goToTab('retail')}
                 className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-300 rounded ${
                   activeTab === 'retail'
                     ? 'bg-action-primary text-action-primary-text shadow-xs'
@@ -44,7 +84,7 @@ export function HeroSection() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('wholesale')}
+                onClick={() => goToTab('wholesale')}
                 className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all duration-300 rounded ${
                   activeTab === 'wholesale'
                     ? 'bg-action-primary text-action-primary-text shadow-xs'
@@ -100,6 +140,23 @@ export function HeroSection() {
                   <span>{activeTab === 'retail' ? 'Toptan Satış' : 'Ticari Hesap Başvurusu'}</span>
                 </Link>
               </div>
+            </div>
+
+            {/* Mobile Dot Indicator — mobile only */}
+            <div className="flex lg:hidden items-center gap-2.5 pt-2">
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  aria-label={tab === 'retail' ? 'Perakende moduna geç' : 'Toptan moduna geç'}
+                  onClick={() => goToTab(tab)}
+                  className={`transition-all duration-300 rounded-full ${
+                    activeTab === tab
+                      ? 'w-6 h-2 bg-action-primary'
+                      : 'w-2 h-2 bg-border-default hover:bg-text-secondary'
+                  }`}
+                />
+              ))}
             </div>
           </div>
 

@@ -49,7 +49,7 @@ export function CommercialBenefitsReference03() {
 
   return (
     <section className="w-full bg-canvas-default py-12 md:py-16 border-b border-border-subtle">
-      <Container size="lg">
+      <Container size="full" className="max-w-[1536px] px-4 sm:px-8 lg:px-12">
         {/* Section Header (Reference 03) */}
         <div className="text-center max-w-xl mx-auto space-y-1 mb-10 md:mb-12">
           <span className="text-[11px] uppercase font-semibold tracking-editorial text-text-secondary">
@@ -60,11 +60,11 @@ export function CommercialBenefitsReference03() {
           </h2>
         </div>
 
-        {/* 5-Column Grid with delicate vertical dividers */}
+        {/* 4-Column Grid with delicate vertical dividers & balanced 5-space margins */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-28 bg-surface-secondary/40 animate-pulse rounded" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-32 bg-surface-secondary/40 animate-pulse rounded" />
             ))}
           </div>
         ) : benefits.length === 0 ? (
@@ -72,21 +72,21 @@ export function CommercialBenefitsReference03() {
             Ticari avantaj bilgisi bulunamadı.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 divide-y sm:divide-y-0 lg:divide-x divide-border-subtle">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${benefits.length === 4 ? 'lg:grid-cols-4' : benefits.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-5'} divide-y sm:divide-y-0 lg:divide-x divide-border-subtle`}>
             {benefits.map((b) => {
               const Icon = COMMERCIAL_BENEFIT_ICONS[b.iconName] || Tag;
               return (
                 <div
                   key={b.id || b.title}
-                  className="flex flex-col items-center text-center p-4 sm:p-6 space-y-2.5"
+                  className="flex flex-col items-center text-center px-6 sm:px-8 lg:px-12 py-6 sm:py-8 space-y-3"
                 >
-                  <div className="w-10 h-10 rounded-full bg-surface-secondary border border-border-subtle flex items-center justify-center text-text-primary mb-1">
-                    <Icon className="w-4 h-4 stroke-[1.5]" />
+                  <div className="w-12 h-12 rounded-full bg-surface-secondary border border-border-subtle flex items-center justify-center text-text-primary mb-1 shadow-xs">
+                    <Icon className="w-5 h-5 stroke-[1.5]" />
                   </div>
-                  <h3 className="font-sans text-xs font-semibold text-text-primary">
+                  <h3 className="font-sans text-xs font-semibold text-text-primary tracking-wide">
                     {b.title}
                   </h3>
-                  <p className="text-[11px] text-text-secondary font-sans leading-relaxed max-w-[180px]">
+                  <p className="text-[11px] text-text-secondary font-sans leading-relaxed max-w-[220px]">
                     {b.description}
                   </p>
                 </div>

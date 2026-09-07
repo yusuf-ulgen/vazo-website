@@ -7,9 +7,10 @@ import { MegaMenuData } from '@/shared/mocks/navigation';
 export interface ToptanMegaMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  onMouseEnter?: () => void;
 }
 
-export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
+export function ToptanMegaMenu({ isOpen, onClose, onMouseEnter }: ToptanMegaMenuProps) {
   const [menuData, setMenuData] = useState<MegaMenuData | null>(null);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export function ToptanMegaMenu({ isOpen, onClose }: ToptanMegaMenuProps) {
 
   return (
     <div
-      onMouseEnter={() => {}}
+      onMouseEnter={onMouseEnter}
       onMouseLeave={onClose}
       role="region"
       aria-label="Toptan Menüsü"

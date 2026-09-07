@@ -67,9 +67,16 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
         <div>
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-border-default">
-            <span className="font-display text-xl tracking-wider text-text-primary uppercase">
-              {settings.general.brandName}
-            </span>
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/images/MONOCACTUS.png"
+                alt={settings.general.brandName}
+                className="h-7 w-auto object-contain"
+              />
+              <span className="font-display text-xl tracking-wider text-text-primary uppercase">
+                {settings.general.brandName}
+              </span>
+            </div>
             <button
               type="button"
               onClick={onClose}

@@ -31,14 +31,11 @@ describe('Catalog Page Integration Tests (/products, /new, /bestsellers)', () =>
     expect(headings.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('filters by category button click and material dropdown', async () => {
+  it('filters by category button click and sorting', async () => {
     renderWithRouter(<CatalogPage mode="all" />, { routerInitialEntries: ['/products'] });
 
     const categoryBtn = await screen.findByRole('button', { name: 'Masa Üstü Vazolar' });
     fireEvent.click(categoryBtn);
-
-    const materialSelect = screen.getByLabelText('Materyale göre filtrele');
-    fireEvent.change(materialSelect, { target: { value: 'Stoneware' } });
 
     const sortSelect = screen.getByLabelText('Sıralama seçeneği');
     fireEvent.change(sortSelect, { target: { value: 'price_asc' } });

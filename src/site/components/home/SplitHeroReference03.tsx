@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowRight, AlertCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { contentRepository } from '@/entities/content/api/content-repository';
 import type { SplitHeroConfig } from '@/entities/content/types';
 
@@ -8,6 +8,14 @@ export function SplitHeroReference03() {
   const [splitHero, setSplitHero] = useState<SplitHeroConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Mobile slider state: 0 = Retail (Perakende), 1 = Wholesale (Toptan)
+  const [activeMobileIndex, setActiveMobileIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Touch gesture support for mobile swiping
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   const loadHero = async () => {
     setIsLoading(true);
@@ -26,6 +34,50 @@ export function SplitHeroReference03() {
   useEffect(() => {
     loadHero();
   }, []);
+
+  // 5-second autoplay loop for mobile slider
+  const nextSlide = useCallback(() => {
+    setActiveMobileIndex((prev) => (prev === 0 ? 1 : 0));
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setActiveMobileIndex((prev) => (prev === 0 ? 1 : 0));
+  }, []);
+
+  useEffect(() => {
+    if (isPaused || isLoading || errorMessage) return;
+
+    const timer = setInterval(() => {
+      nextSlide();
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [isPaused, isLoading, errorMessage, nextSlide, activeMobileIndex]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.targetTouches[0]) {
+      touchStartX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.targetTouches[0]) {
+      touchEndX.current = e.targetTouches[0].clientX;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diff = touchStartX.current - touchEndX.current;
+    // 40px swipe threshold
+    if (diff > 40) {
+      nextSlide();
+    } else if (diff < -40) {
+      prevSlide();
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   if (isLoading) {
     return (
@@ -61,23 +113,84 @@ export function SplitHeroReference03() {
   const wholesale = splitHero?.wholesale;
 
   return (
-    <section className="w-full bg-canvas-default border-b border-border-subtle overflow-hidden">
+    <section
+      className="w-full bg-canvas-default border-b border-border-subtle overflow-hidden"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Mobile Top Controls: Segmented Indicator Pills & Navigation (lg:hidden) */}
+      <div className="lg:hidden flex items-center justify-between px-4 sm:px-6 pt-3.5 pb-2 bg-canvas-default/95 border-b border-border-subtle/50">
+        {/* Segmented Switcher Pills */}
+        <div className="inline-flex items-center p-1 rounded-full bg-surface-secondary border border-border-subtle shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setActiveMobileIndex(0)}
+            className={`px-4 py-1 text-[11px] font-semibold tracking-wider uppercase rounded-full transition-all duration-300 ${
+              activeMobileIndex === 0
+                ? 'bg-action-primary text-action-primary-text shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            Perakende
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMobileIndex(1)}
+            className={`px-4 py-1 text-[11px] font-semibold tracking-wider uppercase rounded-full transition-all duration-300 ${
+              activeMobileIndex === 1
+                ? 'bg-action-primary text-action-primary-text shadow-xs'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            Toptan
+          </button>
+        </div>
+
+        {/* Prev / Next Chevrons */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Önceki vitrin"
+            className="w-7 h-7 rounded-full bg-surface-primary border border-border-subtle flex items-center justify-center text-text-primary hover:bg-surface-secondary active:scale-95 transition-all shadow-2xs"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Sonraki vitrin"
+            className="w-7 h-7 rounded-full bg-surface-primary border border-border-subtle flex items-center justify-center text-text-primary hover:bg-surface-secondary active:scale-95 transition-all shadow-2xs"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        {/* Left: BİREYSEL ALIŞVERİŞ (Perakende) */}
+        {/* Left Column: BİREYSEL ALIŞVERİŞ (Perakende) */}
         {retail && retail.active ? (
-          <div className="relative min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] flex flex-col justify-center p-8 sm:p-12 lg:p-16 border-b lg:border-b-0 lg:border-r border-border-subtle overflow-hidden group">
-            {/* Background Image */}
+          <div
+            key={activeMobileIndex === 0 ? 'retail-active' : 'retail-inactive'}
+            className={`relative min-h-[480px] sm:min-h-[520px] lg:min-h-[580px] flex-col justify-center p-6 sm:p-12 lg:p-16 border-b lg:border-b-0 lg:border-r border-border-subtle overflow-hidden group ${
+              activeMobileIndex === 0 ? 'flex animate-hero-slide' : 'hidden lg:flex'
+            }`}
+          >
+            {/* Background Image: right-focal positioning prevents vases from being cropped on mobile */}
             <div className="absolute inset-0 z-0">
               <img
                 src={retail.imageUrl}
                 alt={retail.title || 'Perakende Vazo Koleksiyonu'}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover object-[78%_center] lg:object-[80%_center] group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-canvas-default/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-canvas-default/95 via-canvas-default/65 to-transparent/10 sm:from-canvas-default/75 sm:via-canvas-default/30" />
             </div>
 
             {/* Content Overlay */}
-            <div className="relative z-10 space-y-4 max-w-md text-left">
+            <div className="relative z-10 space-y-4 max-w-[260px] sm:max-w-md text-left">
               {retail.eyebrow && (
                 <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
                   {retail.eyebrow}
@@ -101,26 +214,35 @@ export function SplitHeroReference03() {
             </div>
           </div>
         ) : (
-          <div className="min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] flex items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-border-subtle bg-surface-secondary/20 text-xs text-text-muted">
+          <div
+            className={`min-h-[480px] sm:min-h-[520px] lg:min-h-[580px] items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-border-subtle bg-surface-secondary/20 text-xs text-text-muted ${
+              activeMobileIndex === 0 ? 'flex' : 'hidden lg:flex'
+            }`}
+          >
             Perakende vitrini şu anda devre dışı.
           </div>
         )}
 
-        {/* Right: PROFESYONEL ALIŞVERİŞ (Toptan) */}
+        {/* Right Column: PROFESYONEL ALIŞVERİŞ (Toptan) */}
         {wholesale && wholesale.active ? (
-          <div className="relative min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] flex flex-col justify-center p-8 sm:p-12 lg:p-16 overflow-hidden group">
-            {/* Background Image */}
+          <div
+            key={activeMobileIndex === 1 ? 'wholesale-active' : 'wholesale-inactive'}
+            className={`relative min-h-[480px] sm:min-h-[520px] lg:min-h-[580px] flex-col justify-center p-6 sm:p-12 lg:p-16 overflow-hidden group ${
+              activeMobileIndex === 1 ? 'flex animate-hero-slide' : 'hidden lg:flex'
+            }`}
+          >
+            {/* Background Image: right-focal positioning prevents artwork from being cropped on mobile */}
             <div className="absolute inset-0 z-0">
               <img
                 src={wholesale.imageUrl}
                 alt={wholesale.title || 'Toptan Seramik Proje ve Mimari Çözümler'}
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover object-[78%_center] lg:object-[80%_center] group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-canvas-default/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-canvas-default/95 via-canvas-default/65 to-transparent/10 sm:from-canvas-default/75 sm:via-canvas-default/30" />
             </div>
 
             {/* Content Overlay */}
-            <div className="relative z-10 space-y-4 max-w-md text-left">
+            <div className="relative z-10 space-y-4 max-w-[260px] sm:max-w-md text-left">
               {wholesale.eyebrow && (
                 <span className="text-xs uppercase font-semibold tracking-editorial text-text-secondary">
                   {wholesale.eyebrow}
@@ -144,10 +266,25 @@ export function SplitHeroReference03() {
             </div>
           </div>
         ) : (
-          <div className="min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] flex items-center justify-center p-8 bg-surface-secondary/20 text-xs text-text-muted">
+          <div
+            className={`min-h-[480px] sm:min-h-[520px] lg:min-h-[580px] items-center justify-center p-8 bg-surface-secondary/20 text-xs text-text-muted ${
+              activeMobileIndex === 1 ? 'flex' : 'hidden lg:flex'
+            }`}
+          >
             Toptan vitrini şu anda devre dışı.
           </div>
         )}
+      </div>
+
+      {/* Mobile 5-Second Looping Progress Indicator Bar (lg:hidden) */}
+      <div className="lg:hidden w-full bg-border-subtle/60 h-1 overflow-hidden">
+        <div
+          key={`progress-${activeMobileIndex}-${isPaused}`}
+          className="h-full bg-action-primary transition-all"
+          style={{
+            animation: isPaused ? 'none' : 'heroProgress 5s linear forwards',
+          }}
+        />
       </div>
     </section>
   );

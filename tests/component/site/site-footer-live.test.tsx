@@ -33,7 +33,7 @@ describe('SiteFooter Live Integration (Phase 2.9)', () => {
 
     renderComponent();
 
-    expect(screen.getAllByText('VAZO STUDIO DYNAMIC').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/VAZO STUDIO DYNAMIC/)).toBeInTheDocument();
     expect(screen.getByText(/iletisim@vazostudio.com/)).toBeInTheDocument();
     expect(screen.getByText(/555 9999/)).toBeInTheDocument();
   });

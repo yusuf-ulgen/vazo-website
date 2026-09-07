@@ -223,7 +223,15 @@ export const router = createBrowserRouter([
         element: <PrivacyKvkkPolicyPage />,
       },
       {
+        path: 'policies/privacy-policy',
+        element: <PrivacyKvkkPolicyPage />,
+      },
+      {
         path: 'policies/terms',
+        element: <TermsOfServicePage />,
+      },
+      {
+        path: 'policies/terms-of-service',
         element: <TermsOfServicePage />,
       },
       {
@@ -259,11 +267,19 @@ export const router = createBrowserRouter([
         element: <PrivacyKvkkPolicyPage />,
       },
       {
+        path: 'privacy-policy',
+        element: <PrivacyKvkkPolicyPage />,
+      },
+      {
         path: 'kvkk',
         element: <PrivacyKvkkPolicyPage />,
       },
       {
         path: 'terms',
+        element: <TermsOfServicePage />,
+      },
+      {
+        path: 'terms-of-service',
         element: <TermsOfServicePage />,
       },
       {

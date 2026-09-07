@@ -63,4 +63,24 @@ describe('CartDrawer Component', () => {
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(2);
   });
+
+  it('renders volume discount badge and strikethrough price when tier applies', () => {
+    const product = createProduct({
+      name: 'Lunea Form No.4',
+      retailPrice: 1450,
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 6,
+        tiers: [{ minQuantity: 6, maxQuantity: 11, unitPrice: 1160, discountPercentage: 20 }],
+      },
+    });
+    const variant = createVariant({ retailPrice: 1450, stockQuantity: 20 });
+    cartStore.addItem(product, variant, 6);
+
+    renderWithRouter(<CartDrawer isOpen={true} onClose={vi.fn()} />);
+
+    expect(screen.getByText(/-%20 Toplu Alım/)).toBeInTheDocument();
+    expect(screen.getByText(/1\.160/)).toBeInTheDocument();
+    expect(screen.getByText(/1\.450/)).toBeInTheDocument();
+  });
 });

@@ -214,4 +214,47 @@ describe('cartStore & useCart', () => {
     expect(result.current.totalItems).toBe(0);
     expect(result.current.subtotal).toBe(0);
   });
+
+  it('automatically applies volume/wholesale tier pricing when item quantity reaches tier threshold', () => {
+    const product = createProduct({
+      id: 'p-vazo',
+      retailPrice: 1450,
+      wholesale: {
+        isWholesaleEnabled: true,
+        minOrderQuantity: 6,
+        tiers: [
+          { minQuantity: 6, maxQuantity: 11, unitPrice: 1160, discountPercentage: 20 },
+          { minQuantity: 12, maxQuantity: 23, unitPrice: 1085, discountPercentage: 25 },
+          { minQuantity: 24, maxQuantity: 49, unitPrice: 1015, discountPercentage: 30 },
+        ],
+      },
+    });
+    const variant = createVariant({ retailPrice: 1450, stockQuantity: 30 });
+
+    // 1. Add 1 item (normal retail price)
+    cartStore.addItem(product, variant, 1);
+    let items = cartStore.getItems();
+    expect(items[0]?.retailPrice).toBe(1450);
+    expect(items[0]?.unitPrice).toBe(1450);
+    expect(items[0]?.discountPercentage).toBeUndefined();
+
+    // 2. Update quantity to 6 (triggers tier 1: 20% discount => 1160 TL)
+    const itemId = items[0]!.id;
+    cartStore.updateQuantity(itemId, 6);
+    items = cartStore.getItems();
+    expect(items[0]?.quantity).toBe(6);
+    expect(items[0]?.retailPrice).toBe(1450);
+    expect(items[0]?.unitPrice).toBe(1160);
+    expect(items[0]?.discountPercentage).toBe(20);
+
+    // 3. Verify subtotal via hook: 6 * 1160 = 6960
+    const { result } = renderHook(() => useCart());
+    expect(result.current.subtotal).toBe(6960);
+
+    // 4. Update quantity to 12 (triggers tier 2: 25% discount => 1085 TL)
+    cartStore.updateQuantity(itemId, 12);
+    items = cartStore.getItems();
+    expect(items[0]?.unitPrice).toBe(1085);
+    expect(items[0]?.discountPercentage).toBe(25);
+  });
 });
