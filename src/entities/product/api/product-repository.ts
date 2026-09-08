@@ -1,6 +1,7 @@
 import { Product, ProductVariant, WholesalePricingTier } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import { mockProducts } from '@/shared/mocks/products';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 
 export interface ProductFilterOptions {
   categoryId?: string;
@@ -211,7 +212,7 @@ export const productRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const categorySelect = options?.categoryId
@@ -275,7 +276,7 @@ export const productRepository = {
     const { data, error } = await query;
     if (error) {
       console.error('[productRepository.getProducts] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch products from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürünler veritabanından yüklenemedi', error));
     }
 
     let products = (data as unknown as SupabaseProductRow[]).map(mapRowToProduct);
@@ -296,7 +297,7 @@ export const productRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -318,7 +319,7 @@ export const productRepository = {
         return null;
       }
       console.error('[productRepository.getProductBySlug] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch product by slug from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürün detayı veritabanından yüklenemedi', error));
     }
 
     return data ? mapRowToProduct(data as unknown as SupabaseProductRow) : null;

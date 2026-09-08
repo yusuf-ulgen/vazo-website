@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   AdminCollection,
   CreateCollectionInput,
@@ -9,7 +10,7 @@ import { generateSlug, validateSlug } from '@/admin/categories/api/admin-categor
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -36,7 +37,7 @@ export const adminCollectionRepository = {
 
     if (error) {
       console.error('[adminCollectionRepository.getAllCollections] Error:', error);
-      throw new Error(`Koleksiyonlar yüklenirken hata oluştu: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyonlar yüklenirken hata oluştu', error));
     }
 
     return (data || []) as AdminCollection[];
@@ -48,7 +49,7 @@ export const adminCollectionRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Koleksiyon yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyon yüklenemedi', error));
     }
 
     return data as AdminCollection;
@@ -88,7 +89,7 @@ export const adminCollectionRepository = {
       if (error.code === '23505') {
         throw new Error(`"${slug}" slug adresine sahip bir koleksiyon zaten mevcut. Lütfen farklı bir slug belirleyin.`);
       }
-      throw new Error(`Koleksiyon oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyon oluşturulamadı', error));
     }
 
     return data as AdminCollection;
@@ -130,7 +131,7 @@ export const adminCollectionRepository = {
       if (error.code === '23505') {
         throw new Error(`Bu slug adresi başka bir koleksiyon tarafından kullanılıyor.`);
       }
-      throw new Error(`Koleksiyon güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyon güncellenemedi', error));
     }
 
     return data as AdminCollection;
@@ -149,7 +150,7 @@ export const adminCollectionRepository = {
     const { error } = await client.from('collections').delete().eq('id', id);
 
     if (error) {
-      throw new Error(`Koleksiyon silinemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyon silinemedi', error));
     }
   },
 };

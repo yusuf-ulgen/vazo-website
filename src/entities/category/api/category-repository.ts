@@ -1,5 +1,6 @@
 import { Category } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 
 export const mockCategories: Category[] = [
   {
@@ -56,7 +57,7 @@ export const categoryRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -67,7 +68,7 @@ export const categoryRepository = {
 
     if (error) {
       console.error('[categoryRepository.getCategories] Error:', error);
-      throw new Error(`Failed to fetch categories: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategoriler veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((row) => ({
@@ -87,7 +88,7 @@ export const categoryRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -99,7 +100,7 @@ export const categoryRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Failed to fetch category: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategori veritabanından yüklenemedi', error));
     }
 
     return data

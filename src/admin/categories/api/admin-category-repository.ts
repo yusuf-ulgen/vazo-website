@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   AdminCategory,
   CreateCategoryInput,
@@ -65,7 +66,7 @@ export function detectCategoryCycle(
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -88,7 +89,7 @@ export const adminCategoryRepository = {
 
     if (error) {
       console.error('[adminCategoryRepository.getAllCategories] Error:', error);
-      throw new Error(`Kategoriler yüklenirken hata oluştu: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategoriler yüklenirken hata oluştu', error));
     }
 
     return (data || []) as AdminCategory[];
@@ -100,7 +101,7 @@ export const adminCategoryRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Kategori yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategori yüklenemedi', error));
     }
 
     return data as AdminCategory;
@@ -138,7 +139,7 @@ export const adminCategoryRepository = {
       if (error.code === '23505') {
         throw new Error(`"${slug}" slug adresine sahip bir kategori zaten mevcut. Lütfen farklı bir slug belirleyin.`);
       }
-      throw new Error(`Kategori oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategori oluşturulamadı', error));
     }
 
     return data as AdminCategory;
@@ -190,7 +191,7 @@ export const adminCategoryRepository = {
       if (error.code === '23505') {
         throw new Error(`Bu slug adresi başka bir kategori tarafından kullanılıyor.`);
       }
-      throw new Error(`Kategori güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategori güncellenemedi', error));
     }
 
     return data as AdminCategory;
@@ -205,7 +206,7 @@ export const adminCategoryRepository = {
     const { error } = await client.from('categories').delete().eq('id', id);
 
     if (error) {
-      throw new Error(`Kategori silinemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Kategori silinemedi', error));
     }
   },
 };

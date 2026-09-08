@@ -12,6 +12,8 @@ import {
   Menu as MenuIcon,
   FileText,
   HelpCircle,
+  ArrowLeftRight,
+  GripVertical,
 } from 'lucide-react';
 import {
   AdminPageHeader,
@@ -39,6 +41,8 @@ export function AdminContentPage() {
   // Hero Modal
   const [isHeroModalOpen, setIsHeroModalOpen] = useState(false);
   const [editingHeroSlide, setEditingHeroSlide] = useState<AdminHeroSlide | null>(null);
+  const [draggedSlideId, setDraggedSlideId] = useState<string | null>(null);
+  const [isSwapping, setIsSwapping] = useState(false);
 
   // Benefit Modal
   const [isBenefitModalOpen, setIsBenefitModalOpen] = useState(false);
@@ -78,6 +82,43 @@ export function AdminContentPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Durum güncellenemedi.';
       toastError('Hata', msg);
+    }
+  };
+
+  const handleSwapHeroSlides = async () => {
+    const retailSlide = heroSlides.find((s) => s.slot === 'retail');
+    const wholesaleSlide = heroSlides.find((s) => s.slot === 'wholesale');
+    if (!retailSlide || !wholesaleSlide) {
+      toastError('Hata', 'Değiştirilebilecek bir sol (perakende) ve bir sağ (toptan) vitrin bulunamadı.');
+      return;
+    }
+    setIsSwapping(true);
+    try {
+      await adminContentRepository.swapHeroSlots(retailSlide, wholesaleSlide);
+      success('Başarılı', 'Vitrin yerleri (Sol ⇄ Sağ) başarıyla değiştirildi.');
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Konumlar değiştirilemedi.';
+      toastError('Hata', msg);
+    } finally {
+      setIsSwapping(false);
+    }
+  };
+
+  const handleDropHeroSlide = async (targetSlide: AdminHeroSlide) => {
+    if (!draggedSlideId || draggedSlideId === targetSlide.id) return;
+    const sourceSlide = heroSlides.find((s) => s.id === draggedSlideId);
+    if (!sourceSlide || !sourceSlide.slot || !targetSlide.slot) return;
+    setIsSwapping(true);
+    try {
+      await adminContentRepository.swapHeroSlots(sourceSlide, targetSlide);
+      success('Başarılı', 'Vitrin konumları başarıyla değiştirildi.');
+      await loadData();
+    } catch (err: unknown) {
+      toastError('Hata', err instanceof Error ? err.message : 'Yer değiştirilemedi.');
+    } finally {
+      setDraggedSlideId(null);
+      setIsSwapping(false);
     }
   };
 
@@ -141,17 +182,29 @@ export function AdminContentPage() {
                 <RefreshCw className="w-4 h-4" />
               </button>
               {activeTab === 'hero' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingHeroSlide(null);
-                    setIsHeroModalOpen(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Yeni Hero Ekle</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSwapHeroSlides}
+                    disabled={isSwapping || heroSlides.length < 2}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded border border-border-default bg-surface-primary text-text-primary hover:bg-surface-secondary transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
+                    title="Sol ve Sağ vitrinlerin yerlerini takas et"
+                  >
+                    <ArrowLeftRight className="w-3.5 h-3.5 text-text-secondary" />
+                    <span>Konumları Değiştir (Sol ⇄ Sağ)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingHeroSlide(null);
+                      setIsHeroModalOpen(true);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors shadow-subtle cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Yeni Hero Ekle</span>
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -255,7 +308,13 @@ export function AdminContentPage() {
               return (
                 <div
                   key={slide.id}
-                  className={`bg-surface-primary border rounded-lg overflow-hidden shadow-card flex flex-col justify-between transition-all ${
+                  draggable
+                  onDragStart={() => setDraggedSlideId(slide.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDropHeroSlide(slide)}
+                  className={`bg-surface-primary border rounded-lg overflow-hidden shadow-card flex flex-col justify-between transition-all cursor-grab active:cursor-grabbing ${
+                    draggedSlideId === slide.id ? 'opacity-50 ring-2 ring-accent-primary ring-offset-2' : ''
+                  } ${
                     slide.active ? 'border-border-default' : 'border-border-default opacity-60 bg-surface-secondary/20'
                   }`}
                 >
@@ -266,13 +325,17 @@ export function AdminContentPage() {
                         <img
                           src={slide.image_url}
                           alt={slide.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover pointer-events-none"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-text-muted">
                           <ImageIcon className="w-8 h-8" />
                         </div>
                       )}
+                      <div className="absolute top-3 right-3 flex items-center gap-1 bg-neutral-900/80 text-white/90 text-[10px] px-2 py-1 rounded backdrop-blur-xs select-none">
+                        <GripVertical className="w-3 h-3" />
+                        <span>Sürükle</span>
+                      </div>
                       <div className="absolute top-3 left-3 flex gap-2">
                         <span className="px-2.5 py-1 text-[10px] font-bold rounded bg-neutral-900/80 text-white uppercase tracking-wider backdrop-blur-xs">
                           {isRetail ? 'Perakende (Sol)' : slide.slot === 'wholesale' ? 'Toptan (Sağ)' : 'Genel'}
@@ -431,6 +494,7 @@ export function AdminContentPage() {
       <HeroSlideEditModal
         isOpen={isHeroModalOpen}
         slide={editingHeroSlide}
+        existingSlides={heroSlides}
         onClose={() => setIsHeroModalOpen(false)}
         onSuccess={loadData}
       />

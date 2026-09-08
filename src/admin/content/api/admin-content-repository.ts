@@ -101,10 +101,31 @@ export const adminContentRepository = {
 
     if (error) {
       console.error('[adminContentRepository.updateHeroSlide] Error:', error.message);
+      if (error.code === 'PGRST116' || error.message?.includes('JSON object')) {
+        throw new Error('Hero slayt güncellenemedi: Güncelleme yetkiniz bulunmuyor (RLS) veya kayıt eşleşmedi.');
+      }
       throw new Error(`Hero slayt güncellenemedi: ${error.message}`);
     }
 
     return data as AdminHeroSlide;
+  },
+
+  async swapHeroSlots(
+    slideA: { id: string; slot: 'retail' | 'wholesale' | 'general' },
+    slideB: { id: string; slot: 'retail' | 'wholesale' | 'general' }
+  ): Promise<void> {
+    const client = requireAdminSupabase();
+    const [resA, resB] = await Promise.all([
+      client.from('hero_slides').update({ slot: slideB.slot }).eq('id', slideA.id),
+      client.from('hero_slides').update({ slot: slideA.slot }).eq('id', slideB.id),
+    ]);
+
+    if (resA.error) {
+      throw new Error(`Vitrin konumu güncellenemedi: ${resA.error.message}`);
+    }
+    if (resB.error) {
+      throw new Error(`Vitrin konumu güncellenemedi: ${resB.error.message}`);
+    }
   },
 
   async deleteHeroSlide(id: string): Promise<void> {
@@ -178,6 +199,9 @@ export const adminContentRepository = {
 
     if (error) {
       console.error('[adminContentRepository.updateWholesaleBenefit] Error:', error.message);
+      if (error.code === 'PGRST116' || error.message?.includes('JSON object')) {
+        throw new Error('Ticari avantaj güncellenemedi: Güncelleme yetkiniz bulunmuyor (RLS) veya kayıt eşleşmedi.');
+      }
       throw new Error(`Ticari avantaj güncellenemedi: ${error.message}`);
     }
 

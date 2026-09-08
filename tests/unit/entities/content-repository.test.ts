@@ -56,22 +56,22 @@ describe('contentRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
       await expect(contentRepository.getAnnouncement()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(contentRepository.getHero()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(contentRepository.getSplitHero()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(contentRepository.getEditorialSections()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(contentRepository.getWholesaleBenefits()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(contentRepository.getMegaMenu('retail_mega')).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
     });
 
@@ -119,7 +119,9 @@ describe('contentRepository', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      await expect(contentRepository.getAnnouncement()).rejects.toThrow('Failed to fetch announcement from Supabase');
+      await expect(contentRepository.getAnnouncement()).rejects.toThrow(
+        /Duyuru bandı veritabanından yüklenemedi|Failed to fetch announcement/
+      );
     });
 
     it('maps hero content from hero_slides', async () => {
@@ -199,7 +201,7 @@ describe('contentRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
       await expect(contentRepository.getSplitHero()).rejects.toThrow(
-        'Failed to fetch split hero from Supabase'
+        /Split hero vitrini veritabanından yüklenemedi|Failed to fetch split hero/
       );
     });
 

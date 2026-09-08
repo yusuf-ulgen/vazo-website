@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 import { ToastContext, ToastItem, ToastOptions, ToastVariant } from './ToastContext';
 import { cn } from '@/shared/lib/cn';
+import { translateErrorMessage } from '@/shared/utils/error-translator';
 
 const DEFAULT_DURATION = 4000;
 
@@ -25,8 +26,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       const id = 'toast_' + Math.random().toString(36).substring(2, 9) + Date.now();
       const newToast: ToastItem = {
         id,
-        title,
-        message,
+        title: title ? translateErrorMessage(title) : undefined,
+        message: translateErrorMessage(message),
         variant,
         duration,
       };

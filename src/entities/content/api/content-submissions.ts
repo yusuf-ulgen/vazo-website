@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 
 export interface TradeApplicationPayload {
   companyName: string;
@@ -40,7 +41,7 @@ export const contentSubmissions = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     try {
@@ -61,7 +62,7 @@ export const contentSubmissions = {
         message: data?.message || 'Toptan / Trade başvurunuz başarıyla alındı.',
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Başvuru iletilirken beklenmeyen bir hata oluştu.';
+      const msg = formatErrorMessage('Başvuru iletilirken hata oluştu', err);
       console.error('[contentSubmissions.submitTradeApplication] Error:', msg);
       throw new Error(msg);
     }
@@ -77,7 +78,7 @@ export const contentSubmissions = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     try {
@@ -98,7 +99,7 @@ export const contentSubmissions = {
         message: data?.message || 'Mesajınız stüdyo ekibimize iletilmiştir.',
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Mesaj iletilirken bir hata oluştu.';
+      const msg = formatErrorMessage('Mesaj iletilirken bir hata oluştu', err);
       console.error('[contentSubmissions.submitContactMessage] Error:', msg);
       throw new Error(msg);
     }
@@ -114,7 +115,7 @@ export const contentSubmissions = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     try {
@@ -135,7 +136,7 @@ export const contentSubmissions = {
         message: data?.message || 'Bülten kaydınız tamamlandı.',
       };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Bülten kaydı oluşturulamadı.';
+      const msg = formatErrorMessage('Bülten kaydı oluşturulamadı', err);
       console.error('[contentSubmissions.subscribeNewsletter] Error:', msg);
       throw new Error(msg);
     }

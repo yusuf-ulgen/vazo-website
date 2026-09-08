@@ -59,7 +59,7 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
           email: 'a@b.com',
           phone: '1',
         })
-      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      ).rejects.toThrow(/Aktif veritabanı bağlantısı bulunamadı/);
 
       await expect(
         contentRepository.submitContactMessage({
@@ -68,13 +68,13 @@ describe('Mutation Functions (submitTradeApplication, submitContactMessage, subs
           subject: 'S',
           message: 'M',
         })
-      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      ).rejects.toThrow(/Aktif veritabanı bağlantısı bulunamadı/);
 
       await expect(
         contentRepository.subscribeNewsletter({
           email: 'a@b.com',
         })
-      ).rejects.toThrow('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      ).rejects.toThrow(/Aktif veritabanı bağlantısı bulunamadı/);
     });
 
     it('invokes submit-trade-application Edge Function in live mode', async () => {

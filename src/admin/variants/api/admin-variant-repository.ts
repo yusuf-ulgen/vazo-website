@@ -1,9 +1,10 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import { AdminProductVariant, CreateVariantInput, UpdateVariantInput } from '../types';
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -20,7 +21,7 @@ export const adminVariantRepository = {
 
     if (error) {
       console.error('[adminVariantRepository.getVariantsByProductId] Error:', error);
-      throw new Error(`Ürün varyantları yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürün varyantları yüklenemedi', error));
     }
 
     interface RawVariantWithProduct {
@@ -90,7 +91,7 @@ export const adminVariantRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Varyant yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Varyant yüklenemedi', error));
     }
 
     return {
@@ -191,7 +192,7 @@ export const adminVariantRepository = {
       if (error.code === '23505') {
         throw new Error(`"${sku}" SKU koduna sahip bir varyant zaten mevcut.`);
       }
-      throw new Error(`Varyant oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Varyant oluşturulamadı', error));
     }
 
     return this.getVariantById(data.id) as Promise<AdminProductVariant>;
@@ -249,7 +250,7 @@ export const adminVariantRepository = {
       if (error.code === '23505') {
         throw new Error(`Bu SKU kodu başka bir varyant tarafından kullanılıyor.`);
       }
-      throw new Error(`Varyant güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Varyant güncellenemedi', error));
     }
 
     return this.getVariantById(id) as Promise<AdminProductVariant>;
@@ -278,7 +279,7 @@ export const adminVariantRepository = {
     const { error } = await client.from('product_variants').delete().eq('id', id);
 
     if (error) {
-      throw new Error(`Varyant silinemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Varyant silinemedi', error));
     }
   },
 };

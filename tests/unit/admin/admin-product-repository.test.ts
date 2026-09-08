@@ -253,7 +253,7 @@ describe('adminProductRepository (Phase 2.5)', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
 
       await expect(adminProductRepository.getProducts()).rejects.toThrow(
-        'Supabase client is not configured'
+        /Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur/
       );
     });
   });

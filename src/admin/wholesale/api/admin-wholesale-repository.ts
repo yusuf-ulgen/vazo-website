@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   AdminWholesaleTier,
   CreateWholesaleTierInput,
@@ -8,7 +9,7 @@ import {
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -44,8 +45,8 @@ export const adminWholesaleRepository = {
     const { data, error } = await query;
 
     if (error) {
-      console.error('[adminWholesaleRepository.getWholesaleTiers] Error:', error);
-      throw new Error(`Toptan fiyat kademeleri yüklenemedi: ${error.message}`);
+      console.error('[adminWholesaleRepository.getTiers] Error:', error);
+      throw new Error(formatErrorMessage('Toptan fiyat kademeleri yüklenemedi', error));
     }
 
     return ((data as unknown as RawTierRow[]) || []).map((row) => ({
@@ -134,7 +135,7 @@ export const adminWholesaleRepository = {
       .single();
 
     if (error) {
-      throw new Error(`Toptan kademe oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Toptan kademe oluşturulamadı', error));
     }
 
     const row = data as unknown as RawTierRow;
@@ -194,7 +195,7 @@ export const adminWholesaleRepository = {
       .eq('id', id);
 
     if (error) {
-      throw new Error(`Toptan kademe güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Toptan kademe güncellenemedi', error));
     }
   },
 
@@ -203,7 +204,7 @@ export const adminWholesaleRepository = {
     const { error } = await client.from('wholesale_price_tiers').delete().eq('id', id);
 
     if (error) {
-      throw new Error(`Toptan kademe silinemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Toptan kademe silinemedi', error));
     }
   },
 
@@ -230,7 +231,7 @@ export const adminWholesaleRepository = {
       .eq('id', productId);
 
     if (error) {
-      throw new Error(`Toptan ayarları güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Toptan ayarları güncellenemedi', error));
     }
   },
 };

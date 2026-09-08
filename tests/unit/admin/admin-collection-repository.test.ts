@@ -190,7 +190,7 @@ describe('adminCollectionRepository (Phase 2.4)', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(false);
 
       await expect(adminCollectionRepository.getAllCollections()).rejects.toThrow(
-        'Supabase client is not configured'
+        /Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur/
       );
     });
   });

@@ -46,10 +46,10 @@ describe('categoryRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
       await expect(categoryRepository.getCategories()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(categoryRepository.getCategoryBySlug('masa-ustu-vazolar')).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
     });
 
@@ -91,7 +91,9 @@ describe('categoryRepository', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      await expect(categoryRepository.getCategories()).rejects.toThrow('Failed to fetch categories');
+      await expect(categoryRepository.getCategories()).rejects.toThrow(
+        /Kategoriler veritabanından yüklenemedi|Failed to fetch categories/
+      );
     });
 
     it('throws error when single category query fails with generic error', async () => {
@@ -104,7 +106,7 @@ describe('categoryRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
       await expect(categoryRepository.getCategoryBySlug('db-kategori')).rejects.toThrow(
-        'Failed to fetch category'
+        /Kategori veritabanından yüklenemedi|Failed to fetch category/
       );
     });
 

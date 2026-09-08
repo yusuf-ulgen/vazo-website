@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import { ProductStatus } from '@/entities/product/types';
 import {
   AdminProduct,
@@ -11,7 +12,7 @@ import { generateSlug, validateSlug } from '@/admin/categories/api/admin-categor
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -87,8 +88,8 @@ export const adminProductRepository = {
     const { data, count, error } = await query;
 
     if (error) {
-      console.error('[adminProductRepository.getProducts] Error:', error);
-      throw new Error(`Ürünler listelenirken hata oluştu: ${error.message}`);
+      console.error('[adminProductRepository.getProducts] Error:', error.message);
+      throw new Error(formatErrorMessage('Ürünler listelenirken hata oluştu', error));
     }
 
     const totalCount = count || 0;
@@ -188,7 +189,7 @@ export const adminProductRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Ürün yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürün yüklenemedi', error));
     }
 
     // Fetch related category IDs
@@ -305,7 +306,7 @@ export const adminProductRepository = {
       if (error.code === '23505') {
         throw new Error(`"${slug}" slug adresine sahip bir ürün zaten mevcut.`);
       }
-      throw new Error(`Ürün oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürün oluşturulamadı', error));
     }
 
     const productId = createdProduct.id;
@@ -383,7 +384,7 @@ export const adminProductRepository = {
       if (error.code === '23505') {
         throw new Error(`Bu slug adresi başka bir ürün tarafından kullanılıyor.`);
       }
-      throw new Error(`Ürün güncellenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Ürün güncellenemedi', error));
     }
 
     // Synchronize category relations if category_ids or primary_category_id updated

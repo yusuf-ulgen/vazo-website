@@ -50,19 +50,19 @@ describe('Data Mode Architecture & Decoupling Contract (Phase 2.1)', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
       await expect(productRepository.getProducts()).rejects.toThrow(
-        /Supabase client is not configured. Live mode requires valid Supabase environment variables./
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
 
       await expect(categoryRepository.getCategories()).rejects.toThrow(
-        /Supabase client is not configured. Live mode requires valid Supabase environment variables./
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
 
       await expect(collectionRepository.getCollections()).rejects.toThrow(
-        /Supabase client is not configured. Live mode requires valid Supabase environment variables./
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
 
       await expect(contentRepository.getAnnouncement()).rejects.toThrow(
-        /Supabase client is not configured. Live mode requires valid Supabase environment variables./
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
     });
 
@@ -76,8 +76,8 @@ describe('Data Mode Architecture & Decoupling Contract (Phase 2.1)', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      await expect(productRepository.getProducts()).rejects.toThrow(/Database outage/);
-      await expect(categoryRepository.getCategories()).rejects.toThrow(/Database outage/);
+      await expect(productRepository.getProducts()).rejects.toThrow(/Veritabanı bağlantısı|Database outage/);
+      await expect(categoryRepository.getCategories()).rejects.toThrow(/Veritabanı bağlantısı|Database outage/);
     });
   });
 

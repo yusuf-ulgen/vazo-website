@@ -17,7 +17,7 @@ describe('supabase configuration module', () => {
     } else {
       expect(supabase).toBeNull();
       expect(() => getSupabase()).toThrow(
-        /Missing or invalid VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY/
+        /Supabase bağlantı bilgileri .* eksik veya geçersiz/
       );
     }
   });

@@ -50,9 +50,9 @@ describe('Admin Production Shell & Dashboard (Phase 2.3)', () => {
       expect(screen.getByText(/admin@vazostudio.com/)).toBeInTheDocument();
       expect(screen.getByText('Sistem Canlı')).toBeInTheDocument();
 
-      // System status banner
-      expect(screen.getByText('Güvenlik & Veritabanı Durumu')).toBeInTheDocument();
-      expect(screen.getByText('PostgreSQL RLS')).toBeInTheDocument();
+      // System status banner was removed per admin requirement
+      expect(screen.queryByText('Güvenlik & Veritabanı Durumu')).not.toBeInTheDocument();
+      expect(screen.queryByText('PostgreSQL RLS')).not.toBeInTheDocument();
 
       // Verify NO fake numbers or fake sales revenue are displayed
       expect(screen.queryByText(/₺148/)).not.toBeInTheDocument();

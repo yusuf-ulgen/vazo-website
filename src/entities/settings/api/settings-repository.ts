@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   PublicSiteSettings,
   DEFAULT_PUBLIC_SITE_SETTINGS,
@@ -24,7 +25,7 @@ export const settingsRepository = {
 
     if (!isSupabaseConfigured || !supabase) {
       throw new Error(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -35,7 +36,7 @@ export const settingsRepository = {
 
     if (error) {
       console.error('[settingsRepository.getPublicSiteSettings] Supabase error:', error.message);
-      throw new Error(`Canlı site ayarları veritabanından alınamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Canlı site ayarları veritabanından alınamadı', error));
     }
 
     const rows = (data || []) as SiteSettingRow[];
@@ -103,7 +104,7 @@ export const settingsRepository = {
 
     if (!isSupabaseConfigured || !supabase) {
       throw new Error(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 

@@ -1,4 +1,5 @@
 import { getSupabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   Order,
   CheckoutQuoteRequest,
@@ -24,7 +25,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -64,7 +65,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -97,7 +98,7 @@ export const orderRepository = {
     });
 
     if (error) {
-      throw new Error(`Sipariş oluşturulamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Sipariş oluşturulamadı', error));
     }
 
     return data as CreateOrderResponse;
@@ -115,7 +116,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live orders require valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -132,7 +133,7 @@ export const orderRepository = {
 
     if (error) {
       console.error('[orderRepository.getCustomerOrders] Error:', error.message);
-      throw new Error(`Siparişler yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Siparişler yüklenemedi', error));
     }
 
     return (data || []) as Order[];
@@ -151,7 +152,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live orders require valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -169,7 +170,7 @@ export const orderRepository = {
 
     if (error) {
       console.error('[orderRepository.getOrderById] Error:', error.message);
-      throw new Error(`Sipariş detayları yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Sipariş detayları yüklenemedi', error));
     }
 
     return (data as Order) || null;
@@ -323,7 +324,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live payment requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 
@@ -342,7 +343,7 @@ export const orderRepository = {
 
     if (error) {
       console.error('[orderRepository.getPayTRToken] Edge function error:', error);
-      throw new Error(`Ödeme başlatılamadı: ${error.message}`);
+      throw new Error(formatErrorMessage('Ödeme başlatılamadı', error));
     }
 
     if (!data || !data.token) {
@@ -370,7 +371,7 @@ export const orderRepository = {
 
     if (!isSupabaseConfigured) {
       throw new Error(
-        'Supabase client is not configured. Live checkout requires valid Supabase environment variables.'
+        'Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.'
       );
     }
 

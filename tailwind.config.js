@@ -65,6 +65,12 @@ export default {
           terracotta: 'var(--color-brand-terracotta)',
           olive: 'var(--color-brand-olive)',
         },
+        accent: {
+          DEFAULT: '#141311',
+          primary: '#141311',
+          hover: '#262420',
+          muted: 'var(--color-brand-sand)',
+        },
       },
       fontFamily: {
         display: ['var(--font-display)', 'serif'],

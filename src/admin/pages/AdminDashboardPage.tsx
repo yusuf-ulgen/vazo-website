@@ -9,15 +9,12 @@ import {
   Inbox,
   Settings,
   ArrowRight,
-  ShieldCheck,
   Boxes,
   AlertTriangle,
   Mail,
   AlertCircle,
   RefreshCw,
   History,
-  Database,
-  Lock,
   FolderTree,
 } from 'lucide-react';
 import { AdminPageHeader, AdminCard, StatusBadge, LoadingSkeleton } from '../ui';
@@ -67,33 +64,6 @@ export function AdminDashboardPage() {
           <span>Yenile</span>
         </button>
       </div>
-
-      {/* System Status Banner */}
-      <AdminCard variant="secondary" className="border-border-default">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted">
-              Güvenlik & Veritabanı Durumu
-            </span>
-            <div className="flex items-center gap-3 text-xs text-text-secondary">
-              <span className="flex items-center gap-1">
-                <Database className="w-3.5 h-3.5 text-feedback-success" />
-                PostgreSQL RLS
-              </span>
-              <span className="text-text-muted">&bull;</span>
-              <span className="flex items-center gap-1">
-                <Lock className="w-3.5 h-3.5 text-feedback-success" />
-                Admin RBAC
-              </span>
-              <span className="text-text-muted">&bull;</span>
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                Denetim İzi Aktif
-              </span>
-            </div>
-          </div>
-        </div>
-      </AdminCard>
 
       {/* Error state */}
       {error && (

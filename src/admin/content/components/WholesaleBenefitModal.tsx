@@ -204,7 +204,7 @@ export function WholesaleBenefitModal({ isOpen, benefit, onClose, onSuccess }: W
             type="submit"
             form="benefit-form"
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded bg-action-primary text-action-primary-text hover:bg-neutral-800 transition-colors disabled:opacity-50 shadow-xs cursor-pointer"
           >
             {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>{benefit ? 'Güncelle' : 'Kaydet'}</span>

@@ -14,6 +14,7 @@ import {
   FaqItem,
 } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   MegaMenuData,
   perakendeMegaMenuData,
@@ -59,7 +60,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -72,7 +73,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getAnnouncement] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch announcement from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Duyuru bandı veritabanından yüklenemedi', error));
     }
 
     if (!data) return null;
@@ -93,7 +94,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -106,7 +107,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getHero] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch hero from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Hero vitrini veritabanından yüklenemedi', error));
     }
 
     if (!data) return null;
@@ -129,7 +130,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -141,7 +142,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getSplitHero] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch split hero from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Split hero vitrini veritabanından yüklenemedi', error));
     }
 
     interface HeroSlideDbRow {
@@ -195,7 +196,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -206,7 +207,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getEditorialSections] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch editorial sections from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Editoryal bölümler veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((row) => ({
@@ -227,7 +228,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -238,7 +239,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getWholesaleBenefits] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch wholesale benefits from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Ticari avantajlar veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((row) => ({
@@ -256,7 +257,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -271,7 +272,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getMegaMenu] Live Supabase error:', error.message);
-      throw new Error(`Failed to fetch navigation menu from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Gezinme menüsü veritabanından yüklenemedi', error));
     }
 
     if (!data || data.length === 0) {
@@ -317,7 +318,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -332,7 +333,7 @@ export const contentRepository = {
 
     if (error) {
       console.error(`[contentRepository.getNavMenu:${menuType}] Live Supabase error:`, error.message);
-      throw new Error(`Failed to fetch navigation menu from Supabase: ${error.message}`);
+      throw new Error(formatErrorMessage('Gezinme menüsü veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((g) => ({
@@ -392,7 +393,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -407,7 +408,7 @@ export const contentRepository = {
 
     if (error) {
       console.error(`[contentRepository.getContentPage:${pageKey}] Live error:`, error.message);
-      throw new Error(`İçerik sayfası yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('İçerik sayfası veritabanından yüklenemedi', error));
     }
 
     if (!data) return null;
@@ -460,7 +461,7 @@ export const contentRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -474,7 +475,7 @@ export const contentRepository = {
 
     if (error) {
       console.error('[contentRepository.getFaqGroups] Live error:', error.message);
-      throw new Error(`Sıkça sorulan sorular yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Sıkça sorulan sorular veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((g) => ({

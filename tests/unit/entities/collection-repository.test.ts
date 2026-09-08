@@ -47,10 +47,10 @@ describe('collectionRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
       await expect(collectionRepository.getCollections()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(collectionRepository.getCollectionBySlug('nordik-sessizlik')).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
     });
 
@@ -92,7 +92,9 @@ describe('collectionRepository', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      await expect(collectionRepository.getCollections()).rejects.toThrow('Failed to fetch collections');
+      await expect(collectionRepository.getCollections()).rejects.toThrow(
+        /Koleksiyonlar veritabanından yüklenemedi|Failed to fetch collections/
+      );
     });
 
     it('throws error when single collection query fails with generic error', async () => {
@@ -105,7 +107,7 @@ describe('collectionRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
       await expect(collectionRepository.getCollectionBySlug('db-koleksiyon')).rejects.toThrow(
-        'Failed to fetch collection'
+        /Koleksiyon detayı veritabanından yüklenemedi|Failed to fetch collection/
       );
     });
 

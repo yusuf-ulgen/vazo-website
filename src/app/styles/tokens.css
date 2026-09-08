@@ -35,6 +35,10 @@
   --color-action-secondary-hover: #EAE6DF;
   --color-action-secondary-text: #141311;
 
+  /* Accent Tokens */
+  --color-accent-primary: #141311;
+  --color-accent-hover: #262420;
+
   /* Feedback Colors */
   --color-feedback-success: #2E7D32;
   --color-feedback-success-surface: #EDF7EE;

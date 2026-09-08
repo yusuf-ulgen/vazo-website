@@ -9,11 +9,12 @@ import type { AdminHeroSlide, HeroSlot } from '../types';
 interface HeroSlideEditModalProps {
   isOpen: boolean;
   slide: AdminHeroSlide | null;
+  existingSlides?: AdminHeroSlide[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSlideEditModalProps) {
+export function HeroSlideEditModal({ isOpen, slide, existingSlides, onClose, onSuccess }: HeroSlideEditModalProps) {
   const { success, error: toastError } = useToast();
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
@@ -79,6 +80,14 @@ export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSl
     setIsSubmitting(true);
     try {
       if (slide) {
+        // If slot is changing between retail and wholesale, swap the other slide automatically
+        if (existingSlides && slide.slot !== slot && (slot === 'retail' || slot === 'wholesale')) {
+          const conflictingSlide = existingSlides.find((s) => s.id !== slide.id && s.slot === slot);
+          if (conflictingSlide && slide.slot) {
+            await adminContentRepository.updateHeroSlide(conflictingSlide.id, { slot: slide.slot });
+          }
+        }
+
         await adminContentRepository.updateHeroSlide(slide.id, {
           slot,
           eyebrow: eyebrow.trim() || null,
@@ -267,7 +276,7 @@ export function HeroSlideEditModal({ isOpen, slide, onClose, onSuccess }: HeroSl
             type="submit"
             form="hero-slide-form"
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded bg-accent-primary text-text-inverse hover:bg-accent-hover transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold rounded bg-action-primary text-action-primary-text hover:bg-neutral-800 transition-colors disabled:opacity-50 shadow-xs cursor-pointer"
           >
             {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>{slide ? 'Güncelle' : 'Kaydet'}</span>

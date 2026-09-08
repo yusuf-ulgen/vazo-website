@@ -133,7 +133,7 @@ export const isSupabaseConfigured = Boolean(clientInstance);
 export function getSupabase(): SupabaseClient {
   if (!clientInstance) {
     throw new Error(
-      'Missing or invalid VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY in environment variables.'
+      'Supabase bağlantı bilgileri (VITE_SUPABASE_URL veya VITE_SUPABASE_PUBLISHABLE_KEY) eksik veya geçersiz.'
     );
   }
   return clientInstance;

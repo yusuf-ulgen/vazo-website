@@ -1,5 +1,6 @@
 import { Collection } from '../types';
 import { supabase, isSupabaseConfigured, isStorefrontMockEnabled } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 
 export const mockCollections: Collection[] = [
   {
@@ -44,7 +45,7 @@ export const collectionRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -55,7 +56,7 @@ export const collectionRepository = {
 
     if (error) {
       console.error('[collectionRepository.getCollections] Error:', error);
-      throw new Error(`Failed to fetch collections: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyonlar veritabanından yüklenemedi', error));
     }
 
     return (data || []).map((row) => ({
@@ -77,7 +78,7 @@ export const collectionRepository = {
     }
 
     if (!isSupabaseConfigured || !supabase) {
-      throw new Error('Supabase client is not configured. Live mode requires valid Supabase environment variables.');
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı. Canlı mod geçerli Supabase ortam değişkenlerini gerektirir.');
     }
 
     const { data, error } = await supabase
@@ -89,7 +90,7 @@ export const collectionRepository = {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      throw new Error(`Failed to fetch collection: ${error.message}`);
+      throw new Error(formatErrorMessage('Koleksiyon detayı veritabanından yüklenemedi', error));
     }
 
     return data

@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
+import { formatErrorMessage } from '@/shared/utils/error-translator';
 import {
   AdminPricingItem,
   AdminPricingListParams,
@@ -8,7 +9,7 @@ import {
 
 function getClient() {
   if (!isSupabaseConfigured || !supabase) {
-    throw new Error('Supabase client is not configured. Admin operations require active Supabase connection.');
+    throw new Error('Yönetici paneli için aktif Supabase veritabanı bağlantısı zorunludur.');
   }
   return supabase;
 }
@@ -69,7 +70,7 @@ export const adminPricingRepository = {
 
     if (error) {
       console.error('[adminPricingRepository.getPricingList] Error:', error);
-      throw new Error(`Fiyat listesi yüklenemedi: ${error.message}`);
+      throw new Error(formatErrorMessage('Fiyat listesi yüklenemedi', error));
     }
 
     const totalCount = count || 0;
@@ -141,22 +142,22 @@ export const adminPricingRepository = {
     };
 
     if (input.type === 'product') {
-      const { error } = await client
+      const { error: productErr } = await client
         .from('products')
         .update(payload)
         .eq('id', input.id);
 
-      if (error) {
-        throw new Error(`Ürün fiyatı güncellenemedi: ${error.message}`);
+      if (productErr) {
+        throw new Error(formatErrorMessage('Ürün fiyatı güncellenemedi', productErr));
       }
     } else {
-      const { error } = await client
+      const { error: variantErr } = await client
         .from('product_variants')
         .update(payload)
         .eq('id', input.id);
 
-      if (error) {
-        throw new Error(`Varyant fiyatı güncellenemedi: ${error.message}`);
+      if (variantErr) {
+        throw new Error(formatErrorMessage('Varyant fiyatı güncellenemedi', variantErr));
       }
     }
   },

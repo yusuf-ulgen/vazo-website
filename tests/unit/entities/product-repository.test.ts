@@ -172,10 +172,10 @@ describe('productRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(null);
 
       await expect(productRepository.getProducts()).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
       await expect(productRepository.getProductBySlug('amforik-tas-vazo-tebehir')).rejects.toThrow(
-        'Supabase client is not configured. Live mode requires valid Supabase environment variables.'
+        /Aktif veritabanı bağlantısı bulunamadı/
       );
     });
 
@@ -235,7 +235,9 @@ describe('productRepository', () => {
       vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-      await expect(productRepository.getProducts()).rejects.toThrow('Failed to fetch products');
+      await expect(productRepository.getProducts()).rejects.toThrow(
+        /Ürünler veritabanından yüklenemedi|Failed to fetch products/
+      );
     });
 
     it('fetches single product by slug in live mode', async () => {
@@ -275,7 +277,7 @@ describe('productRepository', () => {
       vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
       await expect(productRepository.getProductBySlug('db-vazo')).rejects.toThrow(
-        'Failed to fetch product by slug from Supabase'
+        /Ürün detayı veritabanından yüklenemedi|Failed to fetch product by slug/
       );
     });
   });
