@@ -203,7 +203,7 @@ export const AdminWholesalePage: React.FC = () => {
               </td>
 
               <td className="py-3 px-4 font-mono">
-                {tier.discount_percentage !== null ? `%{tier.discount_percentage}` : '—'}
+                {tier.discount_percentage !== null ? `%${tier.discount_percentage}` : '—'}
               </td>
 
               <td className="py-3 px-4">
