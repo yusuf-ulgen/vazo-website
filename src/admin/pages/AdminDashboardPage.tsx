@@ -102,7 +102,7 @@ export function AdminDashboardPage() {
         </Link>
 
         {/* Stock & Variants Metric */}
-        <Link to="/admin/variants" className="group block">
+        <Link to="/admin/inventory" className="group block">
           <AdminCard className="h-full hover:border-text-primary/30 transition-all shadow-xs">
             <div className="flex items-start justify-between">
               <div>
@@ -225,7 +225,7 @@ export function AdminDashboardPage() {
             </div>
           </Link>
 
-          <Link to="/admin/variants" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+          <Link to="/admin/inventory" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
             <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
               <Layers className="w-4 h-4" />
             </div>

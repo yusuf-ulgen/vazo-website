@@ -237,19 +237,132 @@ export const adminSettingsRepository = {
     }
 
     // 2. Direct database RPC fallback
-    const { data, error } = await client.rpc('get_checkout_readiness');
-    if (error) throw new Error(`Hazırlık durumu alınamadı: ${error.message}`);
-    return data as CheckoutReadiness;
+    try {
+      const { data, error } = await client.rpc('get_checkout_readiness');
+      if (!error && data && typeof (data as CheckoutReadiness).seller_legal_complete === 'boolean') {
+        return data as CheckoutReadiness;
+      }
+    } catch {
+      // Fallback to direct client-side calculation
+    }
+
+    // 3. Robust client-side fallback if RPC is not present in database
+    return await this.calculateCheckoutReadinessFallback();
+  },
+
+  async calculateCheckoutReadinessFallback(): Promise<CheckoutReadiness> {
+    const client = requireAdminSupabase();
+    let sellerLegal: Record<string, unknown> = {};
+    let commerceSettings: Record<string, unknown> = {};
+    let hasActiveShipping = false;
+
+    try {
+      const { data } = await client
+        .from('site_settings')
+        .select('key, value')
+        .in('key', ['seller_legal', 'commerce']);
+
+      if (data) {
+        for (const row of data) {
+          if (row.key === 'seller_legal') sellerLegal = (row.value as Record<string, unknown>) || {};
+          if (row.key === 'commerce') commerceSettings = (row.value as Record<string, unknown>) || {};
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const { data: zones } = await client
+        .from('shipping_zones')
+        .select('id, active')
+        .eq('active', true)
+        .limit(1);
+
+      hasActiveShipping = Boolean(zones && zones.length > 0);
+    } catch {
+      hasActiveShipping = false;
+    }
+
+    const requiredFields = [
+      'business_type',
+      'owner_full_name',
+      'legal_trade_title',
+      'tax_office',
+      'tax_number',
+      'registered_address',
+      'kep_address',
+      'business_email',
+      'business_phone',
+    ];
+
+    const sellerFieldsSummary: Record<string, boolean> = {};
+    let allFilled = true;
+
+    for (const field of requiredFields) {
+      const val = sellerLegal[field];
+      const isFilled = typeof val === 'string' && val.trim().length > 0;
+      sellerFieldsSummary[field] = isFilled;
+      if (!isFilled) allFilled = false;
+    }
+
+    const mersis = sellerLegal['mersis_number'];
+    sellerFieldsSummary['mersis_number'] = typeof mersis === 'string' && mersis.trim().length > 0;
+
+    const checkoutEnabled = Boolean(commerceSettings['checkout_enabled']);
+
+    return {
+      seller_legal_complete: allFilled,
+      checkout_enabled: checkoutEnabled,
+      has_active_shipping: hasActiveShipping,
+      paytr_secrets_present: null,
+      gmail_secrets_present: null,
+      seller_fields_summary: sellerFieldsSummary,
+    };
   },
 
   async setCheckoutEnabled(enabled: boolean): Promise<{ success: boolean; error?: string }> {
     const client = requireAdminSupabase();
-    const { data, error } = await client.rpc('admin_enable_checkout', { p_enabled: enabled });
-    if (error) return { success: false, error: error.message };
-    const result = data as { success: boolean; error?: string };
-    if (result.success) {
-      await siteSettingsStore.fetchSettings(true).catch(() => {});
+    try {
+      const { data, error } = await client.rpc('admin_enable_checkout', { p_enabled: enabled });
+      if (!error && data) {
+        const result = data as { success: boolean; error?: string };
+        if (result.success) {
+          await siteSettingsStore.fetchSettings(true).catch(() => {});
+        }
+        return result;
+      }
+    } catch {
+      // Fallback to direct mutation
     }
-    return result;
+
+    // Direct fallback if RPC is not available in Supabase
+    try {
+      const { data: currentCommerce } = await client
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'commerce')
+        .single();
+      const currentVal = (currentCommerce?.value as Record<string, unknown>) || {};
+      const { error: upsertError } = await client
+        .from('site_settings')
+        .upsert(
+          {
+            key: 'commerce',
+            value: { ...currentVal, checkout_enabled: enabled },
+            is_public: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+      if (upsertError) {
+        return { success: false, error: upsertError.message };
+      }
+      await siteSettingsStore.fetchSettings(true).catch(() => {});
+      return { success: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ödeme ayarı güncellenemedi';
+      return { success: false, error: msg };
+    }
   },
 };

@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { SiteLayout } from '@/site/layouts/SiteLayout';
 import { HomePage } from '@/site/pages/HomePage';
 import { CatalogPage } from '@/site/pages/CatalogPage';
@@ -387,6 +387,10 @@ export const router = createBrowserRouter([
             <AdminInventoryPage />
           </Suspense>
         ),
+      },
+      {
+        path: 'variants',
+        element: <Navigate to="/admin/inventory" replace />,
       },
       {
         path: 'pricing',

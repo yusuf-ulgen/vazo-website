@@ -51,6 +51,13 @@ export function translateErrorMessage(error: unknown, fallbackMessage = 'Beklenm
     return 'Erişim engellendi. Bu işlem için gerekli izne sahip değilsiniz.';
   }
 
+  if (
+    normalized.includes('could not find the function') ||
+    normalized.includes('schema cache')
+  ) {
+    return 'Gerekli veritabanı fonksiyonu (RPC) henüz veritabanında tanımlanmamış. Lütfen Supabase SQL migration scriptini çalıştırınız.';
+  }
+
   // 2. PostgreSQL Kısıtlama (Constraint) Hataları
   if (normalizedCode === '23505' || normalized.includes('duplicate key value violates unique constraint')) {
     if (normalized.includes('slug')) {

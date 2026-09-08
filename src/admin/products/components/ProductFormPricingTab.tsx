@@ -87,7 +87,7 @@ export const ProductFormPricingTab: React.FC<ProductFormPricingTabProps> = ({
               onChange={(e) => onRetailEnabledChange(e.target.checked)}
               className="rounded border-border-default text-accent-primary focus:ring-accent-primary"
             />
-            <span>Perakende (B2C) Satışa Açık</span>
+            <span>Perakende Satışa Açık</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer text-xs text-text-primary">
@@ -97,7 +97,7 @@ export const ProductFormPricingTab: React.FC<ProductFormPricingTabProps> = ({
               onChange={(e) => onWholesaleEnabledChange(e.target.checked)}
               className="rounded border-border-default text-accent-primary focus:ring-accent-primary"
             />
-            <span>Toptan (B2B) Satışa Açık</span>
+            <span>Toptan Satışa Açık</span>
           </label>
         </div>
       </div>

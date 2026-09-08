@@ -185,7 +185,7 @@ export const adminVariantRepository = {
     const { data, error } = await client
       .from('product_variants')
       .insert(payload)
-      .select('*, products(name, slug)')
+      .select('id')
       .single();
 
     if (error) {

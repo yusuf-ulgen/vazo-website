@@ -8,9 +8,15 @@ import type { AdminProductVariant } from '@/admin/variants/types';
 
 interface ProductFormVariantsTabProps {
   productId?: string;
+  defaultRetailPrice?: string;
+  productName?: string;
 }
 
-export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ productId }) => {
+export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({
+  productId,
+  defaultRetailPrice,
+  productName,
+}) => {
   const { success, error: toastError } = useToast();
 
   const [variants, setVariants] = useState<AdminProductVariant[]>([]);
@@ -32,7 +38,7 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
       const data = await adminVariantRepository.getVariantsByProductId(productId);
       setVariants(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Varyantlar yüklenemedi.';
+      const msg = err instanceof Error ? err.message : 'Renk ve seçenekler yüklenemedi.';
       setErrorMessage(msg);
     } finally {
       setIsLoading(false);
@@ -56,7 +62,7 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
   const handleToggleActive = async (variant: AdminProductVariant) => {
     try {
       await adminVariantRepository.toggleVariantActive(variant.id, !variant.active);
-      success('Varyant Güncellendi', `"${variant.sku}" durumu güncellendi.`);
+      success('Durum Güncellendi', `"${variant.color_name || variant.sku}" durumu güncellendi.`);
       loadVariants();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Durum güncellenemedi.';
@@ -70,11 +76,11 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
     setIsDeleting(true);
     try {
       await adminVariantRepository.deleteVariant(deletingVariant.id);
-      success('Varyant Silindi', `"${deletingVariant.sku}" kaldırıldı.`);
+      success('Kayıt Silindi', `"${deletingVariant.color_name || deletingVariant.sku}" kaldırıldı.`);
       setDeletingVariant(null);
       loadVariants();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Varyant silinemedi.';
+      const msg = err instanceof Error ? err.message : 'Silme işlemi tamamlanamadı.';
       toastError('Hata', msg);
     } finally {
       setIsDeleting(false);
@@ -84,7 +90,7 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
   if (!productId) {
     return (
       <div className="p-6 text-center text-xs text-text-muted bg-surface-secondary/40 rounded-lg border border-border-subtle">
-        Varyant (SKU) eklemek için önce ürünü oluşturunuz.
+        Renk ve seçenek eklemek için önce ürünü oluşturunuz.
       </div>
     );
   }
@@ -94,10 +100,10 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
       <div className="flex items-center justify-between">
         <div>
           <span className="text-xs font-semibold text-text-primary block">
-            Ürün Varyantları ({variants.length})
+            Ürün Renk & Seçenekleri ({variants.length})
           </span>
           <span className="text-[11px] text-text-muted">
-            SKU bazlı renk, boyut, ağırlık ve stok miktarları.
+            Farklı renk tonları, ebatlar, stok miktarları ve fiyatlar.
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -116,7 +122,7 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
             className="flex items-center gap-1 px-3 py-1.5 rounded bg-accent-primary text-text-inverse hover:bg-accent-primary/90 text-xs font-medium transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Varyant Ekle
+            Yeni Renk / Seçenek Ekle
           </button>
         </div>
       </div>
@@ -129,18 +135,19 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
       )}
 
       {variants.length === 0 && !isLoading ? (
-        <div className="p-6 text-center border border-dashed border-border-default rounded-lg text-xs text-text-muted">
-          Bu ürüne ait henüz varyant bulunmuyor.
+        <div className="p-8 text-center border border-dashed border-border-default rounded-lg text-xs text-text-muted space-y-2">
+          <p className="font-medium text-text-secondary">Bu ürüne ait henüz renk veya seçenek tanımlanmamış.</p>
+          <p className="text-[11px]">Farklı renk, ton veya ebatlar eklemek için yukarıdaki butonu kullanabilirsiniz.</p>
         </div>
       ) : (
         <div className="border border-border-subtle rounded-lg overflow-hidden">
           <table className="w-full text-left text-xs">
             <thead className="bg-surface-secondary/50 border-b border-border-subtle text-text-secondary text-[11px] uppercase font-semibold">
               <tr>
-                <th className="py-2.5 px-3">SKU / Varyant</th>
-                <th className="py-2.5 px-3">Renk & Boyut</th>
-                <th className="py-2.5 px-3">Fiyat</th>
-                <th className="py-2.5 px-3">Stok</th>
+                <th className="py-2.5 px-3">Renk & Görünüm</th>
+                <th className="py-2.5 px-3">Boyut / Ebat</th>
+                <th className="py-2.5 px-3">Satış Fiyatı</th>
+                <th className="py-2.5 px-3">Mevcut Stok</th>
                 <th className="py-2.5 px-3">Durum</th>
                 <th className="py-2.5 px-3 text-right">Eylemler</th>
               </tr>
@@ -149,22 +156,24 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
               {variants.map((variant) => (
                 <tr key={variant.id} className="hover:bg-surface-secondary/30 transition-colors">
                   <td className="py-2.5 px-3">
-                    <span className="font-mono font-semibold text-text-primary block">{variant.sku}</span>
-                    <span className="text-[11px] text-text-secondary">{variant.variant_name}</span>
-                  </td>
-
-                  <td className="py-2.5 px-3">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       {variant.color_hex && (
                         <span
-                          className="w-3 h-3 rounded-full border border-border-default shrink-0 inline-block"
+                          className="w-3.5 h-3.5 rounded-full border border-border-default shrink-0 inline-block shadow-2xs"
                           style={{ backgroundColor: variant.color_hex }}
                         />
                       )}
-                      <span>{variant.color_name}</span>
+                      <div>
+                        <span className="font-medium text-text-primary block">{variant.color_name || 'Standart'}</span>
+                        <span className="text-[10px] text-text-muted font-mono">{variant.sku}</span>
+                      </div>
                     </div>
-                    {variant.size_label && (
-                      <span className="text-[10px] text-text-muted block mt-0.5">{variant.size_label}</span>
+                  </td>
+
+                  <td className="py-2.5 px-3">
+                    <span className="text-text-primary">{variant.size_label || 'Standart'}</span>
+                    {variant.finish && (
+                      <span className="text-[10px] text-text-muted block mt-0.5">{variant.finish}</span>
                     )}
                   </td>
 
@@ -244,6 +253,8 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
         onSuccess={loadVariants}
         productId={productId}
         initialData={editingVariant}
+        defaultRetailPrice={defaultRetailPrice}
+        productName={productName}
       />
 
       {/* Variant Delete Confirm Dialog */}
@@ -251,9 +262,9 @@ export const ProductFormVariantsTab: React.FC<ProductFormVariantsTabProps> = ({ 
         isOpen={Boolean(deletingVariant)}
         onCancel={() => setDeletingVariant(null)}
         onConfirm={handleDeleteConfirm}
-        title="Varyantı Sil"
-        message={`"${deletingVariant?.sku}" kodlu varyantı kalıcı olarak silmek istediğinizden emin misiniz? Bu varyanta bağlı toptan kademe fiyatları da silinecektir.`}
-        confirmLabel="Varyantı Sil"
+        title="Rengi / Seçeneği Sil"
+        message={`"${deletingVariant?.color_name || deletingVariant?.sku}" seçeneğini kalıcı olarak silmek istediğinizden emin misiniz?`}
+        confirmLabel="Seçeneği Sil"
         cancelLabel="Vazgeç"
         isDestructive
         isLoading={isDeleting}

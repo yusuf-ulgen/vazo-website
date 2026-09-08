@@ -333,7 +333,7 @@ export const AdminProductsPage: React.FC = () => {
                 <td className="py-3.5 px-4">
                   <div className="flex flex-col gap-1 text-[11px]">
                     {product.retail_enabled && (
-                      <span className="text-text-secondary">• Perakende (B2C)</span>
+                      <span className="text-text-secondary">• Perakende</span>
                     )}
                     {product.wholesale_enabled && (
                       <span className="text-text-secondary">• Toptan (MOQ: {product.wholesale_moq})</span>

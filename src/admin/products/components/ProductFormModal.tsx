@@ -353,7 +353,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       : 'text-text-secondary hover:text-text-primary'
                   }`}
                 >
-                  Varyantlar (SKU)
+                  Renk & Seçenekler
                 </button>
                 <button
                   type="button"
@@ -441,7 +441,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           )}
 
           {activeTab === 'variants' && isEditing && (
-            <ProductFormVariantsTab productId={initialData?.id} />
+            <ProductFormVariantsTab
+              productId={initialData?.id}
+              defaultRetailPrice={retailPrice}
+              productName={name}
+            />
           )}
 
           {activeTab === 'gallery' && isEditing && (
