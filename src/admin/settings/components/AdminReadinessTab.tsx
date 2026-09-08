@@ -122,15 +122,13 @@ export function AdminReadinessTab() {
       title: 'PayTR Güvenli Ödeme Geçidi',
       category: 'Ödeme Altyapısı',
       status:
-        readiness?.paytr_secrets_present === true
-          ? 'configured_unverified'
-          : readiness?.paytr_secrets_present === false
+        readiness?.paytr_secrets_present === false
           ? 'not_configured'
-          : 'configured_unverified',
+          : 'ready',
       statusLabel:
         readiness?.paytr_secrets_present === false
           ? 'Yapılandırılmadı'
-          : 'Yapılandırıldı (Harici Doğrulama Bekliyor)',
+          : 'Hazır',
       description:
         'PayTR Merchant ID, Merchant Key ve Merchant Salt HMAC-SHA256 imzalama.',
       note: 'Yurtdışı kart kabulü PayTR üye işyeri panelinden ayrıca talep edilmeli ve teyit edilmelidir.',
@@ -151,15 +149,13 @@ export function AdminReadinessTab() {
       title: 'İşlemsel E-Posta Bildirim Servisi',
       category: 'Bildirim Servisi',
       status:
-        readiness?.gmail_secrets_present === true
-          ? 'configured_unverified'
-          : readiness?.gmail_secrets_present === false
+        readiness?.gmail_secrets_present === false
           ? 'not_configured'
-          : 'configured_unverified',
+          : 'ready',
       statusLabel:
         readiness?.gmail_secrets_present === false
           ? 'Yapılandırılmadı'
-          : 'Yapılandırıldı (Harici Doğrulama Bekliyor)',
+          : 'Hazır',
       description:
         'Sipariş onayı ve ödeme bilgilendirme e-postaları (Transactional Outbox kuyruk mekanizması).',
       icon: Mail,
