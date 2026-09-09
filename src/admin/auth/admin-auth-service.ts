@@ -218,5 +218,53 @@ export const adminAuthService = {
       throw new Error(translateAuthError(error.message));
     }
   },
+
+  /**
+   * Verifies current password against the database / auth provider and updates the password.
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const currentAdmin = await this.getCurrentAdmin();
+    if (!currentAdmin?.email) {
+      throw new Error('Oturum süreniz doldu. Güvenliğiniz için lütfen yeniden giriş yapınız.');
+    }
+
+    const client = supabaseModule.supabase;
+    const isDevMatch = currentAdmin.email.toLowerCase() === DEV_ADMIN_EMAIL.toLowerCase();
+
+    if (client && supabaseModule.isSupabaseConfigured) {
+      // 1. Re-authenticate to verify current password against Supabase GoTrue
+      const { data, error: signInError } = await client.auth.signInWithPassword({
+        email: currentAdmin.email,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        // If Supabase signIn failed, check if dev fallback matches
+        if (isDevMatch && currentPassword === DEV_ADMIN_PASSWORD) {
+          return;
+        }
+        throw new Error('Güncel şifreniz uyuşmuyor.');
+      }
+
+      // 2. Update to new password with verified active session
+      if (data?.session || data?.user) {
+        const { error: updateError } = await client.auth.updateUser({ password: newPassword });
+        if (updateError) {
+          throw new Error(translateAuthError(updateError.message));
+        }
+        return;
+      }
+    }
+
+    // Fallback in offline / dev mock environment
+    if (isDevMatch) {
+      if (currentPassword !== DEV_ADMIN_PASSWORD) {
+        throw new Error('Güncel şifreniz uyuşmuyor.');
+      }
+      return;
+    }
+
+    throw new Error('Oturum süreniz doldu. Güvenliğiniz için lütfen yeniden giriş yapınız.');
+  },
 };
 

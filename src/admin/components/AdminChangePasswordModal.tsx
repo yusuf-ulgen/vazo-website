@@ -11,12 +11,30 @@ export interface AdminChangePasswordModalProps {
 
 export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswordModalProps) {
   const toastContext = useContext(ToastContext);
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const resetForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+    setErrorMessage(null);
+  };
+
+  const handleClose = () => {
+    if (isSubmitting) return;
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -24,22 +42,31 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
     e.preventDefault();
     setErrorMessage(null);
 
-    if (password.length < 6) {
+    if (!currentPassword.trim()) {
+      setErrorMessage('Lütfen güncel şifrenizi giriniz.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
       setErrorMessage('Yeni şifre en az 6 karakter uzunluğunda olmalıdır.');
       return;
     }
 
-    if (password !== confirmPassword) {
-      setErrorMessage('Şifreler birbiriyle eşleşmiyor.');
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('Yeni şifreler birbiriyle uyuşmuyor.');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setErrorMessage('Yeni şifreniz güncel şifrenizle aynı olamaz.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await adminAuthService.updatePassword(password);
+      await adminAuthService.changePassword(currentPassword, newPassword);
       toastContext?.success('Şifre Güncellendi', 'Yönetici şifreniz başarıyla değiştirildi.');
-      setPassword('');
-      setConfirmPassword('');
+      resetForm();
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Şifre güncellenirken bir hata oluştu.';
@@ -53,7 +80,7 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-neutral-950/60 backdrop-blur-xs animate-fade-in"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) onClose();
+        if (e.target === e.currentTarget && !isSubmitting) handleClose();
       }}
       role="dialog"
       aria-modal="true"
@@ -64,7 +91,7 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
         className="w-full max-w-md bg-surface-primary border border-border-default shadow-elevated p-6 sm:p-7 space-y-5 animate-fade-scale text-left relative"
       >
         <button
-          onClick={onClose}
+          onClick={handleClose}
           disabled={isSubmitting}
           aria-label="Kapat"
           className="absolute top-4 right-4 p-1.5 text-text-muted hover:text-text-primary rounded-full transition-colors disabled:opacity-50"
@@ -96,27 +123,54 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="block text-xs font-medium text-text-primary">
+              Güncel Şifre
+            </label>
+            <div className="relative">
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                required
+                disabled={isSubmitting}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Mevcut şifrenizi girin"
+                autoComplete="current-password"
+                className="w-full px-3 py-2 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword((prev) => !prev)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors p-1"
+                aria-label={showCurrentPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                tabIndex={-1}
+              >
+                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-text-primary">
               Yeni Şifre
             </label>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showNewPassword ? 'text' : 'password'}
                 required
                 disabled={isSubmitting}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="En az 6 karakter"
                 autoComplete="new-password"
                 className="w-full px-3 py-2 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50 pr-10"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => setShowNewPassword((prev) => !prev)}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors p-1"
-                aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                aria-label={showNewPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -132,7 +186,7 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
                 disabled={isSubmitting}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Şifrenizi tekrar girin"
+                placeholder="Yeni şifrenizi tekrar girin"
                 autoComplete="new-password"
                 className="w-full px-3 py-2 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50 pr-10"
               />
