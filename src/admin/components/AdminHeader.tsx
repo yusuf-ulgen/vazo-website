@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, ExternalLink, Bell, User, LogOut, Shield } from 'lucide-react';
+import { Menu, ExternalLink, User, LogOut, Shield, KeyRound } from 'lucide-react';
 import { useAdminAuth } from '../auth/AdminAuthContext';
+import { AdminNotificationPopover } from '../notifications/components/AdminNotificationPopover';
+import { AdminChangePasswordModal } from './AdminChangePasswordModal';
 
 export interface AdminHeaderProps {
   onOpenMobileSidebar: () => void;
@@ -9,6 +12,7 @@ export interface AdminHeaderProps {
 export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
   const location = useLocation();
   const { adminUser, logout } = useAdminAuth();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const getBreadcrumbTitle = (pathname: string) => {
     switch (pathname) {
@@ -40,86 +44,100 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
   const roleLabel = adminUser?.role === 'super_admin' ? 'Süper Admin' : 'Admin';
 
   return (
-    <header className="h-16 bg-surface-primary border-b border-border-default px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center gap-4">
-        {/* Mobile sidebar toggle */}
-        <button
-          onClick={onOpenMobileSidebar}
-          className="lg:hidden p-2 text-text-secondary hover:text-text-primary rounded"
-          aria-label="Admin Menüsünü Aç"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {/* Breadcrumb / Title */}
-        <div className="flex items-center gap-2">
-          <Link
-            to="/admin"
-            className="text-xs text-text-secondary hover:text-text-primary font-medium hidden sm:inline transition-colors"
+    <>
+      <header className="h-16 bg-surface-primary border-b border-border-default px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-4">
+          {/* Mobile sidebar toggle */}
+          <button
+            onClick={onOpenMobileSidebar}
+            className="lg:hidden p-2 text-text-secondary hover:text-text-primary rounded cursor-pointer"
+            aria-label="Admin Menüsünü Aç"
           >
-            Admin
-          </Link>
-          <span className="text-xs text-text-muted hidden sm:inline">/</span>
-          <h1 className="text-sm font-semibold text-text-primary">
-            {getBreadcrumbTitle(location.pathname)}
-          </h1>
-        </div>
-      </div>
+            <Menu className="w-5 h-5" />
+          </button>
 
-      {/* Right actions */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* View Public Store */}
-        <Link
-          to="/"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary px-3 py-1.5 border border-border-default rounded transition-colors"
-        >
-          <span>Mağazayı Gör</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-
-        {/* Notification Bell */}
-        <button
-          aria-label="Bildirimler"
-          className="p-2 text-text-secondary hover:text-text-primary rounded transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-        </button>
-
-        {/* Admin Avatar & Real Identity */}
-        <div className="flex items-center gap-2.5 pl-2.5 border-l border-border-subtle">
-          <div className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold">
-            {adminUser?.role === 'super_admin' ? (
-              <Shield className="w-4 h-4 text-amber-400" />
-            ) : (
-              <User className="w-4 h-4" />
-            )}
+          {/* Breadcrumb / Title */}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin"
+              className="text-xs text-text-secondary hover:text-text-primary font-medium hidden sm:inline transition-colors"
+            >
+              Admin
+            </Link>
+            <span className="text-xs text-text-muted hidden sm:inline">/</span>
+            <h1 className="text-sm font-semibold text-text-primary">
+              {getBreadcrumbTitle(location.pathname)}
+            </h1>
           </div>
-          <div className="hidden sm:block text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-medium text-text-primary leading-tight truncate max-w-[150px]">
-                {adminUser?.email.split('@')[0] || 'Admin'}
-              </span>
-              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 bg-surface-secondary border border-border-subtle text-text-secondary rounded">
-                {roleLabel}
+        </div>
+
+        {/* Right actions */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* View Public Store */}
+          <Link
+            to="/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary px-3 py-1.5 border border-border-default rounded transition-colors"
+          >
+            <span>Mağazayı Gör</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
+
+          {/* Notification Popover */}
+          <AdminNotificationPopover />
+
+          {/* Admin Avatar & Real Identity */}
+          <div className="flex items-center gap-2.5 pl-2.5 border-l border-border-subtle">
+            <div className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold">
+              {adminUser?.role === 'super_admin' ? (
+                <Shield className="w-4 h-4 text-amber-400" />
+              ) : (
+                <User className="w-4 h-4" />
+              )}
+            </div>
+            <div className="hidden sm:block text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-text-primary leading-tight truncate max-w-[150px]">
+                  {adminUser?.email.split('@')[0] || 'Admin'}
+                </span>
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 bg-surface-secondary border border-border-subtle text-text-secondary rounded">
+                  {roleLabel}
+                </span>
+              </div>
+              <span className="block text-[10px] text-text-secondary truncate max-w-[150px]">
+                {adminUser?.email || 'admin@monocactus.com'}
               </span>
             </div>
-            <span className="block text-[10px] text-text-secondary truncate max-w-[150px]">
-              {adminUser?.email || 'admin@vazostudio.com'}
-            </span>
-          </div>
 
-          <button
-            onClick={() => logout()}
-            title="Admin Oturumunu Kapat"
-            aria-label="Çıkış Yap"
-            className="p-1.5 text-text-secondary hover:text-feedback-danger transition-colors ml-1"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+            {/* Change Password Button */}
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              title="Şifre Değiştir"
+              aria-label="Şifre Değiştir"
+              className="p-1.5 text-text-secondary hover:text-text-primary transition-colors ml-1 cursor-pointer rounded hover:bg-surface-secondary"
+            >
+              <KeyRound className="w-4 h-4" />
+            </button>
+
+            {/* Logout Button */}
+            <button
+              onClick={() => logout()}
+              title="Admin Oturumunu Kapat"
+              aria-label="Çıkış Yap"
+              className="p-1.5 text-text-secondary hover:text-feedback-danger transition-colors cursor-pointer rounded hover:bg-surface-secondary"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Change Password Modal */}
+      <AdminChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
+    </>
   );
 }

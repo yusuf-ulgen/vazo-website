@@ -119,7 +119,11 @@ function mapRowToProduct(row: SupabaseProductRow): Product {
       discountPercentage: t.discount_percentage ? Number(t.discount_percentage) : undefined,
     }));
 
-  const categoryIds = (row.product_categories || []).map((c) => c.category_id);
+  const rawCatIds = (row.product_categories || []).map((c) => c.category_id);
+  const categoryIds =
+    row.primary_category_id && !rawCatIds.includes(row.primary_category_id)
+      ? [row.primary_category_id, ...rawCatIds]
+      : rawCatIds;
   const primaryCategoryId = row.primary_category_id || categoryIds[0] || undefined;
 
   return {

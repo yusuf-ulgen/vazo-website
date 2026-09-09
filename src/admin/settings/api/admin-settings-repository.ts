@@ -129,16 +129,56 @@ export const adminSettingsRepository = {
   async updateCommerceSettings(data: CommerceSettings): Promise<void> {
     const client = requireAdminSupabase();
 
-    const { error } = await client.rpc('admin_update_commerce_settings', {
-      p_free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
-      p_shipping_estimate_text: data.shippingEstimateText.trim(),
-      p_shipping_summary: data.shippingSummary.trim(),
-      p_returns_policy_text: data.returnsPolicyText.trim(),
-    });
+    let rpcSuccess = false;
+    try {
+      const { error } = await client.rpc('admin_update_commerce_settings', {
+        p_free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
+        p_shipping_estimate_text: data.shippingEstimateText.trim(),
+        p_shipping_summary: data.shippingSummary.trim(),
+        p_returns_policy_text: data.returnsPolicyText.trim(),
+      });
+      if (!error) {
+        rpcSuccess = true;
+      } else {
+        console.warn('[adminSettingsRepository.updateCommerceSettings] RPC unavailable, falling back to direct update:', error.message);
+      }
+    } catch (rpcErr) {
+      console.warn('[adminSettingsRepository.updateCommerceSettings] RPC call failed, falling back to direct update:', rpcErr);
+    }
 
-    if (error) {
-      console.error('[adminSettingsRepository.updateCommerceSettings] Error:', error.message);
-      throw new Error(`E-Ticaret ayarları kaydedilemedi: ${error.message}`);
+    if (!rpcSuccess) {
+      // Direct table upsert fallback preserving existing keys (like checkout_enabled)
+      const { data: currentCommerce } = await client
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'commerce')
+        .maybeSingle();
+
+      const existingValue = (currentCommerce?.value as Record<string, unknown>) || {};
+      const mergedValue = {
+        ...existingValue,
+        free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
+        shipping_estimate_text: data.shippingEstimateText.trim(),
+        shipping_summary: data.shippingSummary.trim(),
+        returns_policy_text: data.returnsPolicyText.trim(),
+      };
+
+      const { error: upsertError } = await client
+        .from('site_settings')
+        .upsert(
+          {
+            key: 'commerce',
+            value: mergedValue,
+            is_public: true,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+
+      if (upsertError) {
+        console.error('[adminSettingsRepository.updateCommerceSettings] Fallback Error:', upsertError.message);
+        throw new Error(`E-Ticaret ayarları kaydedilemedi: ${upsertError.message}`);
+      }
     }
 
     await siteSettingsStore.fetchSettings(true).catch(() => {});

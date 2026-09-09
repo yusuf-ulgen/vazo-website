@@ -27,7 +27,7 @@ export const adminProductRepository = {
 
     let query = client
       .from('products')
-      .select('*, product_media(url, is_primary, sort_order), product_variants(id)', { count: 'exact' });
+      .select('*, product_media(url, is_primary, sort_order), product_variants(id), product_categories(category_id), product_collections(collection_id)', { count: 'exact' });
 
     // Text search filter
     if (params.search && params.search.trim()) {
@@ -129,6 +129,8 @@ export const adminProductRepository = {
       updated_at: string;
       product_media?: RawMediaRow[];
       product_variants?: Array<{ id: string }>;
+      product_categories?: Array<{ category_id: string }>;
+      product_collections?: Array<{ collection_id: string }>;
     }
 
     const mappedProducts: AdminProduct[] = ((data as unknown as RawProductRow[]) || []).map((row) => {
@@ -137,6 +139,9 @@ export const adminProductRepository = {
       const primaryMedia =
         mediaList.find((m) => m.is_primary) ||
         [...mediaList].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0];
+
+      const categoryIds = (row.product_categories || []).map((c) => c.category_id);
+      const collectionIds = (row.product_collections || []).map((c) => c.collection_id);
 
       return {
         id: row.id,
@@ -164,6 +169,8 @@ export const adminProductRepository = {
         seo_description: row.seo_description || null,
         created_at: row.created_at,
         updated_at: row.updated_at,
+        category_ids: categoryIds,
+        collection_ids: collectionIds,
         thumbnail_url: primaryMedia?.url || null,
         variants_count: Array.isArray(row.product_variants) ? row.product_variants.length : 0,
       };
@@ -394,25 +401,43 @@ export const adminProductRepository = {
         categoryIds.add(input.primary_category_id);
       }
 
-      await client.from('product_categories').delete().eq('product_id', id);
+      const { error: delCatErr } = await client.from('product_categories').delete().eq('product_id', id);
+      if (delCatErr) {
+        console.error('Failed to clear old product categories:', delCatErr);
+        throw new Error(formatErrorMessage('Ürün kategorileri temizlenirken hata oluştu', delCatErr));
+      }
+
       if (categoryIds.size > 0) {
         const catInserts = Array.from(categoryIds).map((catId) => ({
           product_id: id,
           category_id: catId,
         }));
-        await client.from('product_categories').insert(catInserts);
+        const { error: insCatErr } = await client.from('product_categories').insert(catInserts);
+        if (insCatErr) {
+          console.error('Failed to save product categories:', insCatErr);
+          throw new Error(formatErrorMessage('Ürün kategorileri kaydedilemedi', insCatErr));
+        }
       }
     }
 
     // Synchronize collection relations if collection_ids updated
     if (input.collection_ids !== undefined) {
-      await client.from('product_collections').delete().eq('product_id', id);
+      const { error: delColErr } = await client.from('product_collections').delete().eq('product_id', id);
+      if (delColErr) {
+        console.error('Failed to clear old product collections:', delColErr);
+        throw new Error(formatErrorMessage('Ürün koleksiyonları temizlenirken hata oluştu', delColErr));
+      }
+
       if (input.collection_ids.length > 0) {
         const colInserts = input.collection_ids.map((colId) => ({
           product_id: id,
           collection_id: colId,
         }));
-        await client.from('product_collections').insert(colInserts);
+        const { error: insColErr } = await client.from('product_collections').insert(colInserts);
+        if (insColErr) {
+          console.error('Failed to save product collections:', insColErr);
+          throw new Error(formatErrorMessage('Ürün koleksiyonları kaydedilemedi', insColErr));
+        }
       }
     }
 

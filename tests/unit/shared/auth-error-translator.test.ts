@@ -12,6 +12,9 @@ describe('Auth Error Translator (Kimlik Doğrulama Hata Çevirici)', () => {
     expect(translateAuthError(new Error('Invalid login credentials'))).toBe(
       'Geçersiz e-posta adresi veya şifre.'
     );
+    expect(translateAuthError('Database error finding user')).toBe(
+      'Geçersiz e-posta adresi veya şifre.'
+    );
   });
 
   it('translates unconfirmed email error', () => {

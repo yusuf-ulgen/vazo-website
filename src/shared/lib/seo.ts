@@ -14,7 +14,7 @@ const DEFAULT_OG_IMAGE = 'https://images.unsplash.com/photo-1581783342308-f792db
 export function useSEO({ title, description, canonicalUrl, ogImage }: SEOProps = {}) {
   useEffect(() => {
     // 1. Document Title
-    const fullTitle = title ? `${title} | ${siteConfig.name}` : `${siteConfig.name} — ${siteConfig.tagline}`;
+    const fullTitle = title ? `${title} | ${siteConfig.name}` : siteConfig.name;
     const previousTitle = document.title;
     document.title = fullTitle;
 
@@ -80,7 +80,7 @@ export function useSEO({ title, description, canonicalUrl, ogImage }: SEOProps =
     }
 
     return () => {
-      document.title = previousTitle || `${siteConfig.name} — ${siteConfig.tagline}`;
+      document.title = previousTitle || siteConfig.name;
       if (metaDesc) {
         if (createdDesc) {
           metaDesc.remove();
@@ -91,7 +91,7 @@ export function useSEO({ title, description, canonicalUrl, ogImage }: SEOProps =
         }
       }
       if (ogTitle) {
-        ogTitle.setAttribute('content', previousOgTitle || `${siteConfig.name} — ${siteConfig.tagline}`);
+        ogTitle.setAttribute('content', previousOgTitle || siteConfig.name);
       }
       if (ogDesc) {
         ogDesc.setAttribute('content', previousOgDesc || siteConfig.description);

@@ -7,8 +7,10 @@ import {
   Share2,
   Scale,
   ShieldCheck,
+  KeyRound,
 } from 'lucide-react';
 import { AdminPageHeader, useToast } from '@/admin/ui';
+import { AdminChangePasswordModal } from '@/admin/components/AdminChangePasswordModal';
 import { adminSettingsRepository } from '../api/admin-settings-repository';
 import { AdminGeneralSettingsTab } from '../components/AdminGeneralSettingsTab';
 import { AdminContactSettingsTab } from '../components/AdminContactSettingsTab';
@@ -29,6 +31,7 @@ export function AdminSettingsPage() {
   const { error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const [settings, setSettings] = useState<PublicSiteSettings>(DEFAULT_PUBLIC_SITE_SETTINGS);
   const [sellerLegal, setSellerLegal] = useState<SellerLegalSettings>(DEFAULT_SELLER_LEGAL);
@@ -69,14 +72,24 @@ export function AdminSettingsPage() {
         title="Sistem & Site Ayarları"
         description="Marka kimliği, yasal satıcı profili, PayTR ödeme hazırlığı ve e-ticaret parametreleri."
         actions={
-          <button
-            type="button"
-            onClick={loadAllSettings}
-            className="p-2 rounded border border-border-default bg-surface-primary text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-            title="Yenile"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-border-default bg-surface-primary text-xs font-semibold text-text-primary hover:bg-surface-secondary transition-colors cursor-pointer"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-accent-primary" />
+              <span>Şifre Değiştir</span>
+            </button>
+            <button
+              type="button"
+              onClick={loadAllSettings}
+              className="p-2 rounded border border-border-default bg-surface-primary text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              title="Yenile"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         }
       />
 
@@ -147,6 +160,12 @@ export function AdminSettingsPage() {
           {activeTab === 'readiness' && <AdminReadinessTab />}
         </div>
       )}
+
+      {/* Change Password Modal */}
+      <AdminChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 }

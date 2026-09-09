@@ -203,5 +203,20 @@ export const adminAuthService = {
       unsubscribe: () => subscription.unsubscribe(),
     };
   },
+
+  /**
+   * Updates current authenticated admin password via Supabase Auth.
+   */
+  async updatePassword(newPassword: string): Promise<void> {
+    const client = supabaseModule.supabase;
+    if (!client || !supabaseModule.isSupabaseConfigured) {
+      throw new Error('Aktif veritabanı bağlantısı bulunamadı.');
+    }
+
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    if (error) {
+      throw new Error(translateAuthError(error.message));
+    }
+  },
 };
 

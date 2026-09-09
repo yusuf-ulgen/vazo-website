@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/admin/ui';
 import { adminProductRepository } from '../api/admin-product-repository';
@@ -95,6 +96,18 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setTagsInput(initialData.tags?.join(', ') || '');
       setSeoTitle(initialData.seo_title || '');
       setSeoDescription(initialData.seo_description || '');
+
+      // Load fresh relations from DB to ensure checkboxes reflect actual junctions
+      if (initialData.id) {
+        adminProductRepository.getProductById(initialData.id).then((fresh) => {
+          if (!fresh) return;
+          if (fresh.category_ids) setSelectedCategoryIds(fresh.category_ids);
+          if (fresh.collection_ids) setSelectedCollectionIds(fresh.collection_ids);
+          if (fresh.primary_category_id) setPrimaryCategoryId(fresh.primary_category_id);
+        }).catch((err) => {
+          console.warn('Could not reload fresh relations:', err);
+        });
+      }
     } else {
       setName('');
       setSlug('');
@@ -264,9 +277,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
@@ -491,6 +504,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -151,4 +151,62 @@ describe('ProductPurchasePanel Component', () => {
     expect(screen.getByText(/%20 Toplu Alım İndirimi/)).toBeInTheDocument();
     expect(screen.getAllByText(/1\.160/).length).toBeGreaterThan(0);
   });
+
+  it('clamps quantity when active variant stock is lower than selected quantity', () => {
+    const variantHighStock: ProductVariant = {
+      id: 'v-high',
+      sku: 'TEST-HIGH',
+      variantName: 'Beyaz (Yüksek Stok)',
+      colorName: 'Beyaz',
+      colorHex: '#FFFFFF',
+      retailPrice: 1000,
+      stockQuantity: 10,
+      isAvailableForRetail: true,
+      isAvailableForWholesale: true,
+    };
+
+    const variantLowStock: ProductVariant = {
+      id: 'v-low',
+      sku: 'TEST-LOW',
+      variantName: 'Siyah (Düşük Stok)',
+      colorName: 'Siyah',
+      colorHex: '#000000',
+      retailPrice: 1000,
+      stockQuantity: 5,
+      isAvailableForRetail: true,
+      isAvailableForWholesale: true,
+    };
+
+    const productMultiVariants = createProduct({
+      variants: [variantHighStock, variantLowStock],
+    });
+
+    const { rerender } = renderWithRouter(
+      <ProductPurchasePanel
+        product={productMultiVariants}
+        selectedVariant={variantHighStock}
+        onSelectVariant={vi.fn()}
+      />
+    );
+
+    // Increase quantity to 8
+    const incrementBtn = screen.getByRole('button', { name: 'Adet Artır' });
+    for (let i = 0; i < 7; i++) {
+      fireEvent.click(incrementBtn);
+    }
+    expect(screen.getByText('8')).toBeInTheDocument();
+
+    // Now switch variant to variantLowStock (max stock: 5)
+    rerender(
+      <ProductPurchasePanel
+        product={productMultiVariants}
+        selectedVariant={variantLowStock}
+        onSelectVariant={vi.fn()}
+      />
+    );
+
+    // Quantity should automatically clamp to 5
+    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getByText(/Stokta Mevcut \(5 adet\)/)).toBeInTheDocument();
+  });
 });

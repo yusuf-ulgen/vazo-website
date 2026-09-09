@@ -1,14 +1,14 @@
 import { useState, type FormEvent, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Shield, ArrowRight, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { Shield, ArrowRight, ArrowLeft, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAdminAuth } from '../auth/AdminAuthContext';
-import { DEV_ADMIN_EMAIL, DEV_ADMIN_PASSWORD } from '../auth/admin-auth-service';
 import { translateAuthError } from '@/shared/utils/auth-error-translator';
 
 export function AdminLoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -62,7 +62,7 @@ export function AdminLoginPage() {
             Yönetici Girişi
           </h1>
           <p className="text-xs text-text-secondary leading-relaxed">
-            Vazo E-Ticaret yönetim paneline erişmek için yetkili Supabase kimlik bilgilerinizi giriniz.
+            Monocactus yönetim paneline erişmek için yetkili kimlik bilgilerinizi giriniz.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export function AdminLoginPage() {
               disabled={isSubmitting}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@vazostudio.com"
+              placeholder="admin@monocactus.com"
               autoComplete="username"
               className="w-full px-3.5 py-2.5 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50"
             />
@@ -94,43 +94,33 @@ export function AdminLoginPage() {
             <label className="block text-xs font-medium text-text-primary">
               Şifre
             </label>
-            <input
-              type="password"
-              required
-              disabled={isSubmitting}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              className="w-full px-3.5 py-2.5 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50"
-            />
-          </div>
-
-          <div className="p-3 bg-surface-secondary border border-border-subtle text-[11px] text-text-secondary flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-text-primary">Varsayılan Yönetici Bilgileri:</span>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                disabled={isSubmitting}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className="w-full px-3.5 py-2.5 pr-10 text-xs bg-surface-secondary border border-border-default focus:border-text-primary focus:outline-none text-text-primary disabled:opacity-50"
+              />
               <button
                 type="button"
-                onClick={() => {
-                  setEmail(DEV_ADMIN_EMAIL);
-                  setPassword(DEV_ADMIN_PASSWORD);
-                }}
-                className="text-text-primary hover:underline font-semibold text-[11px]"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors p-1"
+                aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                tabIndex={-1}
               >
-                Otomatik Doldur
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </div>
-            <div className="font-mono text-[10px] text-text-secondary">
-              <span>E-posta: </span><span className="text-text-primary font-medium">{DEV_ADMIN_EMAIL}</span>
-              <br />
-              <span>Şifre: </span><span className="text-text-primary font-medium">{DEV_ADMIN_PASSWORD}</span>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full flex items-center justify-center gap-2 bg-action-primary text-action-primary-text py-3 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 bg-action-primary text-action-primary-text py-3 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors shadow-xs disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               <>

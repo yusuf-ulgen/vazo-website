@@ -27,7 +27,7 @@ export interface SiteConfig {
 }
 
 export const siteConfig: SiteConfig = {
-  name: 'Vazo Studio',
+  name: 'Monocactus',
   tagline: 'Heykelsi Formlar & Çağdaş Seramik Tasarımlar',
   description: 'İskandinav estetiği ve zanaatkar dokunuşlarla şekillenen premium vazo koleksiyonları. Perakende ve toptan satış.',
   announcement: {

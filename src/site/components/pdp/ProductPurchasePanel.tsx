@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, Truck, ShieldCheck, RefreshCw, Tag } from 'lucide-react';
 import { Product, ProductVariant, WholesalePricingTier } from '@/entities/product/types';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -36,6 +36,15 @@ export function ProductPurchasePanel({
   const isOutOfStock = stock <= 0;
   const isRetailAvailable = (product.retailEnabled ?? true) && (activeVariant?.isAvailableForRetail ?? true);
 
+  // Automatically clamp quantity if current variant stock is lower than selected quantity
+  useEffect(() => {
+    if (stock > 0 && quantity > stock) {
+      setQuantity(stock);
+    } else if (stock <= 0 && quantity > 1) {
+      setQuantity(1);
+    }
+  }, [stock, quantity, activeVariant?.id]);
+
   // Authoritative product configuration tiers only - NO synthetic fallback tiers!
   const activeTiers: WholesalePricingTier[] =
     product.wholesale?.tiers && product.wholesale.tiers.length > 0
@@ -46,7 +55,8 @@ export function ProductPurchasePanel({
 
   const handleAddToCart = () => {
     if (isOutOfStock || !isRetailAvailable) return;
-    addItem(product, activeVariant, quantity);
+    const clampedQuantity = Math.min(quantity, Math.max(1, stock));
+    addItem(product, activeVariant, clampedQuantity);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2500);
   };

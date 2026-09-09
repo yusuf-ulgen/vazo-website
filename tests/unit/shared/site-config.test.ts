@@ -3,7 +3,7 @@ import { siteConfig } from '@/shared/config/site-config';
 
 describe('siteConfig configuration object', () => {
   it('contains valid branding and studio details', () => {
-    expect(siteConfig.name).toBe('Vazo Studio');
+    expect(siteConfig.name).toBe('Monocactus');
     expect(siteConfig.contact.email).toContain('@');
     expect(siteConfig.contact.phone).toBeDefined();
     expect(siteConfig.contact.address).toBeDefined();

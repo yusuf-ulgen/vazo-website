@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import {
   AdminCategory,
@@ -129,15 +130,22 @@ export function CategoryFormModal({
   // Filter available parent candidates (exclude current category)
   const availableParents = allCategories.filter((c) => !category || c.id !== category.id);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center p-4 sm:p-6 pt-10 sm:pt-14 pb-12 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) onClose();
+      }}
+    >
       {/* Backdrop */}
       <div
         onClick={() => {
           if (!isLoading) onClose();
         }}
         aria-hidden="true"
-        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs animate-fade-in"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-xs animate-fade-in -z-10"
       />
 
       {/* Modal Container */}
@@ -147,7 +155,8 @@ export function CategoryFormModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="category-modal-title"
-        className="relative w-full max-w-2xl bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left my-8 focus:outline-none"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-surface-primary border border-border-default shadow-elevated z-10 p-6 sm:p-8 animate-fade-scale text-left my-auto focus:outline-none"
       >
         <button
           onClick={onClose}
@@ -339,6 +348,7 @@ export function CategoryFormModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

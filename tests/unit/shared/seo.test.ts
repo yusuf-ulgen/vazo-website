@@ -51,7 +51,7 @@ describe('useSEO hook', () => {
   it('uses default fallback values when arguments are omitted', () => {
     renderHook(() => useSEO());
 
-    expect(document.title).toBe(`${siteConfig.name} — ${siteConfig.tagline}`);
+    expect(document.title).toBe(siteConfig.name);
     const metaDesc = document.querySelector('meta[name="description"]');
     expect(metaDesc?.getAttribute('content')).toBe(siteConfig.description);
   });
