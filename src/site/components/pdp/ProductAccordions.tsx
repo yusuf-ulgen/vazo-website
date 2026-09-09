@@ -1,9 +1,19 @@
 import { useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
 import { Container } from '@/shared/ui/Container';
+import { useSiteSettings } from '@/shared/stores/settings-store';
 
 export function ProductAccordions() {
+  const { settings } = useSiteSettings();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const shippingContent = [
+    settings?.commerce?.shippingSummary ||
+      'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir.',
+    settings?.commerce?.returnsPolicyText || 'Teslimattan itibaren 14 gün içinde iade imkanı.',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const accordions = [
     {
@@ -14,6 +24,7 @@ export function ProductAccordions() {
     {
       title: 'Kargo, Paketleme & Sevkiyat',
       content:
+        shippingContent ||
         'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir. Anlaşmalı kargo firmaları aracılığıyla 1-3 iş günü içinde sigortalı olarak sevk edilir.',
     },
     {
