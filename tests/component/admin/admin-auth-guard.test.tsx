@@ -91,9 +91,9 @@ describe('Admin Guard & UI Components (Phase 2.2 RBAC Integration)', () => {
       );
 
       expect(screen.getByText('Yönetici Girişi')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('admin@vazostudio.com')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('admin@monocactus.com')).toBeInTheDocument();
 
-      fireEvent.change(screen.getByPlaceholderText('admin@vazostudio.com'), {
+      fireEvent.change(screen.getByPlaceholderText('admin@monocactus.com'), {
         target: { value: 'editor@vazostudio.com' },
       });
       fireEvent.change(screen.getByPlaceholderText('••••••••'), {
@@ -124,7 +124,7 @@ describe('Admin Guard & UI Components (Phase 2.2 RBAC Integration)', () => {
         </AdminAuthProvider>
       );
 
-      fireEvent.change(screen.getByPlaceholderText('admin@vazostudio.com'), {
+      fireEvent.change(screen.getByPlaceholderText('admin@monocactus.com'), {
         target: { value: 'notadmin@example.com' },
       });
       fireEvent.change(screen.getByPlaceholderText('••••••••'), {

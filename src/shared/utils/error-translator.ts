@@ -130,7 +130,9 @@ export function translateErrorMessage(error: unknown, fallbackMessage = 'Beklenm
     normalized.includes('invalid_grant') ||
     normalized.includes('invalid username or password') ||
     normalized.includes('invalid password') ||
-    normalized.includes('invalid credentials')
+    normalized.includes('invalid credentials') ||
+    normalized.includes('database error finding user') ||
+    normalized.includes('database error querying user')
   ) {
     return 'Geçersiz e-posta adresi veya şifre.';
   }

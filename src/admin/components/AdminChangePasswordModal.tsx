@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { KeyRound, X, Loader2, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { adminAuthService } from '../auth/admin-auth-service';
-import { useToast } from '../ui';
+import { ToastContext } from '../ui/ToastContext';
 
 export interface AdminChangePasswordModalProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ export interface AdminChangePasswordModalProps {
 }
 
 export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswordModalProps) {
-  const { success } = useToast();
+  const toastContext = useContext(ToastContext);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,14 +30,14 @@ export function AdminChangePasswordModal({ isOpen, onClose }: AdminChangePasswor
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Girdiğiniz şifreler birbiriyle eşleşmiyor.');
+      setErrorMessage('Şifreler birbiriyle eşleşmiyor.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       await adminAuthService.updatePassword(password);
-      success('Şifre Güncellendi', 'Yönetici şifreniz başarıyla değiştirildi.');
+      toastContext?.success('Şifre Güncellendi', 'Yönetici şifreniz başarıyla değiştirildi.');
       setPassword('');
       setConfirmPassword('');
       onClose();

@@ -15,6 +15,18 @@ describe('Auth Error Translator (Kimlik Doğrulama Hata Çevirici)', () => {
     expect(translateAuthError('Database error finding user')).toBe(
       'Geçersiz e-posta adresi veya şifre.'
     );
+    expect(translateAuthError('Database error querying user')).toBe(
+      'Geçersiz e-posta adresi veya şifre.'
+    );
+    expect(translateAuthError('database error')).toBe(
+      'Geçersiz e-posta adresi veya şifre.'
+    );
+    expect(translateAuthError('unexpected_failure')).toBe(
+      'Geçersiz e-posta adresi veya şifre.'
+    );
+    expect(translateAuthError('Database error saving new user')).toBe(
+      'Kayıt işlemi sırasında bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.'
+    );
   });
 
   it('translates unconfirmed email error', () => {

@@ -21,6 +21,14 @@ export function translateAuthError(error: unknown): string {
 
   const normalized = message.trim().toLowerCase();
 
+  // 0. Kayıt / Hesap oluşturma veritabanı hataları
+  if (
+    normalized.includes('database error saving') ||
+    normalized.includes('database error creating')
+  ) {
+    return 'Kayıt işlemi sırasında bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.';
+  }
+
   // 1. Geçersiz giriş bilgileri (Invalid login credentials)
   if (
     normalized.includes('invalid login credentials') ||
@@ -28,7 +36,8 @@ export function translateAuthError(error: unknown): string {
     normalized.includes('invalid username or password') ||
     normalized.includes('invalid password') ||
     normalized.includes('invalid credentials') ||
-    normalized.includes('database error finding user')
+    normalized.includes('database error') ||
+    normalized.includes('unexpected_failure')
   ) {
     return 'Geçersiz e-posta adresi veya şifre.';
   }
@@ -132,8 +141,8 @@ export function translateAuthError(error: unknown): string {
     return 'Giriş işlemi iptal edildi veya yetkilendirme reddedildi.';
   }
 
-  // 11. Veritabanı veya sunucu hatası
-  if (normalized.includes('database error') || normalized.includes('unexpected_failure')) {
+  // 11. Genel sunucu hatası
+  if (normalized.includes('internal server error') || normalized.includes('500 internal')) {
     return 'İşlem sırasında bir sistem hatası oluştu. Lütfen daha sonra tekrar deneyiniz.';
   }
 
