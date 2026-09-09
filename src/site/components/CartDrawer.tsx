@@ -203,8 +203,13 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                <span>{settings.commerce.shippingSummary}</span>
+                <span>{settings.commerce.shippingSummary || 'Güvenli Alışveriş ve Sigortalı Sevkiyat'}</span>
               </div>
+              {settings.commerce.returnsPolicyText && (
+                <p className="text-[10px] text-text-muted text-center">
+                  {settings.commerce.returnsPolicyText}
+                </p>
+              )}
             </div>
           </div>
         )}

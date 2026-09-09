@@ -10,9 +10,13 @@ import { useSiteSettings } from '@/shared/stores/settings-store';
 import { createProduct, createVariant } from 'tests/factories/product.factory';
 import { DEFAULT_PUBLIC_SITE_SETTINGS } from '@/entities/settings/types';
 
-vi.mock('@/shared/stores/settings-store', () => ({
-  useSiteSettings: vi.fn(),
-}));
+vi.mock('@/shared/stores/settings-store', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/shared/stores/settings-store')>();
+  return {
+    ...actual,
+    useSiteSettings: vi.fn(),
+  };
+});
 
 describe('CartPage Checkout Enablement Gate (Phase 3.10)', () => {
   beforeEach(() => {
@@ -104,5 +108,31 @@ describe('CartPage Checkout Enablement Gate (Phase 3.10)', () => {
     expect(screen.getByText(/-%20 Toplu Alım/)).toBeInTheDocument();
     expect(screen.getByText(/%20 İskonto Uygulandı/)).toBeInTheDocument();
     expect(screen.getAllByText(/6\.960/).length).toBeGreaterThan(0);
+  });
+
+  it('renders dynamic shipping estimate, summary, and returns text from site settings in CartPage', () => {
+    vi.mocked(useSiteSettings).mockReturnValue({
+      settings: {
+        ...DEFAULT_PUBLIC_SITE_SETTINGS,
+        commerce: {
+          ...DEFAULT_PUBLIC_SITE_SETTINGS.commerce,
+          shippingEstimateText: 'Ödeme adımında hesaplanıraaa',
+          shippingSummary: 'Güvenli Alışveriş ve Sigortalı Sevkiyataaa',
+          returnsPolicyText: 'Teslimattan itibaren 14 gün içinde iade imkanı.aaa',
+        },
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    const product = createProduct({ id: 'p-cart-04', name: 'Vazo Test', retailPrice: 1000 });
+    const variant = createVariant({ id: 'v-cart-04', retailPrice: 1000, stockQuantity: 10 });
+    cartStore.addItem(product, variant, 1);
+
+    renderWithRouter(<CartPage />);
+
+    expect(screen.getByText('Ödeme adımında hesaplanıraaa')).toBeInTheDocument();
+    expect(screen.getByText('Güvenli Alışveriş ve Sigortalı Sevkiyataaa')).toBeInTheDocument();
+    expect(screen.getByText('Teslimattan itibaren 14 gün içinde iade imkanı.aaa')).toBeInTheDocument();
   });
 });

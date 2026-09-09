@@ -264,6 +264,22 @@ export const router = createBrowserRouter([
         element: <ShippingReturnsPolicyPage />,
       },
       {
+        path: 'shipping-returns',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
+        path: 'shipping-and-returns',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
+        path: 'kargo-iade',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
+        path: 'kargo-ve-iade',
+        element: <ShippingReturnsPolicyPage />,
+      },
+      {
         path: 'returns',
         element: <ShippingReturnsPolicyPage />,
       },

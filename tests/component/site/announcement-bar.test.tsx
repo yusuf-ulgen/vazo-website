@@ -28,7 +28,7 @@ describe('AnnouncementBar Component', () => {
     expect(screen.queryByText('Özel Duyuru Metni')).not.toBeInTheDocument();
   });
 
-  it('falls back to /wholesale link when linkUrl is not provided', async () => {
+  it('falls back to default link when linkUrl is not provided', async () => {
     vi.spyOn(contentRepository, 'getAnnouncement').mockResolvedValue({
       isEnabled: true,
       message: 'Link urlsiz duyuru',
@@ -38,13 +38,20 @@ describe('AnnouncementBar Component', () => {
     renderWithRouter(<AnnouncementBar />);
 
     expect(await screen.findByText('Link urlsiz duyuru')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Detay/ })).toHaveAttribute('href', '/wholesale');
+    expect(screen.getByRole('link', { name: /Detay/ })).toHaveAttribute('href', '/products');
   });
 
-  it('does not render when announcement is inactive or null', async () => {
+  it('renders dynamic free shipping notice when announcement is null and dismisses on close', async () => {
     vi.spyOn(contentRepository, 'getAnnouncement').mockResolvedValue(null);
 
-    const { container } = renderWithRouter(<AnnouncementBar />);
-    expect(container.firstChild).toBeNull();
+    renderWithRouter(<AnnouncementBar />);
+
+    expect(await screen.findByText(/ve Üzeri Siparişlerde Kargo Ücretsiz/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Alışverişe Başla/ })).toHaveAttribute('href', '/products');
+
+    const closeBtn = screen.getByRole('button', { name: 'Duyuruyu Kapat' });
+    fireEvent.click(closeBtn);
+
+    expect(screen.queryByText(/ve Üzeri Siparişlerde Kargo Ücretsiz/)).not.toBeInTheDocument();
   });
 });

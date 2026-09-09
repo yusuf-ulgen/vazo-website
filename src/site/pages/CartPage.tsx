@@ -171,7 +171,7 @@ export function CartPage() {
                 <div className="flex justify-between text-text-secondary">
                   <span>Tahmini Kargo</span>
                   <span className="text-text-primary font-medium">
-                    Ödeme adımında hesaplanır
+                    {settings?.commerce?.shippingEstimateText || 'Ödeme adımında hesaplanır'}
                   </span>
                 </div>
 
@@ -224,8 +224,13 @@ export function CartPage() {
 
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />
-                  <span>Güvenli Alışveriş & Sigortalı Sevkiyat</span>
+                  <span>{settings?.commerce?.shippingSummary || 'Güvenli Alışveriş ve Sigortalı Sevkiyat'}</span>
                 </div>
+                {settings?.commerce?.returnsPolicyText && (
+                  <p className="text-[11px] text-text-muted text-center pt-0.5">
+                    {settings.commerce.returnsPolicyText}
+                  </p>
+                )}
               </div>
             </div>
           </div>

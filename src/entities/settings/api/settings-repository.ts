@@ -72,10 +72,19 @@ export const settingsRepository = {
     };
 
     const commerce: CommerceSettings = {
-      freeShippingThreshold: Number(commerceRow.free_shipping_threshold) || 0,
-      shippingEstimateText: String(commerceRow.shipping_estimate_text || ''),
-      shippingSummary: String(commerceRow.shipping_summary || ''),
-      returnsPolicyText: String(commerceRow.returns_policy_text || ''),
+      freeShippingThreshold:
+        typeof commerceRow.free_shipping_threshold === 'number'
+          ? commerceRow.free_shipping_threshold
+          : DEFAULT_PUBLIC_SITE_SETTINGS.commerce.freeShippingThreshold,
+      shippingEstimateText:
+        String(commerceRow.shipping_estimate_text || '') ||
+        DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingEstimateText,
+      shippingSummary:
+        String(commerceRow.shipping_summary || '') ||
+        DEFAULT_PUBLIC_SITE_SETTINGS.commerce.shippingSummary,
+      returnsPolicyText:
+        String(commerceRow.returns_policy_text || '') ||
+        DEFAULT_PUBLIC_SITE_SETTINGS.commerce.returnsPolicyText,
       checkoutEnabled: Boolean(commerceRow.checkout_enabled ?? false),
     };
 
