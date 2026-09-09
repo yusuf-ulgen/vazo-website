@@ -245,14 +245,34 @@ export const adminMediaService = {
   async setPrimaryImage(productId: string, mediaId: string): Promise<void> {
     const client = requireAdminSupabase();
 
-    const { error } = await client.rpc('set_primary_product_media', {
-      p_product_id: productId,
-      p_media_id: mediaId,
-    });
+    try {
+      const { error } = await client.rpc('set_primary_product_media', {
+        p_product_id: productId,
+        p_media_id: mediaId,
+      });
 
-    if (error) {
-      console.error('[adminMediaService.setPrimaryImage] RPC error:', error);
-      throw new Error(`Ana görsel belirlenemedi: ${error.message}`);
+      if (!error) {
+        return;
+      }
+      console.warn('[adminMediaService.setPrimaryImage] RPC failed, trying direct table update:', error.message);
+    } catch (rpcErr) {
+      console.warn('[adminMediaService.setPrimaryImage] RPC exception, trying direct table update:', rpcErr);
+    }
+
+    // Direct table fallback ensuring primary image assignment never fails
+    await client
+      .from('product_media')
+      .update({ is_primary: false })
+      .eq('product_id', productId);
+
+    const { error: updateError } = await client
+      .from('product_media')
+      .update({ is_primary: true })
+      .eq('id', mediaId);
+
+    if (updateError) {
+      console.error('[adminMediaService.setPrimaryImage] Direct update error:', updateError);
+      throw new Error(`Ana görsel belirlenemedi: ${updateError.message}`);
     }
   },
 

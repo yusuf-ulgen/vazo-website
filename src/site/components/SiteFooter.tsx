@@ -1,11 +1,32 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Mail } from 'lucide-react';
 import { usePolicyDrawer } from '@/shared/stores/policy-drawer-store';
 import { useSiteSettings } from '@/shared/stores/settings-store';
+import { contentRepository } from '@/entities/content/api/content-repository';
+import { mockFooterNavGroups } from '@/entities/content/api/content-mocks';
+import type { MenuGroup } from '@/entities/content/types';
 
 export function SiteFooter() {
   const { open: openPolicy } = usePolicyDrawer();
   const { settings } = useSiteSettings();
+  const [footerGroups, setFooterGroups] = useState<MenuGroup[]>(mockFooterNavGroups);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getNavMenu('footer')
+      .then((groups) => {
+        if (isMounted && groups && groups.length > 0) {
+          setFooterGroups(groups);
+        }
+      })
+      .catch((err) => {
+        console.warn('[SiteFooter] Failed to load dynamic footer nav:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <footer className="bg-canvas-warm border-t border-border-subtle pt-6 sm:pt-8 pb-10 sm:pb-12 text-xs font-sans text-text-secondary">
@@ -86,103 +107,60 @@ export function SiteFooter() {
             </div>
           </div>
 
-          {/* Right Navigation Columns (8 cols: 3 equal sub-columns) */}
-          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-8 lg:gap-12 pt-6 sm:pt-10 lg:pt-14">
-            {/* Shop Column */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">
-                Alışveriş
-              </h4>
-              <ul className="space-y-3.5">
-                <li>
-                  <Link to="/products" className="hover:text-text-primary transition-colors">
-                    Tüm Modeller
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/new" className="hover:text-text-primary transition-colors">
-                    Yeni Gelenler
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/bestsellers" className="hover:text-text-primary transition-colors">
-                    Çok Satanlar
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/collections" className="hover:text-text-primary transition-colors">
-                    Koleksiyonlar
-                  </Link>
-                </li>
-              </ul>
-            </div>
+          {/* Dynamic Navigation Columns */}
+          <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12 pt-6 sm:pt-10 lg:pt-14">
+            {footerGroups.map((group) => {
+              const activeItems = (group.items || []).filter((item) => item.active);
+              if (activeItems.length === 0 && !group.title) return null;
+              return (
+                <div key={group.id} className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">
+                    {group.title}
+                  </h4>
+                  <ul className="space-y-3.5">
+                    {activeItems.map((item) => {
+                      if (item.href.startsWith('#policy-')) {
+                        const policyKey = item.href.replace('#policy-', '') as 'privacy' | 'terms' | 'shipping';
+                        return (
+                          <li key={item.id}>
+                            <button
+                              type="button"
+                              onClick={() => openPolicy(policyKey)}
+                              className="hover:text-text-primary transition-colors text-left cursor-pointer"
+                            >
+                              {item.label}
+                            </button>
+                          </li>
+                        );
+                      }
 
-            {/* Wholesale Column */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">
-                Toptan
-              </h4>
-              <ul className="space-y-3.5">
-                <li>
-                  <Link to="/wholesale" className="hover:text-text-primary transition-colors">
-                    Toptan Satışımız
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/wholesale/products" className="hover:text-text-primary transition-colors">
-                    Toptan Kataloğu
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/wholesale/how-it-works" className="hover:text-text-primary transition-colors">
-                    Nasıl Çalışır?
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/wholesale/apply" className="hover:text-text-primary transition-colors">
-                    Ticari Hesap Başvurusu
-                  </Link>
-                </li>
-              </ul>
-            </div>
+                      if (item.href.startsWith('http')) {
+                        return (
+                          <li key={item.id}>
+                            <a
+                              href={item.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-text-primary transition-colors cursor-pointer"
+                            >
+                              {item.label}
+                            </a>
+                          </li>
+                        );
+                      }
 
-            {/* Support Column */}
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-text-primary">
-                Müşteri Deneyimi
-              </h4>
-              <ul className="space-y-3.5">
-                <li>
-                  <Link to="/about" className="hover:text-text-primary transition-colors">
-                    Hakkımızda & Zanaat
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/contact" className="hover:text-text-primary transition-colors">
-                    İletişim & Showroom
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/faq" className="hover:text-text-primary transition-colors">
-                    Sıkça Sorulan Sorular
-                  </Link>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => openPolicy('shipping')}
-                    className="hover:text-text-primary transition-colors text-left"
-                  >
-                    Kargo & İade Koşulları
-                  </button>
-                </li>
-                <li>
-                  <Link to="/seller-information" className="hover:text-text-primary transition-colors">
-                    Satıcı & Yasal Bilgiler
-                  </Link>
-                </li>
-              </ul>
-            </div>
+                      return (
+                        <li key={item.id}>
+                          <Link to={item.href} className="hover:text-text-primary transition-colors">
+                            {item.label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </div>
 
