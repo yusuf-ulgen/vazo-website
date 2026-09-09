@@ -219,8 +219,9 @@ describe('cartStore & useCart', () => {
     expect(result.current.subtotal).toBe(0);
   });
 
-  it('does not apply wholesale tier discounts to unauthenticated or retail customers', () => {
+  it('applies wholesale tier discounts to cart items when tier quantity is reached, regardless of auth state', () => {
     customerAuthStore._setStateForTesting({ user: null, profile: null });
+
     const product = createProduct({
       id: 'p-vazo',
       retailPrice: 1450,
@@ -240,11 +241,13 @@ describe('cartStore & useCart', () => {
     const items = cartStore.getItems();
     expect(items[0]?.quantity).toBe(6);
     expect(items[0]?.retailPrice).toBe(1450);
-    expect(items[0]?.unitPrice).toBe(1450);
-    expect(items[0]?.discountPercentage).toBeUndefined();
+    expect(items[0]?.unitPrice).toBe(1160);
+    expect(items[0]?.discountPercentage).toBe(20);
+    expect(items[0]?.isWholesaleTierReached).toBe(true);
 
     const { result } = renderHook(() => useCart());
-    expect(result.current.subtotal).toBe(1450 * 6);
+    expect(result.current.subtotal).toBe(1160 * 6);
+    expect(result.current.hasWholesaleTier).toBe(true);
   });
 
   it('applies volume/wholesale tier pricing to approved wholesale customers and recomputes on auth state change', () => {
@@ -287,13 +290,14 @@ describe('cartStore & useCart', () => {
     expect(items[0]?.unitPrice).toBe(1085);
     expect(items[0]?.discountPercentage).toBe(25);
 
-    // 5. Customer signs out -> existing items in cart automatically revert to retail price
+    // 5. Customer signs out -> tier price still applies to cart display, but customer is unapproved
     act(() => {
       customerAuthStore._setStateForTesting({ user: null, profile: null });
     });
     items = cartStore.getItems();
-    expect(items[0]?.unitPrice).toBe(1450);
-    expect(items[0]?.discountPercentage).toBeUndefined();
+    expect(items[0]?.unitPrice).toBe(1085);
+    expect(items[0]?.discountPercentage).toBe(25);
+    expect(items[0]?.isWholesaleTierReached).toBe(true);
 
     // 6. Customer logs back in as approved wholesale -> items re-discount
     act(() => {

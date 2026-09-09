@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Container } from '@/shared/ui/Container';
 import { useCustomerAuth, customerAuthStore } from '@/shared/stores/customer-auth-store';
 import { useCart, cartStore } from '@/shared/stores/cart-store';
@@ -34,11 +34,19 @@ const CHECKOUT_STEPS: StepItem[] = [
 ];
 
 export function CheckoutPage() {
+  const navigate = useNavigate();
   const { user, addresses, isLoading: isAuthLoading, isWholesaleApproved } = useCustomerAuth();
-  const { items: cartItems } = useCart();
+  const { items: cartItems, hasWholesaleTier } = useCart();
   const { settings } = useSiteSettings();
   const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
   const [checkoutAuthModalOpen, setCheckoutAuthModalOpen] = useState(false);
+
+  // Wholesale bulk volume checkout guard
+  useEffect(() => {
+    if (hasWholesaleTier && !isWholesaleApproved && !isAuthLoading) {
+      navigate('/wholesale/apply?ref=checkout', { replace: true });
+    }
+  }, [hasWholesaleTier, isWholesaleApproved, isAuthLoading, navigate]);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [shippingAddress, setShippingAddress] = useState<CustomerAddress | null>(null);

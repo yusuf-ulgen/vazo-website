@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck, Lock } from 'lucide-react';
+import { ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck, Lock, AlertCircle } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { Container } from '@/shared/ui/Container';
@@ -11,11 +12,14 @@ export function CartPage() {
     items,
     totalItems,
     subtotal,
+    hasWholesaleTier,
     updateQuantity,
     removeItem,
   } = useCart();
+  const { isWholesaleApproved } = useCustomerAuth();
   const { settings } = useSiteSettings();
   const checkoutEnabled = settings?.commerce?.checkoutEnabled ?? false;
+  const isBulkRedirectNeeded = hasWholesaleTier && !isWholesaleApproved;
 
   return (
     <div className="w-full bg-canvas-default min-h-screen py-10 md:py-16">
@@ -71,6 +75,19 @@ export function CartPage() {
                   <span>Kargo ücreti teslimat ülkesine göre ödeme adımında hesaplanır.</span>
                 </div>
               </div>
+
+              {/* Wholesale Tier Notice Banner */}
+              {isBulkRedirectNeeded && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/25 rounded flex items-start gap-3 text-xs text-amber-900">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm text-amber-900">Toplu Alım / Toptan Baremi Yakalandı</p>
+                    <p className="text-amber-800 leading-relaxed">
+                      Sepetinizdeki ürün adedi toptan satış baremine (% indirim) ulaştı. Siparişinizi indirimli toptan fiyatlandırmayla tamamlayabilmek için onaylı bir toptan müşteri hesabınızın olması gerekmektedir.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Items Table */}
               <div className="divide-y divide-border-subtle border-y border-border-subtle">
@@ -188,7 +205,15 @@ export function CartPage() {
 
               {/* Explicit Checkout Notice & Button */}
               <div className="space-y-3">
-                {checkoutEnabled ? (
+                {isBulkRedirectNeeded ? (
+                  <Link
+                    to="/wholesale/apply?ref=bulk_cart"
+                    className="w-full bg-accent-primary text-text-inverse py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 shadow-xs"
+                  >
+                    <span>Toptan Başvuru Formuna Git</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : checkoutEnabled ? (
                   <Link
                     to="/checkout"
                     className="w-full bg-action-primary text-action-primary-text py-4 px-6 text-xs uppercase font-semibold tracking-wider hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 shadow-xs"

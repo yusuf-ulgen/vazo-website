@@ -12,12 +12,20 @@ import {
   User,
 } from 'lucide-react';
 import { contentRepository } from '@/entities/content/api/content-repository';
+import type { MenuItem } from '@/entities/content/types';
 import { MegaMenuData, perakendeMegaMenuData, toptanMegaMenuData } from '@/shared/mocks/navigation';
 import { siteConfig } from '@/shared/config/site-config';
 import { useWishlist } from '@/shared/stores/wishlist-store';
 import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { useDialogFocusTrap } from '@/shared/hooks/useDialogFocusTrap';
 import { useSiteSettings } from '@/shared/stores/settings-store';
+
+const DEFAULT_MOBILE_NAV: MenuItem[] = [
+  { id: 'm1', groupId: 'primary', label: 'Yeni Gelenler', href: '/new', isNew: false, isPopular: false, sortOrder: 1, active: true },
+  { id: 'm2', groupId: 'primary', label: 'Perakende Koleksiyonu', href: '/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
+  { id: 'm3', groupId: 'primary', label: 'Toptan Portalı', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 3, active: true },
+  { id: 'm4', groupId: 'primary', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
+];
 
 export interface MobileNavDrawerProps {
   isOpen: boolean;
@@ -30,6 +38,7 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
   const [wholesaleExpanded, setWholesaleExpanded] = useState(false);
   const [retailMenu, setRetailMenu] = useState<MegaMenuData>(perakendeMegaMenuData);
   const [wholesaleMenu, setWholesaleMenu] = useState<MegaMenuData>(toptanMegaMenuData);
+  const [navItems, setNavItems] = useState<MenuItem[]>(DEFAULT_MOBILE_NAV);
   const { count: wishlistCount } = useWishlist();
   const { isAuthenticated } = useCustomerAuth();
   const { settings } = useSiteSettings();
@@ -43,6 +52,14 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
     if (isOpen) {
       contentRepository.getMegaMenu('retail_mega').then(setRetailMenu).catch(() => {});
       contentRepository.getMegaMenu('wholesale_mega').then(setWholesaleMenu).catch(() => {});
+      contentRepository.getNavMenu('primary')
+        .then((groups) => {
+          const items = groups.flatMap((g) => g.items || []).filter((i) => i.active);
+          if (items.length > 0) {
+            setNavItems(items);
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -107,91 +124,113 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
 
           {/* Navigation Links */}
           <nav className="p-4 space-y-1">
-            <Link
-              to="/new"
-              onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
-            >
-              <span>Yeni Gelenler</span>
-              <ChevronRight className="w-4 h-4 text-text-muted" />
-            </Link>
+            {navItems.map((item) => {
+              const lower = item.label.toLowerCase();
+              const isPerakende = item.href === '/products' || lower.includes('perakende');
+              const isToptan = item.href === '/wholesale' || lower.includes('toptan');
 
-            {/* Perakende Accordion */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setRetailExpanded((p) => !p)}
-                aria-expanded={retailExpanded}
-                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
-              >
-                <span className="flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Perakende Koleksiyonu</span>
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    retailExpanded ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {retailExpanded && (
-                <div className="bg-surface-secondary px-4 py-2 space-y-2 text-xs">
-                  {retailMenu.groups.flatMap((g) => g.links).map((link) => (
-                    <Link
-                      key={link.label}
-                      to={link.href}
-                      onClick={onClose}
-                      className="block py-1.5 text-text-secondary hover:text-text-primary"
+              if (isPerakende) {
+                return (
+                  <div key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => setRetailExpanded((p) => !p)}
+                      aria-expanded={retailExpanded}
+                      className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
                     >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                      <span className="flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          retailExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    {retailExpanded && (
+                      <div className="bg-surface-secondary px-4 py-2 space-y-2 text-xs">
+                        {retailMenu.groups.flatMap((g) => g.links).map((link) => (
+                          <Link
+                            key={link.label}
+                            to={link.href}
+                            onClick={onClose}
+                            className="block py-1.5 text-text-secondary hover:text-text-primary"
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
-            {/* Toptan Accordion */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setWholesaleExpanded((p) => !p)}
-                aria-expanded={wholesaleExpanded}
-                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
-              >
-                <span className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
-                  <span>Toptan Portalı</span>
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    wholesaleExpanded ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {wholesaleExpanded && (
-                <div className="bg-surface-muted px-4 py-2 space-y-2 text-xs">
-                  {wholesaleMenu.groups.flatMap((g) => g.links).map((link) => (
-                    <Link
-                      key={link.label}
-                      to={link.href}
-                      onClick={onClose}
-                      className="block py-1.5 text-text-secondary hover:text-text-primary"
+              if (isToptan) {
+                return (
+                  <div key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => setWholesaleExpanded((p) => !p)}
+                      aria-expanded={wholesaleExpanded}
+                      className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
                     >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                      <span className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </span>
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          wholesaleExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    {wholesaleExpanded && (
+                      <div className="bg-surface-muted px-4 py-2 space-y-2 text-xs">
+                        {wholesaleMenu.groups.flatMap((g) => g.links).map((link) => (
+                          <Link
+                            key={link.label}
+                            to={link.href}
+                            onClick={onClose}
+                            className="block py-1.5 text-text-secondary hover:text-text-primary"
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
-            <Link
-              to="/collections"
-              onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
-            >
-              <span>Koleksiyonlar</span>
-              <ChevronRight className="w-4 h-4 text-text-muted" />
-            </Link>
+              if (item.href.startsWith('http')) {
+                return (
+                  <a
+                    key={item.id}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={onClose}
+                    className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
+                  >
+                    <span>{item.label}</span>
+                    <ChevronRight className="w-4 h-4 text-text-muted" />
+                  </a>
+                );
+              }
+
+              return (
+                <Link
+                  key={item.id}
+                  to={item.href}
+                  onClick={onClose}
+                  className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
+                >
+                  <span>{item.label}</span>
+                  <ChevronRight className="w-4 h-4 text-text-muted" />
+                </Link>
+              );
+            })}
 
             <Link
               to="/account"

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
+import { X, ShoppingBag, Trash2, ArrowRight, ShieldCheck, Truck, AlertCircle } from 'lucide-react';
 import { useCart } from '@/shared/stores/cart-store';
+import { useCustomerAuth } from '@/shared/stores/customer-auth-store';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { useSiteSettings } from '@/shared/stores/settings-store';
 import { QuantitySelector } from '@/shared/ui/QuantitySelector';
@@ -13,13 +14,17 @@ export interface CartDrawerProps {
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { settings } = useSiteSettings();
+  const { isWholesaleApproved } = useCustomerAuth();
   const {
     items,
     totalItems,
     subtotal,
+    hasWholesaleTier,
     updateQuantity,
     removeItem,
   } = useCart();
+
+  const isBulkRedirectNeeded = hasWholesaleTier && !isWholesaleApproved;
 
   const { containerRef } = useDialogFocusTrap<HTMLDivElement>({
     isOpen,
@@ -190,16 +195,40 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               </div>
             </div>
 
+            {/* Bulk wholesale notice */}
+            {isBulkRedirectNeeded && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded text-[11px] text-amber-900 space-y-1">
+                <p className="font-semibold flex items-center gap-1 text-amber-800">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                  <span>Toplu Alım / Toptan Baremi</span>
+                </p>
+                <p className="text-[10.5px] text-amber-800 leading-snug">
+                  Sepetinizdeki ürün adedi toptan satış baremine ulaştı. Toptan iskonto ile sipariş verebilmek için toptan müşteri başvurusu gerekmektedir.
+                </p>
+              </div>
+            )}
+
             {/* Checkout Button */}
             <div className="space-y-2">
-              <Link
-                to="/cart"
-                onClick={onClose}
-                className="w-full bg-action-primary text-action-primary-text py-3.5 px-6 text-xs uppercase font-semibold tracking-wide hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>Sepete Git & Öde</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {isBulkRedirectNeeded ? (
+                <Link
+                  to="/wholesale/apply?ref=bulk_cart"
+                  onClick={onClose}
+                  className="w-full bg-accent-primary text-text-inverse py-3.5 px-6 text-xs uppercase font-semibold tracking-wide hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2 shadow-xs"
+                >
+                  <span>Toptan Başvuru Formuna Git</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <Link
+                  to="/cart"
+                  onClick={onClose}
+                  className="w-full bg-action-primary text-action-primary-text py-3.5 px-6 text-xs uppercase font-semibold tracking-wide hover:bg-neutral-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Sepete Git & Öde</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
 
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-text-muted text-center pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-feedback-success" />

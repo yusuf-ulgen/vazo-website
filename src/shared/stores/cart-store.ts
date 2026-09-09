@@ -16,6 +16,7 @@ export interface CartItem {
   retailPrice: number;
   unitPrice: number; // Effective unit price after authorized tier discount
   discountPercentage?: number;
+  isWholesaleTierReached?: boolean;
   quantity: number;
   maxStock?: number;
   imageUrl?: string;
@@ -90,17 +91,18 @@ export function resolveCartItemPricing(
   basePrice: number,
   quantity: number,
   tiers?: WholesalePricingTier[],
-  authorized = false
+  _authorized = false
 ): {
   unitPrice: number;
   discountPercentage?: number;
+  isWholesaleTierReached?: boolean;
 } {
-  // If not authorized for wholesale, or no tiers configured, retail price always applies
-  if (!authorized || !tiers || tiers.length === 0 || quantity < 1) {
-    return { unitPrice: basePrice, discountPercentage: undefined };
+  // If no tiers configured or invalid quantity, retail price always applies
+  if (!tiers || tiers.length === 0 || quantity < 1) {
+    return { unitPrice: basePrice, discountPercentage: undefined, isWholesaleTierReached: false };
   }
 
-  // Authorized wholesale customer: find matching configured tier
+  // Find matching configured tier
   const matchingTier = tiers.find(
     (t) => quantity >= t.minQuantity && (t.maxQuantity === undefined || quantity <= t.maxQuantity)
   );
@@ -120,10 +122,11 @@ export function resolveCartItemPricing(
     return {
       unitPrice,
       discountPercentage,
+      isWholesaleTierReached: true,
     };
   }
 
-  return { unitPrice: basePrice, discountPercentage: undefined };
+  return { unitPrice: basePrice, discountPercentage: undefined, isWholesaleTierReached: false };
 }
 
 export function sanitizeCartItem(raw: unknown, authorized = isWholesaleAuthorized()): CartItem | null {
@@ -169,6 +172,7 @@ export function sanitizeCartItem(raw: unknown, authorized = isWholesaleAuthorize
     retailPrice: basePrice,
     unitPrice: pricing.unitPrice,
     discountPercentage: pricing.discountPercentage,
+    isWholesaleTierReached: pricing.isWholesaleTierReached,
     quantity: qty,
     maxStock: typeof item.maxStock === 'number' && Number.isFinite(item.maxStock) ? item.maxStock : undefined,
     imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : undefined,
@@ -279,12 +283,17 @@ export const cartStore = {
     let hasChanged = false;
     cartItems = cartItems.map((item) => {
       const pricing = resolveCartItemPricing(item.retailPrice, item.quantity, item.wholesaleTiers, authorized);
-      if (item.unitPrice !== pricing.unitPrice || item.discountPercentage !== pricing.discountPercentage) {
+      if (
+        item.unitPrice !== pricing.unitPrice ||
+        item.discountPercentage !== pricing.discountPercentage ||
+        item.isWholesaleTierReached !== pricing.isWholesaleTierReached
+      ) {
         hasChanged = true;
         return {
           ...item,
           unitPrice: pricing.unitPrice,
           discountPercentage: pricing.discountPercentage,
+          isWholesaleTierReached: pricing.isWholesaleTierReached,
         };
       }
       return item;
@@ -330,6 +339,7 @@ export const cartStore = {
         quantity: newQuantity,
         unitPrice: pricing.unitPrice,
         discountPercentage: pricing.discountPercentage,
+        isWholesaleTierReached: pricing.isWholesaleTierReached,
         wholesaleTiers: effectiveTiers,
         maxStock: availableStock,
       };
@@ -348,6 +358,7 @@ export const cartStore = {
         retailPrice: baseRetailPrice,
         unitPrice: pricing.unitPrice,
         discountPercentage: pricing.discountPercentage,
+        isWholesaleTierReached: pricing.isWholesaleTierReached,
         wholesaleTiers: tiers,
         quantity: initialQuantity,
         maxStock: availableStock,
@@ -375,6 +386,7 @@ export const cartStore = {
         quantity: targetQty,
         unitPrice: pricing.unitPrice,
         discountPercentage: pricing.discountPercentage,
+        isWholesaleTierReached: pricing.isWholesaleTierReached,
       };
     });
     notify();
@@ -431,10 +443,15 @@ export function useCart() {
   const isFreeShipping = subtotal >= freeShippingThreshold;
   const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
 
+  const hasWholesaleTier = items.some(
+    (item) => Boolean(item.isWholesaleTierReached || (item.discountPercentage && item.discountPercentage > 0 && item.unitPrice < item.retailPrice))
+  );
+
   return {
     items,
     totalItems,
     subtotal,
+    hasWholesaleTier,
     freeShippingThreshold,
     isFreeShipping,
     freeShippingRemaining,

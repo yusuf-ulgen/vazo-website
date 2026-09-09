@@ -18,6 +18,17 @@ import { MobileNavDrawer } from './MobileNavDrawer';
 import { CartDrawer } from './CartDrawer';
 import { SearchModal } from './SearchModal';
 import { AuthModal } from './AuthModal';
+import { contentRepository } from '@/entities/content/api/content-repository';
+import type { MenuItem } from '@/entities/content/types';
+
+const DEFAULT_PRIMARY_NAV: MenuItem[] = [
+  { id: 'p1', groupId: 'primary', label: 'Yeni', href: '/new', isNew: false, isPopular: false, sortOrder: 1, active: true },
+  { id: 'p2', groupId: 'primary', label: 'Perakende', href: '/products', isNew: false, isPopular: false, sortOrder: 2, active: true },
+  { id: 'p3', groupId: 'primary', label: 'Toptan', href: '/wholesale', isNew: false, isPopular: false, sortOrder: 3, active: true },
+  { id: 'p4', groupId: 'primary', label: 'Koleksiyonlar', href: '/collections', isNew: false, isPopular: false, sortOrder: 4, active: true },
+  { id: 'p5', groupId: 'primary', label: 'Hakkımızda', href: '/about', isNew: false, isPopular: false, sortOrder: 5, active: true },
+  { id: 'p6', groupId: 'primary', label: 'İletişim', href: '/contact', isNew: false, isPopular: false, sortOrder: 6, active: true },
+];
 
 export function SiteNavbar() {
   const [activeMenu, setActiveMenu] = useState<'perakende' | 'toptan' | null>(null);
@@ -31,6 +42,25 @@ export function SiteNavbar() {
   const { totalItems: cartCount } = useCart();
   const { user, displayName, isAuthenticated } = useCustomerAuth();
   const { settings } = useSiteSettings();
+  const [navItems, setNavItems] = useState<MenuItem[]>(DEFAULT_PRIMARY_NAV);
+
+  useEffect(() => {
+    let isMounted = true;
+    contentRepository.getNavMenu('primary')
+      .then((groups) => {
+        if (!isMounted || !groups || groups.length === 0) return;
+        const items = groups.flatMap((g) => g.items || []).filter((i) => i.active);
+        if (items.length > 0) {
+          setNavItems(items);
+        }
+      })
+      .catch((err) => {
+        console.warn('[SiteNavbar] Failed to load dynamic primary nav:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleMouseEnter = (menu: 'perakende' | 'toptan') => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -96,81 +126,89 @@ export function SiteNavbar() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-8 text-sm font-sans tracking-wide">
-              <Link
-                to="/new"
-                onMouseEnter={handleCloseImmediate}
-                className="text-text-primary hover:opacity-60 transition-opacity py-2 font-normal"
-              >
-                Yeni
-              </Link>
+              {navItems.map((item) => {
+                const lower = item.label.toLowerCase();
+                const isPerakende = item.href === '/products' || lower.includes('perakende');
+                const isToptan = item.href === '/wholesale' || lower.includes('toptan');
 
-              {/* Perakende Mega Menu Trigger */}
-              <div
-                className="relative py-2"
-                onMouseEnter={() => handleMouseEnter('perakende')}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveMenu(activeMenu === 'perakende' ? null : 'perakende')}
-                  aria-expanded={activeMenu === 'perakende'}
-                  className={`inline-flex items-center gap-1.5 hover:opacity-60 transition-opacity ${
-                    activeMenu === 'perakende' ? 'text-text-primary font-semibold' : 'text-text-primary'
-                  }`}
-                >
-                  <span>Perakende</span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 ${
-                      activeMenu === 'perakende' ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-              </div>
+                if (isPerakende) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="relative py-2"
+                      onMouseEnter={() => handleMouseEnter('perakende')}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenu(activeMenu === 'perakende' ? null : 'perakende')}
+                        aria-expanded={activeMenu === 'perakende'}
+                        className={`inline-flex items-center gap-1.5 hover:opacity-60 transition-opacity ${
+                          activeMenu === 'perakende' ? 'text-text-primary font-semibold' : 'text-text-primary'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 ${
+                            activeMenu === 'perakende' ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                }
 
-              {/* Toptan Mega Menu Trigger */}
-              <div
-                className="relative py-2"
-                onMouseEnter={() => handleMouseEnter('toptan')}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveMenu(activeMenu === 'toptan' ? null : 'toptan')}
-                  aria-expanded={activeMenu === 'toptan'}
-                  className={`inline-flex items-center gap-1.5 hover:opacity-60 transition-opacity ${
-                    activeMenu === 'toptan' ? 'text-text-primary font-semibold' : 'text-text-primary'
-                  }`}
-                >
-                  <span>Toptan</span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 ${
-                      activeMenu === 'toptan' ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-              </div>
+                if (isToptan) {
+                  return (
+                    <div
+                      key={item.id}
+                      className="relative py-2"
+                      onMouseEnter={() => handleMouseEnter('toptan')}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setActiveMenu(activeMenu === 'toptan' ? null : 'toptan')}
+                        aria-expanded={activeMenu === 'toptan'}
+                        className={`inline-flex items-center gap-1.5 hover:opacity-60 transition-opacity ${
+                          activeMenu === 'toptan' ? 'text-text-primary font-semibold' : 'text-text-primary'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-text-secondary transition-transform duration-200 ${
+                            activeMenu === 'toptan' ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  );
+                }
 
-              <Link
-                to="/collections"
-                onMouseEnter={handleCloseImmediate}
-                className="text-text-primary hover:opacity-60 transition-opacity py-2"
-              >
-                Koleksiyonlar
-              </Link>
+                if (item.href.startsWith('http')) {
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onMouseEnter={handleCloseImmediate}
+                      className="text-text-primary hover:opacity-60 transition-opacity py-2 font-normal"
+                    >
+                      {item.label}
+                    </a>
+                  );
+                }
 
-              <Link
-                to="/about"
-                onMouseEnter={handleCloseImmediate}
-                className="text-text-primary hover:opacity-60 transition-opacity py-2"
-              >
-                Hakkımızda
-              </Link>
-
-              <Link
-                to="/contact"
-                onMouseEnter={handleCloseImmediate}
-                className="text-text-primary hover:opacity-60 transition-opacity py-2"
-              >
-                İletişim
-              </Link>
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.href}
+                    onMouseEnter={handleCloseImmediate}
+                    className="text-text-primary hover:opacity-60 transition-opacity py-2 font-normal"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Action Icons */}

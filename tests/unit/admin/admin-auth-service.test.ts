@@ -184,7 +184,7 @@ describe('Admin Auth Service (Phase 2.2 Supabase Auth & RBAC)', () => {
     expect(activeProfile).toBeNull();
   });
 
-  it('authenticates admin with dev credentials when Supabase auth fails', async () => {
+  it('rejects login when Supabase auth fails even for dev credentials (security hardening)', async () => {
     const mockClient = createMockSupabaseClient({});
     mockClient.auth.signInWithPassword = vi.fn().mockResolvedValue({
       data: { user: null, session: null },
@@ -194,25 +194,8 @@ describe('Admin Auth Service (Phase 2.2 Supabase Auth & RBAC)', () => {
     vi.spyOn(supabaseModule, 'isSupabaseConfigured', 'get').mockReturnValue(true);
     vi.spyOn(supabaseModule, 'supabase', 'get').mockReturnValue(mockClient as never);
 
-    const profile = await adminAuthService.login('admin@vazostudio.com', 'VazoAdmin2026!');
-    expect(profile).toEqual({
-      id: 'a0000000-0000-0000-0000-000000000001',
-      email: 'admin@vazostudio.com',
-      role: 'super_admin',
-      active: true,
-    });
-
-    // Session persisted and restored
-    mockClient.auth.getSession = vi.fn().mockResolvedValue({
-      data: { session: null },
-      error: null,
-    });
-    const current = await adminAuthService.getCurrentAdmin();
-    expect(current?.email).toBe('admin@vazostudio.com');
-
-    // Logout clears it
-    await adminAuthService.logout();
-    const afterLogout = await adminAuthService.getCurrentAdmin();
-    expect(afterLogout).toBeNull();
+    await expect(
+      adminAuthService.login('admin@vazostudio.com', 'VazoAdmin2026!')
+    ).rejects.toThrow('Geçersiz e-posta adresi veya şifre.');
   });
 });

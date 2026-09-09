@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, Save, Loader2 } from 'lucide-react';
 import { FormField, AdminInput, useToast } from '@/admin/ui';
+import { translateErrorMessage } from '@/shared/utils/error-translator';
 import { adminSettingsRepository } from '../api/admin-settings-repository';
 import type { CommerceSettings } from '@/entities/settings/types';
 
@@ -33,8 +34,7 @@ export function AdminCommerceSettingsTab({ initialData, onSaved }: AdminCommerce
       success('Başarılı', 'E-Ticaret ve kargo parametreleri kaydedildi.');
       onSaved?.(commerce);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Kaydedilemedi.';
-      toastError('Hata', msg);
+      toastError('Hata', translateErrorMessage(err, 'Kaydedilemedi.'));
     } finally {
       setIsSaving(false);
     }

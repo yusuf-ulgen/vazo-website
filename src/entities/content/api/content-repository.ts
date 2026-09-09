@@ -332,8 +332,16 @@ export const contentRepository = {
       .order('sort_order', { ascending: true });
 
     if (error) {
-      console.error(`[contentRepository.getNavMenu:${menuType}] Live Supabase error:`, error.message);
-      throw new Error(formatErrorMessage('Gezinme menüsü veritabanından yüklenemedi', error));
+      console.warn(`[contentRepository.getNavMenu:${menuType}] Live Supabase error, using fallback:`, error.message);
+      if (menuType === 'primary') return mockPrimaryNavGroups;
+      if (menuType === 'footer') return mockFooterNavGroups;
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      if (menuType === 'primary') return mockPrimaryNavGroups;
+      if (menuType === 'footer') return mockFooterNavGroups;
+      return [];
     }
 
     return (data || []).map((g) => ({
@@ -407,11 +415,13 @@ export const contentRepository = {
       .maybeSingle();
 
     if (error) {
-      console.error(`[contentRepository.getContentPage:${pageKey}] Live error:`, error.message);
-      throw new Error(formatErrorMessage('İçerik sayfası veritabanından yüklenemedi', error));
+      console.warn(`[contentRepository.getContentPage:${pageKey}] Live error, using fallback:`, error.message);
+      return mockContentPages[pageKey] || null;
     }
 
-    if (!data) return null;
+    if (!data) {
+      return mockContentPages[pageKey] || null;
+    }
 
     return {
       id: data.id,
@@ -510,7 +520,29 @@ export const contentRepository = {
       terms: 'terms',
       shipping: 'shipping_returns',
     };
-    return this.getContentPage(keyMap[policyType]);
+    const key = keyMap[policyType];
+    try {
+      const page = await this.getContentPage(key);
+      if (page && page.sections && page.sections.length > 0) {
+        return page;
+      }
+    } catch {
+      // Fallback below
+    }
+
+    const fallback = mockContentPages[key];
+    if (fallback) {
+      return {
+        id: fallback.id,
+        pageKey: fallback.pageKey,
+        title: fallback.title,
+        seoTitle: fallback.seoTitle,
+        seoDescription: fallback.seoDescription,
+        published: fallback.published,
+        sections: fallback.sections,
+      };
+    }
+    return null;
   },
 
   async submitTradeApplication(payload: TradeApplicationPayload): Promise<{ success: boolean; message: string }> {

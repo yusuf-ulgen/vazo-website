@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '@/shared/lib/supabase';
 import type { AdminNotification } from './types';
 
 const READ_NOTIFICATIONS_STORAGE_KEY = 'vazo_admin_read_notifications';
+let lastNotificationDispatch = 0;
 
 function getReadNotificationIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
@@ -175,7 +176,7 @@ export const adminNotificationService = {
   },
 
   /**
-   * Triggers a desktop notification if permitted
+   * Triggers a desktop notification if permitted with anti-spam throttle
    */
   sendDesktopNotification(title: string, options?: NotificationOptions): boolean {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -185,10 +186,18 @@ export const adminNotificationService = {
       return false;
     }
 
+    const now = Date.now();
+    if (now - lastNotificationDispatch < 2500) {
+      // Throttled: ignore rapid multi-clicks
+      return true;
+    }
+    lastNotificationDispatch = now;
+
     try {
       const notif = new Notification(title, {
         icon: '/images/MONOCACTUS.png',
         badge: '/images/MONOCACTUS.png',
+        tag: options?.tag || 'monocactus-admin-notification',
         ...options,
       });
 

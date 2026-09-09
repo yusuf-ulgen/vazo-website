@@ -88,49 +88,30 @@ export const adminAuthService = {
       );
     }
 
-    try {
-      const { data, error } = await client.auth.signInWithPassword({
-        email: normalizedEmail,
-        password,
-      });
+    // When Supabase is configured, live authentication against auth.users is authoritative.
+    // The old/dev password cannot bypass live authentication once updated.
+    const { data, error } = await client.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
 
-      if (error || !data.user) {
-        if (isDevMatch) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
-          }
-          return DEV_ADMIN_PROFILE;
-        }
-        throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
-      }
-
-      const profile = await fetchAdminProfile(data.user);
-
-      if (!profile) {
-        if (isDevMatch) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
-          }
-          return DEV_ADMIN_PROFILE;
-        }
-        // Immediately sign out unprivileged customer or deactivated user
-        await client.auth.signOut();
-        throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
-      }
-      return profile;
-    } catch (err) {
-      if (isDevMatch) {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(DEV_ADMIN_STORAGE_KEY, JSON.stringify(DEV_ADMIN_PROFILE));
-        }
-        return DEV_ADMIN_PROFILE;
-      }
-      throw err;
+    if (error || !data.user) {
+      throw new Error(translateAuthError(error?.message || 'Geçersiz yönetici e-posta adresi veya şifre.'));
     }
+
+    const profile = await fetchAdminProfile(data.user);
+
+    if (!profile) {
+      // Immediately sign out unprivileged customer or deactivated user
+      await client.auth.signOut();
+      throw new Error('Bu hesabın yönetici paneline erişim yetkisi bulunmamaktadır.');
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
+      localStorage.removeItem('vazo_admin_pwd');
+    }
+    return profile;
   },
 
   /**
@@ -242,8 +223,9 @@ export const adminAuthService = {
         });
 
         if (!rpcError && rpcData?.success) {
-          if (typeof window !== 'undefined' && isDevAdmin) {
-            localStorage.setItem('vazo_admin_pwd', newPassword);
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('vazo_admin_pwd');
+            localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
           }
           // Refresh GoTrue session with new password
           await client.auth.signInWithPassword({
@@ -279,13 +261,6 @@ export const adminAuthService = {
       });
 
       if (signInError) {
-        const storedPwd = typeof window !== 'undefined' ? localStorage.getItem('vazo_admin_pwd') : null;
-        if (isDevAdmin && (currentPassword === DEV_ADMIN_PASSWORD || currentPassword === storedPwd)) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('vazo_admin_pwd', newPassword);
-          }
-          return;
-        }
         throw new Error('Güncel şifreniz uyuşmuyor.');
       }
 
@@ -294,8 +269,9 @@ export const adminAuthService = {
         if (updateError) {
           throw new Error(translateAuthError(updateError.message));
         }
-        if (typeof window !== 'undefined' && isDevAdmin) {
-          localStorage.setItem('vazo_admin_pwd', newPassword);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('vazo_admin_pwd');
+          localStorage.removeItem(DEV_ADMIN_STORAGE_KEY);
         }
         return;
       }

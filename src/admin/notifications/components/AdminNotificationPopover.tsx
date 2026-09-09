@@ -73,14 +73,20 @@ export function AdminNotificationPopover() {
     }
   };
 
-  const handleSendTestNotification = () => {
-    const ok = adminNotificationService.sendDesktopNotification('Monocactus Test Bildirimi', {
-      body: 'Masaüstü bildirim sisteminiz sorunsuz çalışıyor!',
-    });
-    if (ok) {
-      setTestSent(true);
-      setTimeout(() => setTestSent(false), 3000);
+  const handleSendTestNotification = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
+    if (testSent) return;
+
+    setTestSent(true);
+    adminNotificationService.sendDesktopNotification('Monocactus Test Bildirimi', {
+      body: 'Masaüstü bildirim sisteminiz sorunsuz çalışıyor!',
+      tag: 'monocactus-test-notif',
+    });
+
+    setTimeout(() => setTestSent(false), 4000);
   };
 
   const handleMarkAsRead = (id: string) => {
@@ -194,7 +200,8 @@ export function AdminNotificationPopover() {
                 <button
                   type="button"
                   onClick={handleSendTestNotification}
-                  className="text-[10px] uppercase font-semibold text-text-primary hover:underline"
+                  disabled={testSent}
+                  className="text-[10px] uppercase font-semibold text-text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {testSent ? 'Gönderildi ✓' : 'Test Gönder'}
                 </button>
