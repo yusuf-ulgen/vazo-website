@@ -3,12 +3,6 @@
 -- ==============================================================================
 -- Bu betik operatör tarafından Supabase Dashboard SQL Editor veya CLI üzerinden
 -- güvenli yönetici hesabı oluşturmak / sıfırlamak için kullanılır.
---
--- GÜVENLİK TALİMATI:
--- 1. Üretim ortamında aşağıdaki v_email ve v_password değişkenlerini kendi belirlediğiniz
---    güçlü değerlerle güncelleyiniz.
--- 2. Bu dosyaya asla gerçek üretim şifrelerini yazıp git reposuna kaydetmeyiniz.
--- 3. Yerel geliştirme için varsayılan test değerleri aşağıda tanımlanmıştır.
 -- ==============================================================================
 
 DO $$
@@ -26,6 +20,16 @@ BEGIN
         email,
         encrypted_password,
         email_confirmed_at,
+        confirmation_token,
+        recovery_token,
+        email_change_token_new,
+        email_change_token_current,
+        email_change,
+        phone_change,
+        phone_change_token,
+        reauthentication_token,
+        is_anonymous,
+        is_sso_user,
         raw_app_meta_data,
         raw_user_meta_data,
         created_at,
@@ -36,8 +40,10 @@ BEGIN
         'authenticated',
         'authenticated',
         v_email,
-        extensions.crypt(v_password, extensions.gen_salt('bf')),
+        extensions.crypt(v_password, extensions.gen_salt('bf', 10)),
         timezone('utc', now()),
+        '', '', '', '', '', '', '', '',
+        false, false,
         '{"provider":"email","providers":["email"]}'::jsonb,
         '{"full_name":"Vazo Geliştirme Yöneticisi","name":"Vazo Geliştirme Yöneticisi"}'::jsonb,
         timezone('utc', now()),
@@ -45,7 +51,17 @@ BEGIN
     ) ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
         encrypted_password = EXCLUDED.encrypted_password,
-        email_confirmed_at = EXCLUDED.email_confirmed_at,
+        email_confirmed_at = COALESCE(auth.users.email_confirmed_at, timezone('utc', now())),
+        confirmation_token = '',
+        recovery_token = '',
+        email_change_token_new = '',
+        email_change_token_current = '',
+        email_change = '',
+        phone_change = '',
+        phone_change_token = '',
+        reauthentication_token = '',
+        is_anonymous = false,
+        is_sso_user = false,
         raw_app_meta_data = EXCLUDED.raw_app_meta_data,
         raw_user_meta_data = EXCLUDED.raw_user_meta_data,
         updated_at = timezone('utc', now());
@@ -90,4 +106,3 @@ BEGIN
         active = true,
         updated_at = timezone('utc', now());
 END $$;
-
