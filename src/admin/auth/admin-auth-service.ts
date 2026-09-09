@@ -69,9 +69,11 @@ export const adminAuthService = {
    */
   async login(email: string, password: string): Promise<AdminProfile> {
     const normalizedEmail = email.trim().toLowerCase();
+    const storedPassword =
+      typeof window !== 'undefined' ? localStorage.getItem('vazo_admin_pwd') : null;
     const isDevMatch =
       normalizedEmail === DEV_ADMIN_EMAIL.toLowerCase() &&
-      password === DEV_ADMIN_PASSWORD;
+      (password === DEV_ADMIN_PASSWORD || (Boolean(storedPassword) && password === storedPassword));
 
     const client = supabaseModule.supabase;
     if (!client || !supabaseModule.isSupabaseConfigured) {
@@ -229,37 +231,84 @@ export const adminAuthService = {
     }
 
     const client = supabaseModule.supabase;
-    const isDevMatch = currentAdmin.email.toLowerCase() === DEV_ADMIN_EMAIL.toLowerCase();
+    const isDevAdmin = currentAdmin.email.toLowerCase() === DEV_ADMIN_EMAIL.toLowerCase();
 
     if (client && supabaseModule.isSupabaseConfigured) {
-      // 1. Re-authenticate to verify current password against Supabase GoTrue
+      // 1. Authoritative RPC update directly in PostgreSQL auth.users with bcrypt cost 10
+      try {
+        const { data: rpcData, error: rpcError } = await client.rpc('admin_change_own_password', {
+          p_current_password: currentPassword,
+          p_new_password: newPassword,
+        });
+
+        if (!rpcError && rpcData?.success) {
+          if (typeof window !== 'undefined' && isDevAdmin) {
+            localStorage.setItem('vazo_admin_pwd', newPassword);
+          }
+          // Refresh GoTrue session with new password
+          await client.auth.signInWithPassword({
+            email: currentAdmin.email,
+            password: newPassword,
+          }).catch(() => {});
+          return;
+        }
+
+        if (rpcError) {
+          const msg = rpcError.message || '';
+          if (msg.includes('Güncel şifreniz uyuşmuyor')) {
+            throw new Error('Güncel şifreniz uyuşmuyor.');
+          }
+          if (msg.includes('en az 6 karakter')) {
+            throw new Error('Yeni şifre en az 6 karakter uzunluğunda olmalıdır.');
+          }
+          throw new Error(translateAuthError(msg));
+        }
+      } catch (err: unknown) {
+        if (
+          err instanceof Error &&
+          (err.message === 'Güncel şifreniz uyuşmuyor.' || err.message.includes('en az 6 karakter'))
+        ) {
+          throw err;
+        }
+      }
+
+      // 2. GoTrue auth verification fallback
       const { data, error: signInError } = await client.auth.signInWithPassword({
         email: currentAdmin.email,
         password: currentPassword,
       });
 
       if (signInError) {
-        // If Supabase signIn failed, check if dev fallback matches
-        if (isDevMatch && currentPassword === DEV_ADMIN_PASSWORD) {
+        const storedPwd = typeof window !== 'undefined' ? localStorage.getItem('vazo_admin_pwd') : null;
+        if (isDevAdmin && (currentPassword === DEV_ADMIN_PASSWORD || currentPassword === storedPwd)) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('vazo_admin_pwd', newPassword);
+          }
           return;
         }
         throw new Error('Güncel şifreniz uyuşmuyor.');
       }
 
-      // 2. Update to new password with verified active session
       if (data?.session || data?.user) {
         const { error: updateError } = await client.auth.updateUser({ password: newPassword });
         if (updateError) {
           throw new Error(translateAuthError(updateError.message));
+        }
+        if (typeof window !== 'undefined' && isDevAdmin) {
+          localStorage.setItem('vazo_admin_pwd', newPassword);
         }
         return;
       }
     }
 
     // Fallback in offline / dev mock environment
-    if (isDevMatch) {
-      if (currentPassword !== DEV_ADMIN_PASSWORD) {
+    const storedPwd = typeof window !== 'undefined' ? localStorage.getItem('vazo_admin_pwd') : null;
+    if (isDevAdmin) {
+      if (currentPassword !== DEV_ADMIN_PASSWORD && currentPassword !== storedPwd) {
         throw new Error('Güncel şifreniz uyuşmuyor.');
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('vazo_admin_pwd', newPassword);
       }
       return;
     }

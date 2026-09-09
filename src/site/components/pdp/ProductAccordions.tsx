@@ -7,10 +7,13 @@ export function ProductAccordions() {
   const { settings } = useSiteSettings();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
+  const packagingText =
+    'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir. Anlaşmalı kargo firmaları aracılığıyla 1-3 iş günü içinde sigortalı olarak sevk edilir.';
+
   const shippingContent = [
-    settings?.commerce?.shippingSummary ||
-      'Siparişleriniz, seramik objelerin taşınması için özel tasarlanmış koruyucu ambalajlarla paketlenir.',
-    settings?.commerce?.returnsPolicyText || 'Teslimattan itibaren 14 gün içinde iade imkanı.',
+    packagingText,
+    settings?.commerce?.shippingSummary,
+    settings?.commerce?.returnsPolicyText,
   ]
     .filter(Boolean)
     .join(' ');
