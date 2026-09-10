@@ -376,7 +376,14 @@ export const adminOrderRepository = {
   },
 
   /**
-   * Dispatch PayTR refund request through paytr-refund Edge Function
+   * Dispatch PayTR refund request through paytr-refund Edge Function.
+   *
+   * Error extraction note: When the Edge Function returns a non-2xx status,
+   * supabase-js sets error.message to the generic "Edge Function returned a
+   * non-2xx status code" string and stores the actual Response object in
+   * error.context. We unwrap error.context to get the real JSON error message
+   * returned by the function (e.g. PayTR rejection reason, configuration error,
+   * idempotency conflict, etc.) before falling back to the generic string.
    */
   async processPayTRRefund(request: AdminRefundRequest): Promise<AdminRefundResponse> {
     const supabase = requireAdminSupabase();
@@ -393,7 +400,21 @@ export const adminOrderRepository = {
 
     if (error) {
       console.error('[adminOrderRepository.processPayTRRefund] Error:', error);
-      throw new Error(error.message || 'İade işlemi başlatılamadı.');
+
+      // Attempt to read the real error JSON from the Edge Function response body.
+      // supabase-js stores the raw Response in error.context for non-2xx replies.
+      let realMessage: string | null = null;
+      try {
+        const ctx = (error as { context?: unknown }).context;
+        if (ctx instanceof Response) {
+          const json = await ctx.json();
+          realMessage = typeof json?.error === 'string' ? json.error : null;
+        }
+      } catch {
+        // If parsing fails, fall through to generic message.
+      }
+
+      throw new Error(realMessage || error.message || 'İade işlemi başlatılamadı.');
     }
 
     if (!data || !data.success) {
