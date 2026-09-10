@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { CreateAddressInput, UpdateAddressInput } from '@/entities/customer/types';
 import {
   customerAuthStore,
   initCustomerAuth,
@@ -47,11 +48,11 @@ export function useCustomerAuth() {
     signOut: customerAuthStore.signOut,
     refresh: customerAuthStore.refresh,
     updateProfile: customerAuthStore.updateProfile,
-    createAddress: customerAuthStore.createAddress,
-    updateAddress: customerAuthStore.updateAddress,
-    deleteAddress: customerAuthStore.deleteAddress,
-    setDefaultShipping: customerAuthStore.setDefaultShipping,
-    setDefaultBilling: customerAuthStore.setDefaultBilling,
+    createAddress: (input: CreateAddressInput) => customerAuthStore.createAddress(input),
+    updateAddress: (id: string, input: UpdateAddressInput) => customerAuthStore.updateAddress(id, input),
+    deleteAddress: (id: string) => customerAuthStore.deleteAddress(id),
+    setDefaultShipping: (id: string) => customerAuthStore.setDefaultShipping(id),
+    setDefaultBilling: (id: string) => customerAuthStore.setDefaultBilling(id),
     claimTradeApplication: () => customerAuthStore.claimTradeApplication(),
   };
 }

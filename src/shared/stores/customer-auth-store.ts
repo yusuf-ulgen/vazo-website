@@ -447,19 +447,19 @@ export const customerAuthStore = {
   },
 
   async createAddress(input: CreateAddressInput): Promise<CustomerAddress> {
-    return this._withUser((uid) => customerAddressActions.createAddress(uid, input));
+    return customerAuthStore._withUser((uid) => customerAddressActions.createAddress(uid, input));
   },
   async updateAddress(addressId: string, input: UpdateAddressInput): Promise<CustomerAddress> {
-    return this._withUser((uid) => customerAddressActions.updateAddress(uid, addressId, input));
+    return customerAuthStore._withUser((uid) => customerAddressActions.updateAddress(uid, addressId, input));
   },
   async deleteAddress(addressId: string): Promise<void> {
-    return this._withUser((uid) => customerAddressActions.deleteAddress(uid, addressId));
+    return customerAuthStore._withUser((uid) => customerAddressActions.deleteAddress(uid, addressId));
   },
   async setDefaultShipping(addressId: string): Promise<void> {
-    return this._withUser((uid) => customerAddressActions.setDefaultShipping(uid, addressId));
+    return customerAuthStore._withUser((uid) => customerAddressActions.setDefaultShipping(uid, addressId));
   },
   async setDefaultBilling(addressId: string): Promise<void> {
-    return this._withUser((uid) => customerAddressActions.setDefaultBilling(uid, addressId));
+    return customerAuthStore._withUser((uid) => customerAddressActions.setDefaultBilling(uid, addressId));
   },
 
   /**

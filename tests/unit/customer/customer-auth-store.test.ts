@@ -425,5 +425,91 @@ describe('customerAuthStore & useCustomerAuth Hook', () => {
     await expect(customerAuthStore.signInWithPassword('', 'pass')).rejects.toThrow('Lütfen geçerli bir e-posta adresi giriniz.');
     await expect(customerAuthStore.signUpWithPassword('test@test.com', '123', 'Name')).rejects.toThrow('Şifre en az 6 karakter olmalıdır.');
   });
+
+  it('executes address mutations safely when destructured from customerAuthStore or useCustomerAuth hook without _withUser TypeError', async () => {
+    const sampleAddr: CustomerAddress = {
+      id: 'addr-hook-1',
+      user_id: 'u-hook',
+      label: 'İş',
+      recipient_name: 'Örnek Müşteri',
+      phone: '05551112233',
+      address_line1: 'Örnek Mah. Test Cad. No: 10',
+      address_line2: null,
+      district: 'Kadıköy',
+      city: 'İstanbul',
+      state_province: null,
+      postal_code: '34710',
+      country_code: 'TR',
+      country_name: 'Türkiye',
+      is_default_shipping: true,
+      is_default_billing: true,
+      created_at: '2026-09-10T00:00:00Z',
+      updated_at: '2026-09-10T00:00:00Z',
+    };
+
+    vi.spyOn(customerAddressRepository, 'createAddress').mockResolvedValue(sampleAddr);
+    vi.spyOn(customerAddressRepository, 'updateAddress').mockResolvedValue(sampleAddr);
+    vi.spyOn(customerAddressRepository, 'deleteAddress').mockResolvedValue(undefined);
+    vi.spyOn(customerAddressRepository, 'setDefaultShipping').mockResolvedValue(undefined);
+    vi.spyOn(customerAddressRepository, 'setDefaultBilling').mockResolvedValue(undefined);
+    vi.spyOn(customerAddressRepository, 'getMyAddresses').mockResolvedValue([sampleAddr]);
+    vi.spyOn(customerProfileRepository, 'getMyProfile').mockResolvedValue(null);
+
+    customerAuthStore._setStateForTesting({
+      user: { id: 'u-hook', email: 'test-customer@example.com' } as unknown as CustomerAuthState['user'],
+    });
+
+    // Test detached method from store (this = undefined)
+    const { createAddress, updateAddress, deleteAddress, setDefaultShipping, setDefaultBilling } = customerAuthStore;
+    const created = await createAddress({
+      label: 'İş',
+      recipient_name: 'Örnek Müşteri',
+      phone: '05551112233',
+      address_line1: 'Örnek Mah. Test Cad. No: 10',
+      address_line2: null,
+      district: 'Kadıköy',
+      city: 'İstanbul',
+      state_province: null,
+      postal_code: '34710',
+      country_code: 'TR',
+      country_name: 'Türkiye',
+      is_default_shipping: true,
+      is_default_billing: true,
+    });
+    expect(created.id).toBe('addr-hook-1');
+
+    await updateAddress('addr-hook-1', { label: 'Ofis' });
+    expect(customerAddressRepository.updateAddress).toHaveBeenCalledWith('u-hook', 'addr-hook-1', { label: 'Ofis' });
+
+    await setDefaultShipping('addr-hook-1');
+    expect(customerAddressRepository.setDefaultShipping).toHaveBeenCalledWith('u-hook', 'addr-hook-1');
+
+    await setDefaultBilling('addr-hook-1');
+    expect(customerAddressRepository.setDefaultBilling).toHaveBeenCalledWith('u-hook', 'addr-hook-1');
+
+    await deleteAddress('addr-hook-1');
+    expect(customerAddressRepository.deleteAddress).toHaveBeenCalledWith('u-hook', 'addr-hook-1');
+
+    // Test hook destructured method
+    const hook = renderHook(() => useCustomerAuth());
+    await hook.result.current.createAddress({
+      label: 'Ev',
+      recipient_name: 'Örnek Müşteri',
+      phone: '05551112233',
+      address_line1: 'Ev Adresi',
+      address_line2: null,
+      district: 'Kadıköy',
+      city: 'İstanbul',
+      state_province: null,
+      postal_code: '34710',
+      country_code: 'TR',
+      country_name: 'Türkiye',
+      is_default_shipping: false,
+      is_default_billing: false,
+    });
+    expect(customerAddressRepository.createAddress).toHaveBeenCalled();
+    hook.unmount();
+  });
 });
+
 
