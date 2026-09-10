@@ -100,7 +100,7 @@ function AccountOrdersContent() {
             </p>
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-action-primary text-white text-xs font-semibold hover:bg-action-primary-hover transition-opacity"
             >
               <ShoppingBag className="w-4 h-4" />
               Koleksiyonu İncele

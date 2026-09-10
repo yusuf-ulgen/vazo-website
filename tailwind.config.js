@@ -9,6 +9,7 @@ export default {
       colors: {
         canvas: {
           DEFAULT: 'var(--color-canvas-default)',
+          default: 'var(--color-canvas-default)',
           subtle: 'var(--color-canvas-subtle)',
           muted: 'var(--color-canvas-muted)',
           warm: 'var(--color-canvas-warm)',
@@ -32,6 +33,7 @@ export default {
         border: {
           subtle: 'var(--color-border-subtle)',
           DEFAULT: 'var(--color-border-default)',
+          default: 'var(--color-border-default)',
           strong: 'var(--color-border-strong)',
           inverse: 'var(--color-border-inverse)',
           focus: 'var(--color-border-focus)',

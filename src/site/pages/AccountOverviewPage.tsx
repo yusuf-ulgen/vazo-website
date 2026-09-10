@@ -224,7 +224,7 @@ function AccountOverviewContent() {
                 {isWholesaleApproved ? (
                   <Link
                     to="/wholesale/products"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 transition-opacity"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-action-primary text-white text-xs font-semibold hover:bg-action-primary-hover transition-opacity"
                   >
                     <span>Toptan Katalog</span>
                     <ArrowRight className="w-3.5 h-3.5" />

@@ -45,7 +45,7 @@ export function PaymentFailurePage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Link
               to={orderId ? `/payment/resume/${orderId}` : '/checkout'}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover transition-opacity"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Ödemeyi Tekrar Dene</span>

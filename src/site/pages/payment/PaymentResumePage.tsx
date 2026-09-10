@@ -188,7 +188,7 @@ export function PaymentResumePage() {
             <div className="pt-2 flex justify-center">
               <Link
                 to={`/account/orders/${orderId}`}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover transition-colors"
               >
                 <span>Sipariş Detayına Git</span>
                 <ArrowRight className="w-4 h-4" />
@@ -228,7 +228,7 @@ export function PaymentResumePage() {
               </button>
               <Link
                 to="/account/orders"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover transition-colors"
               >
                 <span>Siparişlerime Git</span>
                 <ArrowRight className="w-4 h-4" />

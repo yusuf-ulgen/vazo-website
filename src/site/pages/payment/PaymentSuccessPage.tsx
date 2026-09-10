@@ -133,7 +133,7 @@ export function PaymentSuccessPage() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                 <Link
                   to={`/account/orders/${order.id}`}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover transition-opacity"
                 >
                   <span>Sipariş Detayına Git</span>
                   <ArrowRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ export function PaymentSuccessPage() {
               <div className="flex justify-center pt-2">
                 <Link
                   to={`/account/orders/${order.id}`}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover"
                 >
                   Siparişi Görüntüle
                 </Link>
@@ -190,7 +190,7 @@ export function PaymentSuccessPage() {
               <div className="flex justify-center pt-2">
                 <Link
                   to="/checkout"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover"
                 >
                   Ödemeyi Tekrar Dene
                 </Link>
@@ -215,7 +215,7 @@ export function PaymentSuccessPage() {
               <div className="flex justify-center pt-2">
                 <Link
                   to="/account/orders"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover"
                 >
                   Siparişlerime Git
                 </Link>

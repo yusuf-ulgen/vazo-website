@@ -34,7 +34,7 @@ export function CheckoutStepper({ currentStep, steps, onStepClick }: CheckoutSte
                   isCompleted &&
                     'bg-feedback-success text-surface-primary cursor-pointer hover:opacity-90',
                   isCurrent &&
-                    'bg-text-primary text-canvas-default ring-4 ring-surface-muted',
+                    'bg-text-primary text-white ring-4 ring-surface-muted',
                   !isCompleted &&
                     !isCurrent &&
                     'bg-surface-secondary text-text-muted border border-border-default cursor-not-allowed'

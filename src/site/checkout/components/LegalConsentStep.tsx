@@ -201,7 +201,7 @@ export function LegalConsentStep({
               <button
                 type="button"
                 onClick={() => setActiveModalKey(null)}
-                className="px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 cursor-pointer"
+                className="px-4 py-2 bg-action-primary text-white text-xs font-semibold hover:bg-action-primary-hover cursor-pointer"
               >
                 Kapat & Devam Et
               </button>

@@ -116,7 +116,7 @@ function AccountOrderDetailContent() {
             </p>
             <Link
               to="/account/orders"
-              className="inline-block px-5 py-2.5 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90"
+              className="inline-block px-5 py-2.5 bg-action-primary text-white text-xs font-semibold hover:bg-action-primary-hover transition-colors"
             >
               Siparişlerime Dön
             </Link>

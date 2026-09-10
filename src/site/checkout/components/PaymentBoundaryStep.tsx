@@ -84,7 +84,7 @@ export function PaymentBoundaryStep({ orderResponse }: PaymentBoundaryStepProps)
             <button
               type="button"
               onClick={fetchToken}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-text-primary text-canvas-default text-xs font-semibold rounded-xs hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-action-primary text-white text-xs font-semibold rounded-xs hover:bg-action-primary-hover transition-opacity"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Yeniden Dene</span>

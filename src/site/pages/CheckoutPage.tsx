@@ -376,7 +376,7 @@ export function CheckoutPage() {
                   type="button"
                   disabled={!shippingAddress}
                   onClick={() => setCurrentStep(2)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-action-primary text-white hover:bg-action-primary-hover text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   Fatura Adımına Geç
                   <ArrowRight className="w-4 h-4" />
@@ -429,7 +429,7 @@ export function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(3)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-action-primary text-white hover:bg-action-primary-hover text-xs font-semibold transition-all"
                 >
                   Kargo Seçimine Geç
                   <ArrowRight className="w-4 h-4" />
@@ -489,7 +489,7 @@ export function CheckoutPage() {
                   type="button"
                   disabled={!quote || isQuoteLoading}
                   onClick={() => setCurrentStep(4)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 disabled:opacity-40"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-action-primary text-white hover:bg-action-primary-hover text-xs font-semibold disabled:opacity-40 transition-all"
                 >
                   Sipariş Özetine Geç
                   <ArrowRight className="w-4 h-4" />
@@ -523,7 +523,7 @@ export function CheckoutPage() {
                   type="button"
                   disabled={isSubmitting || !acceptedPreliminaryInfo || !acceptedDistanceSales}
                   onClick={handleCreateOrder}
-                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-text-primary text-canvas-default text-xs font-semibold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+                  className="inline-flex items-center gap-2 px-8 py-3.5 bg-action-primary text-white hover:bg-action-primary-hover text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
                 >
                   {isSubmitting ? (
                     <>
