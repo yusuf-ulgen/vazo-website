@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AdminShippingPage } from '@/admin/shipping/pages/AdminShippingPage';
 import { adminShippingRepository } from '@/admin/shipping/api/admin-shipping-repository';
+import { ToastProvider } from '@/admin/ui/ToastProvider';
 import { ShippingZone } from '@/entities/shipping/types';
 
 vi.mock('@/admin/shipping/api/admin-shipping-repository', () => ({
@@ -57,6 +58,14 @@ const mockZones: ShippingZone[] = [
   },
 ];
 
+function renderShippingPage() {
+  return render(
+    <ToastProvider>
+      <AdminShippingPage />
+    </ToastProvider>
+  );
+}
+
 describe('AdminShippingPage Component (Phase 3.3)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,7 +73,7 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
   });
 
   it('renders page header, metrics, and loaded shipping zones', async () => {
-    render(<AdminShippingPage />);
+    renderShippingPage();
 
     expect(screen.getByText('Kargo ve Lojistik Yönetimi')).toBeInTheDocument();
 
@@ -77,7 +86,7 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
   });
 
   it('opens ZoneFormModal when clicking "Yeni Bölge Ekle"', async () => {
-    render(<AdminShippingPage />);
+    renderShippingPage();
 
     await waitFor(() => {
       expect(screen.getByText('Türkiye İçi')).toBeInTheDocument();
@@ -90,7 +99,7 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
   });
 
   it('opens CountryFormModal when clicking "Ülke Ekle"', async () => {
-    render(<AdminShippingPage />);
+    renderShippingPage();
 
     await waitFor(() => {
       expect(screen.getByText('Türkiye İçi')).toBeInTheDocument();
@@ -103,7 +112,7 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
   });
 
   it('opens RateFormModal when clicking "Tarife Ekle"', async () => {
-    render(<AdminShippingPage />);
+    renderShippingPage();
 
     await waitFor(() => {
       expect(screen.getByText('Türkiye İçi')).toBeInTheDocument();
@@ -116,7 +125,7 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
   });
 
   it('opens ConfirmDialog when clicking delete zone button', async () => {
-    render(<AdminShippingPage />);
+    renderShippingPage();
 
     await waitFor(() => {
       expect(screen.getByText('Türkiye İçi')).toBeInTheDocument();
@@ -127,5 +136,27 @@ describe('AdminShippingPage Component (Phase 3.3)', () => {
 
     expect(screen.getByText('Kargo Bölgesini Sil')).toBeInTheDocument();
     expect(screen.getByText(/bölgesini ve bu bölgeye bağlı tüm ülke ve tarifeleri silmek istediğinizden emin misiniz/i)).toBeInTheDocument();
+  });
+
+  it('opens ConfirmDialog on removing country and auto-closes on confirmation', async () => {
+    vi.mocked(adminShippingRepository.removeCountryFromZone).mockResolvedValueOnce();
+    renderShippingPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Türkiye İçi')).toBeInTheDocument();
+    });
+
+    const removeCountryBtn = screen.getByTitle('Ülkeyi Çıkar');
+    fireEvent.click(removeCountryBtn);
+
+    expect(screen.getByText('Ülkeyi Bölgeden Çıkar')).toBeInTheDocument();
+
+    const confirmBtn = screen.getByRole('button', { name: 'Onayla' });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(adminShippingRepository.removeCountryFromZone).toHaveBeenCalledWith('c-tr-01');
+      expect(screen.queryByText('Ülkeyi Bölgeden Çıkar')).not.toBeInTheDocument();
+    });
   });
 });

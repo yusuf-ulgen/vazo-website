@@ -25,6 +25,7 @@ import { ZoneFormModal } from '../components/ZoneFormModal';
 import { CountryFormModal } from '../components/CountryFormModal';
 import { RateFormModal } from '../components/RateFormModal';
 import { ConfirmDialog } from '@/admin/ui/ConfirmDialog';
+import { useToast } from '@/admin/ui';
 import { formatMinorMoney } from '@/shared/lib/money';
 
 export const AdminShippingPage: React.FC = () => {
@@ -42,6 +43,8 @@ export const AdminShippingPage: React.FC = () => {
   const [rateToEdit, setRateToEdit] = useState<ShippingRate | null>(null);
 
   // Confirm dialog state
+  const { success, error: toastError } = useToast();
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -91,6 +94,7 @@ export const AdminShippingPage: React.FC = () => {
       message: `"${zone.name}" bölgesini ve bu bölgeye bağlı tüm ülke ve tarifeleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`,
       onConfirm: async () => {
         await adminShippingRepository.deleteZone(zone.id);
+        success('Bölge Silindi', `"${zone.name}" kargo bölgesi başarıyla silindi.`);
         await loadData();
       },
     });
@@ -99,8 +103,14 @@ export const AdminShippingPage: React.FC = () => {
   // Country Handlers
   const handleAddCountry = async (input: CreateShippingCountryInput) => {
     if (!countryModalZone) return;
-    await adminShippingRepository.addCountryToZone(countryModalZone.id, input);
-    await loadData();
+    try {
+      await adminShippingRepository.addCountryToZone(countryModalZone.id, input);
+      success('Ülke Eklendi', `"${input.country_name}" bölgeye başarıyla eklendi.`);
+      setCountryModalZone(null);
+      await loadData();
+    } catch (err: unknown) {
+      toastError('Hata', err instanceof Error ? err.message : 'Ülke eklenemedi.');
+    }
   };
 
   const handleDeleteCountry = (zoneName: string, countryId: string, countryName: string) => {
@@ -110,6 +120,7 @@ export const AdminShippingPage: React.FC = () => {
       message: `"${countryName}" ülkesini "${zoneName}" bölgesinden çıkarmak istediğinize emin misiniz?`,
       onConfirm: async () => {
         await adminShippingRepository.removeCountryFromZone(countryId);
+        success('Ülke Çıkarıldı', `"${countryName}" ülkesi "${zoneName}" bölgesinden çıkarıldı.`);
         await loadData();
       },
     });
@@ -120,12 +131,20 @@ export const AdminShippingPage: React.FC = () => {
     input: CreateShippingRateInput | UpdateShippingRateInput,
     rateId?: string
   ) => {
-    if (rateId) {
-      await adminShippingRepository.updateRate(rateId, input);
-    } else if (rateModalZone) {
-      await adminShippingRepository.createRate(rateModalZone.id, input as CreateShippingRateInput);
+    try {
+      if (rateId) {
+        await adminShippingRepository.updateRate(rateId, input);
+        success('Tarife Güncellendi', 'Kargo tarifesi güncellendi.');
+      } else if (rateModalZone) {
+        await adminShippingRepository.createRate(rateModalZone.id, input as CreateShippingRateInput);
+        success('Tarife Eklendi', 'Yeni kargo tarifesi oluşturuldu.');
+      }
+      setRateModalZone(null);
+      setRateToEdit(null);
+      await loadData();
+    } catch (err: unknown) {
+      toastError('Hata', err instanceof Error ? err.message : 'Tarife kaydedilemedi.');
     }
-    await loadData();
   };
 
   const handleDeleteRate = (zoneName: string, rate: ShippingRate) => {
@@ -135,6 +154,7 @@ export const AdminShippingPage: React.FC = () => {
       message: `"${rate.name}" tarifesini "${zoneName}" bölgesinden silmek istediğinizden emin misiniz?`,
       onConfirm: async () => {
         await adminShippingRepository.deleteRate(rate.id);
+        success('Tarife Silindi', `"${rate.name}" tarifesi silindi.`);
         await loadData();
       },
     });
@@ -489,8 +509,24 @@ export const AdminShippingPage: React.FC = () => {
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        onConfirm={confirmDialog.onConfirm}
-        onCancel={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
+        isLoading={isConfirmLoading}
+        isDestructive
+        onConfirm={async () => {
+          try {
+            setIsConfirmLoading(true);
+            await confirmDialog.onConfirm();
+            setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+          } catch (err: unknown) {
+            toastError('Hata', err instanceof Error ? err.message : 'İşlem tamamlanamadı.');
+          } finally {
+            setIsConfirmLoading(false);
+          }
+        }}
+        onCancel={() => {
+          if (!isConfirmLoading) {
+            setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
+          }
+        }}
       />
     </div>
   );
