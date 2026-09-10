@@ -328,6 +328,39 @@ export const adminShippingRepository = {
       console.warn('[adminShippingRepository] audit log warning:', e);
     }
 
+    // ── Sync site_settings ─────────────────────────────────────────────────
+    // If the free-shipping threshold changed on this rate, propagate the new
+    // value (converted from minor units to TL) back to site_settings so that
+    // the storefront AnnouncementBar always reflects the checkout engine.
+    if (
+      input.free_shipping_threshold_minor !== undefined &&
+      input.free_shipping_threshold_minor != null
+    ) {
+      const newThresholdTL = Math.round(input.free_shipping_threshold_minor) / 100;
+      try {
+        const { data: currentCommerce } = await client
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'commerce')
+          .maybeSingle();
+        const existingValue = (currentCommerce?.value as Record<string, unknown>) || {};
+        await client
+          .from('site_settings')
+          .upsert(
+            {
+              key: 'commerce',
+              value: { ...existingValue, free_shipping_threshold: newThresholdTL },
+              is_public: true,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'key' }
+          );
+      } catch (syncErr) {
+        console.warn('[adminShippingRepository.updateRate] site_settings sync failed (non-fatal):', syncErr);
+      }
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     return data as ShippingRate;
   },
 

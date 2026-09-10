@@ -128,11 +128,12 @@ export const adminSettingsRepository = {
 
   async updateCommerceSettings(data: CommerceSettings): Promise<void> {
     const client = requireAdminSupabase();
+    const newThreshold = Number(data.freeShippingThreshold) || 0;
 
     let rpcSuccess = false;
     try {
       const { error } = await client.rpc('admin_update_commerce_settings', {
-        p_free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
+        p_free_shipping_threshold: newThreshold,
         p_shipping_estimate_text: data.shippingEstimateText.trim(),
         p_shipping_summary: data.shippingSummary.trim(),
         p_returns_policy_text: data.returnsPolicyText.trim(),
@@ -157,7 +158,7 @@ export const adminSettingsRepository = {
       const existingValue = (currentCommerce?.value as Record<string, unknown>) || {};
       const mergedValue = {
         ...existingValue,
-        free_shipping_threshold: Number(data.freeShippingThreshold) || 0,
+        free_shipping_threshold: newThreshold,
         shipping_estimate_text: data.shippingEstimateText.trim(),
         shipping_summary: data.shippingSummary.trim(),
         returns_policy_text: data.returnsPolicyText.trim(),
@@ -180,6 +181,21 @@ export const adminSettingsRepository = {
         throw new Error(`E-Ticaret ayarları kaydedilemedi: ${upsertError.message}`);
       }
     }
+
+    // ── Sync shipping rates ──────────────────────────────────────────────────
+    // Propagate the new threshold (in minor units: kuruş) to all shipping
+    // rates that already carry a free_shipping_threshold_minor value so that
+    // the checkout engine and site settings always agree.
+    const thresholdMinor = Math.round(newThreshold * 100);
+    try {
+      await client
+        .from('shipping_rates')
+        .update({ free_shipping_threshold_minor: thresholdMinor })
+        .not('free_shipping_threshold_minor', 'is', null);
+    } catch (syncErr) {
+      console.warn('[adminSettingsRepository.updateCommerceSettings] Shipping rate sync failed (non-fatal):', syncErr);
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     await siteSettingsStore.fetchSettings(true).catch(() => {});
   },
