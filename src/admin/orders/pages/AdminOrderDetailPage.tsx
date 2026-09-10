@@ -231,7 +231,7 @@ export function AdminOrderDetailPage() {
                 type="button"
                 onClick={handleCancelOrder}
                 disabled={isCancelling || !cancelReason.trim()}
-                className="px-3 py-1.5 text-xs font-semibold bg-feedback-error text-surface-primary rounded-md disabled:opacity-50"
+                className="px-3 py-1.5 text-xs font-semibold bg-feedback-danger text-text-inverse rounded-md disabled:opacity-50 hover:bg-feedback-danger/90 transition-colors shadow-xs"
               >
                 {isCancelling ? 'İptal Ediliyor...' : 'İptali Onayla'}
               </button>
