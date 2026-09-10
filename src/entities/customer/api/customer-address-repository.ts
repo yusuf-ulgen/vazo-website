@@ -53,6 +53,9 @@ export const customerAddressRepository = {
       .single();
 
     if (error) {
+      if (error.code === '42501' || error.message.includes('row-level security') || error.message.includes('permission denied')) {
+        throw new Error('Oturum süreniz dolmuş veya yetkisiz işlem. Lütfen sayfayı yenileyip tekrar giriş yapınız.');
+      }
       throw new Error(`Adres kaydedilirken hata oluştu: ${error.message}`);
     }
 

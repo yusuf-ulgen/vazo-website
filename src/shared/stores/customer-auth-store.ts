@@ -383,6 +383,40 @@ export const customerAuthStore = {
     }
 
     if (data.user) {
+      if (data.session) {
+        currentState = {
+          ...currentState,
+          user: data.user,
+          isLoading: true,
+          error: null,
+        };
+        notify();
+        await loadUserData(data.user.id);
+        return;
+      }
+
+      // If session was not immediately returned, sign in directly to establish active session
+      try {
+        const { data: signInData, error: signInErr } = await client.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        if (!signInErr && signInData?.user) {
+          currentState = {
+            ...currentState,
+            user: signInData.user,
+            isLoading: true,
+            error: null,
+          };
+          notify();
+          await loadUserData(signInData.user.id);
+          return;
+        }
+      } catch {
+        // Fall back to data.user
+      }
+
       currentState = {
         ...currentState,
         user: data.user,
