@@ -35,6 +35,9 @@ serve(async (req: Request) => {
     );
   }
 
+  let preparedRefundId: string | null = null;
+  let supabaseAdminClient: ReturnType<typeof createClient> | null = null;
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -111,6 +114,7 @@ serve(async (req: Request) => {
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false },
     });
+    supabaseAdminClient = supabaseAdmin;
 
     const { data: prepareRes, error: prepareError } = await supabaseAdmin.rpc('prepare_admin_refund', {
       p_payment_id: payment_id,
@@ -162,6 +166,7 @@ serve(async (req: Request) => {
     }
 
     const { refund_id, reference_no, merchant_oid, amount_minor } = prepareRes;
+    preparedRefundId = refund_id;
 
     // 5. Fail-Closed Check on PayTR Secrets: Missing config is a hard error, NEVER simulate success!
     if (!merchantId || !merchantKey || !merchantSalt) {
@@ -278,10 +283,10 @@ serve(async (req: Request) => {
     const providerRef = typeof paytrData.reference_no === 'string' ? paytrData.reference_no : null;
     const errNo = isMalformed
       ? 'MALFORMED_PROVIDER_RESPONSE'
-      : (typeof paytrData.err_no === 'string' ? paytrData.err_no : (!isSuccess ? 'PROVIDER_REJECTED' : null));
+      : (paytrData.err_no != null ? String(paytrData.err_no) : (!isSuccess ? 'PROVIDER_REJECTED' : null));
     const errMsg = isMalformed
       ? `Geçersiz sağlayıcı yanıtı: ${responseText.slice(0, 100)}`
-      : (typeof paytrData.err_msg === 'string' ? paytrData.err_msg : (!isSuccess ? 'PayTR iade talebini reddetti.' : null));
+      : (paytrData.err_msg != null ? String(paytrData.err_msg) : (!isSuccess ? 'PayTR iade talebini reddetti.' : null));
 
     // 9. Fail-Closed Finalization in Database
     const { data: finalizeRes, error: finalizeError } = await supabaseAdmin.rpc('finalize_admin_refund', {
@@ -324,6 +329,19 @@ serve(async (req: Request) => {
     );
   } catch (err: unknown) {
     console.error('[paytr-refund] Unexpected exception:', err);
+    if (preparedRefundId && supabaseAdminClient) {
+      try {
+        await supabaseAdminClient.rpc('finalize_admin_refund', {
+          p_refund_id: preparedRefundId,
+          p_is_success: false,
+          p_provider_reference: null,
+          p_error_code: 'UNEXPECTED_SERVER_ERROR',
+          p_error_message: err instanceof Error ? err.message : 'Bilinmeyen sunucu hatası.',
+        });
+      } catch (finalizeCatchErr) {
+        console.error('[paytr-refund] Failed to auto-finalize refund after error:', finalizeCatchErr);
+      }
+    }
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Bilinmeyen sunucu hatası.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
