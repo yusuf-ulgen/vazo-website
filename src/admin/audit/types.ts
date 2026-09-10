@@ -20,17 +20,24 @@ export type AuditEntityType =
   | 'newsletter_subscription'
   | 'shipping_zone'
   | 'shipping_zone_country'
-  | 'shipping_rate';
+  | 'shipping_rate'
+  | 'order'
+  | 'refund'
+  | 'transactional_email';
 
 export interface AdminAuditLog {
   id: string;
   actor_user_id: string | null;
   actor_email: string | null;
+  admin_id?: string | null;
   action: AuditAction;
   entity_type: AuditEntityType;
+  resource_type?: string | null;
   entity_id: string;
+  resource_id?: string | null;
   entity_name: string | null;
   safe_metadata: Record<string, unknown>;
+  diff?: Record<string, unknown> | null;
   created_at: string;
 }
 

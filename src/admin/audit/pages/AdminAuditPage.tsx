@@ -108,6 +108,9 @@ export function AdminAuditPage() {
     { value: 'trade_application', label: 'Toptan Başvuruları' },
     { value: 'contact_message', label: 'İletişim Mesajları' },
     { value: 'newsletter_subscription', label: 'Bülten Aboneleri' },
+    { value: 'order', label: 'Siparişler' },
+    { value: 'refund', label: 'İadeler' },
+    { value: 'transactional_email', label: 'İşlemsel E-postalar' },
   ];
 
   return (
