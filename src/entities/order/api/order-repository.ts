@@ -121,6 +121,14 @@ export const orderRepository = {
     }
 
     const client = getSupabase();
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+
+    if (!user) {
+      return [];
+    }
+
     const { data, error } = await client
       .from('orders')
       .select(
@@ -129,6 +137,7 @@ export const orderRepository = {
         items:order_items(*)
       `
       )
+      .eq('customer_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
