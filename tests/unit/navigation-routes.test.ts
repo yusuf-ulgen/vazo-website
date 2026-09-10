@@ -50,6 +50,7 @@ describe('Navigation Route Resolution', () => {
       'contact',
       'faq',
       'policies/shipping-returns',
+      'policies/privacy',
       'policies/privacy-kvkk',
       'policies/terms',
       'privacy',
