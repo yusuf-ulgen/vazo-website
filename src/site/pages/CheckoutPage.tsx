@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useSEO } from '@/shared/lib/seo';
 import { AuthModal } from '@/site/components/AuthModal';
+import { formatCheckoutError } from '../checkout/utils/checkout-error-formatter';
 
 const CHECKOUT_STEPS: StepItem[] = [
   { id: 1, label: 'Teslimat Adresi' },
@@ -355,7 +356,7 @@ export function CheckoutPage() {
         {(quoteError || submitError) && (
           <div className="max-w-2xl mx-auto mb-6 p-4 bg-feedback-error/10 border border-feedback-error/20 rounded-xs flex items-center gap-3 text-xs text-feedback-error text-left">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{quoteError || submitError}</span>
+            <span>{formatCheckoutError(quoteError || submitError, cartItems)}</span>
           </div>
         )}
 

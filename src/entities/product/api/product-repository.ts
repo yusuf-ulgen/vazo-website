@@ -59,6 +59,7 @@ interface SupabaseProductRow {
     is_available_for_retail: boolean;
     is_available_for_wholesale: boolean;
     image_url: string | null;
+    active?: boolean;
   }>;
   product_media?: Array<{
     id: string;
@@ -78,7 +79,9 @@ interface SupabaseProductRow {
 }
 
 function mapRowToProduct(row: SupabaseProductRow): Product {
-  const variants: ProductVariant[] = (row.product_variants || []).map((v) => ({
+  const variants: ProductVariant[] = (row.product_variants || [])
+    .filter((v) => v.active !== false)
+    .map((v) => ({
     id: v.id,
     sku: v.sku,
     name: v.variant_name,
