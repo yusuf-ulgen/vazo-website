@@ -94,21 +94,48 @@ export const adminNotificationService = {
       // 3. Check Pending Wholesale Applications
       const { data: applications } = await supabase
         .from('trade_applications')
-        .select('id, company_name, contact_name, status, created_at')
+        .select('id, company_name, contact_person, status, submitted_at, created_at')
         .eq('status', 'pending')
-        .order('created_at', { ascending: false })
+        .order('submitted_at', { ascending: false })
         .limit(5);
 
       if (applications) {
         for (const app of applications) {
           const notifId = `app-${app.id}`;
+          const contactPerson = app.contact_person || 'Yetkili';
           notifications.push({
             id: notifId,
             type: 'wholesale',
             title: `Yeni Toptan Başvurusu: ${app.company_name}`,
-            message: `${app.contact_name} tarafından yapılan başvuru incelemenizi bekliyor.`,
+            message: `${contactPerson} tarafından yapılan başvuru incelemenizi bekliyor.`,
             link: '/admin/submissions',
-            timestamp: app.created_at,
+            timestamp: app.submitted_at || app.created_at || new Date().toISOString(),
+            read: readIds.has(notifId),
+          });
+        }
+      }
+
+      // 4. Check New Contact Messages
+      const { data: contactMessages } = await supabase
+        .from('contact_messages')
+        .select('id, name, subject, message, status, created_at')
+        .eq('status', 'new')
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (contactMessages) {
+        for (const msg of contactMessages) {
+          const notifId = `msg-${msg.id}`;
+          const snippet = msg.message
+            ? (msg.message.length > 70 ? msg.message.slice(0, 67) + '...' : msg.message)
+            : 'Yeni bir iletişim mesajı iletildi.';
+          notifications.push({
+            id: notifId,
+            type: 'contact',
+            title: `Yeni İletişim Mesajı: ${msg.name}`,
+            message: msg.subject ? `[${msg.subject}] ${snippet}` : snippet,
+            link: '/admin/submissions',
+            timestamp: msg.created_at,
             read: readIds.has(notifId),
           });
         }
@@ -209,6 +236,93 @@ export const adminNotificationService = {
     } catch (err) {
       console.warn('Desktop notification failed:', err);
       return false;
+    }
+  },
+
+  /**
+   * Subscribes to realtime incoming admin events (contact messages, trade applications, orders)
+   */
+  subscribeToRealtimeEvents(onEvent: (notif: AdminNotification) => void): () => void {
+    if (!isSupabaseConfigured || !supabase) {
+      return () => {};
+    }
+
+    const client = supabase;
+
+    try {
+      const channel = client
+        .channel('admin-realtime-notifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'contact_messages' },
+          (payload) => {
+            const newMsg = payload.new as { id: string; name: string; subject: string; message: string; created_at: string };
+            const notif: AdminNotification = {
+              id: `msg-${newMsg.id}`,
+              type: 'contact',
+              title: `Yeni İletişim Mesajı: ${newMsg.name}`,
+              message: newMsg.subject ? `[${newMsg.subject}] ${newMsg.message?.slice(0, 70) || ''}` : newMsg.message?.slice(0, 70) || '',
+              link: '/admin/submissions',
+              timestamp: newMsg.created_at || new Date().toISOString(),
+              read: false,
+            };
+            onEvent(notif);
+            this.sendDesktopNotification(notif.title, {
+              body: notif.message,
+              tag: notif.id,
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'trade_applications' },
+          (payload) => {
+            const newApp = payload.new as { id: string; company_name: string; contact_person: string; submitted_at?: string; created_at?: string };
+            const notif: AdminNotification = {
+              id: `app-${newApp.id}`,
+              type: 'wholesale',
+              title: `Yeni Toptan Başvurusu: ${newApp.company_name}`,
+              message: `${newApp.contact_person || 'Yetkili'} tarafından yapılan başvuru incelemenizi bekliyor.`,
+              link: '/admin/submissions',
+              timestamp: newApp.submitted_at || newApp.created_at || new Date().toISOString(),
+              read: false,
+            };
+            onEvent(notif);
+            this.sendDesktopNotification(notif.title, {
+              body: notif.message,
+              tag: notif.id,
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'orders' },
+          (payload) => {
+            const newOrd = payload.new as { id: string; order_number: string; total_amount: number; created_at: string };
+            const notif: AdminNotification = {
+              id: `ord-${newOrd.id}`,
+              type: 'order',
+              title: `Yeni Sipariş: #${newOrd.order_number || newOrd.id.slice(0, 8)}`,
+              message: `Yeni bir sipariş alındı.`,
+              link: `/admin/orders/${newOrd.id}`,
+              timestamp: newOrd.created_at || new Date().toISOString(),
+              read: false,
+            };
+            onEvent(notif);
+            this.sendDesktopNotification(notif.title, {
+              body: notif.message,
+              tag: notif.id,
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        client.removeChannel(channel);
+      };
+    } catch (err) {
+      console.warn('[adminNotificationService] Realtime subscription error:', err);
+      return () => {};
     }
   },
 };

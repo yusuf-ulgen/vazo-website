@@ -42,10 +42,22 @@ export function AdminNotificationPopover() {
 
   useEffect(() => {
     loadNotifications();
+
+    const unsubscribe = adminNotificationService.subscribeToRealtimeEvents((newNotif) => {
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev];
+      });
+    });
+
     const interval = setInterval(() => {
       loadNotifications();
     }, 60000); // 1 minute auto refresh
-    return () => clearInterval(interval);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   // Click outside to close
@@ -273,6 +285,17 @@ export function AdminNotificationPopover() {
               }`}
             >
               Toptan
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter('contact')}
+              className={`px-2.5 py-1 rounded transition-colors ${
+                filter === 'contact'
+                  ? 'bg-neutral-900 text-white font-medium'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary'
+              }`}
+            >
+              İletişim
             </button>
           </div>
 
