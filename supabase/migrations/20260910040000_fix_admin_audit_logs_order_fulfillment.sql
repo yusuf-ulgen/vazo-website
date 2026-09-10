@@ -483,7 +483,7 @@ BEGIN
     IF p_is_success THEN
         v_new_refunded_minor := COALESCE(v_payment.refunded_amount_minor, 0) + v_refund.amount_minor;
         v_new_payment_status := CASE
-            WHEN v_new_refunded_minor >= v_payment.amount_minor THEN 'refunded'
+            WHEN v_new_refunded_minor >= v_payment.expected_amount_minor THEN 'refunded'
             ELSE 'partially_refunded'
         END;
         v_new_order_status := CASE
