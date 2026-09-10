@@ -198,6 +198,17 @@ describe('Payment Result Pages & PayTR Frame (Phase 3.5 & 3.6)', () => {
       });
       expect(iframe).toHaveStyle({ height: '920px' });
 
+      // Dispatch PayTR [iFrameSizer] message
+      act(() => {
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin: 'https://www.paytr.com',
+            data: '[iFrameSizer]paytriframe:980:0:mutationObserver',
+          })
+        );
+      });
+      expect(iframe).toHaveStyle({ height: '980px' });
+
       // Non-matching origin is ignored
       act(() => {
         window.dispatchEvent(
@@ -207,7 +218,7 @@ describe('Payment Result Pages & PayTR Frame (Phase 3.5 & 3.6)', () => {
           })
         );
       });
-      expect(iframe).toHaveStyle({ height: '920px' });
+      expect(iframe).toHaveStyle({ height: '980px' });
     });
   });
 
