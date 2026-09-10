@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Menu,
   Search,
@@ -37,12 +37,22 @@ export function SiteNavbar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { count: wishlistCount } = useWishlist();
   const { totalItems: cartCount } = useCart();
   const { user, displayName, isAuthenticated } = useCustomerAuth();
   const { settings } = useSiteSettings();
   const [navItems, setNavItems] = useState<MenuItem[]>(DEFAULT_PRIMARY_NAV);
+
+  useEffect(() => {
+    if (searchParams.get('auth_required') === 'true') {
+      setAuthModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('auth_required');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     let isMounted = true;
@@ -296,6 +306,7 @@ export function SiteNavbar() {
         isOpen={mobileDrawerOpen}
         onClose={() => setMobileDrawerOpen(false)}
         onOpenSearch={() => setSearchModalOpen(true)}
+        onOpenAuth={() => setAuthModalOpen(true)}
       />
       <CartDrawer
         isOpen={cartDrawerOpen}

@@ -59,6 +59,25 @@ describe('MobileNavDrawer Component', () => {
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
 
+  it('triggers onOpenAuth and onClose when unauthenticated user clicks Giriş Yap / Kayıt Ol', () => {
+    const handleClose = vi.fn();
+    const handleOpenAuth = vi.fn();
+
+    renderWithRouter(
+      <MobileNavDrawer
+        isOpen={true}
+        onClose={handleClose}
+        onOpenAuth={handleOpenAuth}
+      />
+    );
+
+    const loginBtn = screen.getByText('Giriş Yap / Kayıt Ol');
+    fireEvent.click(loginBtn);
+
+    expect(handleClose).toHaveBeenCalledTimes(1);
+    expect(handleOpenAuth).toHaveBeenCalledTimes(1);
+  });
+
   it('renders nothing when isOpen is false', () => {
     const { container } = renderWithRouter(
       <MobileNavDrawer isOpen={false} onClose={vi.fn()} />

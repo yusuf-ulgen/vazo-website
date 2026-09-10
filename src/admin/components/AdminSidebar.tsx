@@ -17,8 +17,11 @@ import {
   History,
   ShoppingBag,
   CreditCard,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { useContext } from 'react';
+import { AdminAuthContext } from '../auth/AdminAuthContext';
 
 export interface AdminSidebarProps {
   isCollapsed: boolean;
@@ -33,6 +36,8 @@ export function AdminSidebar({
   mobileOpen,
   onCloseMobile,
 }: AdminSidebarProps) {
+  const authContext = useContext(AdminAuthContext);
+  const logout = authContext?.logout;
   const navItems = [
     { label: 'Gösterge Paneli', path: '/admin', icon: LayoutDashboard, end: true },
     { label: 'Siparişler', path: '/admin/orders', icon: ShoppingBag },
@@ -122,12 +127,28 @@ export function AdminSidebar({
           </nav>
         </div>
 
-        {/* System Security Status Footer */}
+        {/* System Security Status Footer & Mobile Logout */}
         <div className="p-4 border-t border-neutral-800 text-[11px] text-neutral-400">
           {!isCollapsed ? (
-            <div className="flex items-center gap-2 text-[10px] text-neutral-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
-              <span className="truncate">Supabase RBAC Aktif</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-[10px] text-neutral-400">
+                <ShieldCheck className="w-3.5 h-3.5 text-feedback-success shrink-0" />
+                <span className="truncate">Supabase RBAC Aktif</span>
+              </div>
+              {mobileOpen && logout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCloseMobile();
+                    logout();
+                  }}
+                  className="lg:hidden flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 font-medium px-2 py-1 rounded hover:bg-neutral-900 transition-colors cursor-pointer"
+                  aria-label="Çıkış Yap"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Çıkış</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex justify-center" title="Supabase RBAC Aktif">

@@ -45,55 +45,59 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
 
   return (
     <>
-      <header className="h-16 bg-surface-primary border-b border-border-default px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-4">
+      <header className="h-16 bg-surface-primary border-b border-border-default px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
           {/* Mobile sidebar toggle */}
           <button
             onClick={onOpenMobileSidebar}
-            className="lg:hidden p-2 text-text-secondary hover:text-text-primary rounded cursor-pointer"
+            className="lg:hidden p-1.5 sm:p-2 -ml-1 text-text-secondary hover:text-text-primary rounded cursor-pointer shrink-0"
             aria-label="Admin Menüsünü Aç"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Breadcrumb / Title */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <Link
               to="/admin"
-              className="text-xs text-text-secondary hover:text-text-primary font-medium hidden sm:inline transition-colors"
+              className="text-xs text-text-secondary hover:text-text-primary font-medium hidden sm:inline transition-colors shrink-0"
             >
               Admin
             </Link>
-            <span className="text-xs text-text-muted hidden sm:inline">/</span>
-            <h1 className="text-sm font-semibold text-text-primary">
+            <span className="text-xs text-text-muted hidden sm:inline shrink-0">/</span>
+            <h1 className="text-xs sm:text-sm font-semibold text-text-primary truncate whitespace-nowrap">
               {getBreadcrumbTitle(location.pathname)}
             </h1>
           </div>
         </div>
 
         {/* Right actions */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
           {/* View Public Store */}
           <Link
             to="/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary px-3 py-1.5 border border-border-default rounded transition-colors"
+            title="Mağazayı Gör"
+            aria-label="Mağazayı Gör"
+            className="inline-flex items-center gap-1.5 text-xs text-text-secondary hover:text-text-primary p-2 sm:px-3 sm:py-1.5 border border-border-default rounded transition-colors shrink-0"
           >
-            <span>Mağazayı Gör</span>
+            <span className="hidden md:inline">Mağazayı Gör</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
 
           {/* Notification Popover */}
-          <AdminNotificationPopover />
+          <div className="shrink-0">
+            <AdminNotificationPopover />
+          </div>
 
           {/* Admin Avatar & Real Identity */}
-          <div className="flex items-center gap-2.5 pl-2.5 border-l border-border-subtle">
-            <div className="w-8 h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold">
+          <div className="flex items-center gap-1 sm:gap-2.5 pl-1.5 sm:pl-2.5 border-l border-border-subtle shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-neutral-900 text-neutral-100 flex items-center justify-center text-xs font-semibold shrink-0">
               {adminUser?.role === 'super_admin' ? (
-                <Shield className="w-4 h-4 text-amber-400" />
+                <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
               ) : (
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </div>
             <div className="hidden sm:block text-left">
@@ -115,7 +119,7 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
               onClick={() => setIsPasswordModalOpen(true)}
               title="Şifre Değiştir"
               aria-label="Şifre Değiştir"
-              className="p-1.5 text-text-secondary hover:text-text-primary transition-colors ml-1 cursor-pointer rounded hover:bg-surface-secondary"
+              className="p-1.5 text-text-secondary hover:text-text-primary transition-colors cursor-pointer rounded hover:bg-surface-secondary shrink-0"
             >
               <KeyRound className="w-4 h-4" />
             </button>
@@ -125,7 +129,7 @@ export function AdminHeader({ onOpenMobileSidebar }: AdminHeaderProps) {
               onClick={() => logout()}
               title="Admin Oturumunu Kapat"
               aria-label="Çıkış Yap"
-              className="p-1.5 text-text-secondary hover:text-feedback-danger transition-colors cursor-pointer rounded hover:bg-surface-secondary"
+              className="p-1.5 text-text-secondary hover:text-feedback-danger transition-colors cursor-pointer rounded hover:bg-surface-secondary shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </button>

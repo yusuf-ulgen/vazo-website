@@ -31,9 +31,10 @@ export interface MobileNavDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenSearch?: () => void;
+  onOpenAuth?: () => void;
 }
 
-export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDrawerProps) {
+export function MobileNavDrawer({ isOpen, onClose, onOpenSearch, onOpenAuth }: MobileNavDrawerProps) {
   const [retailExpanded, setRetailExpanded] = useState(false);
   const [wholesaleExpanded, setWholesaleExpanded] = useState(false);
   const [retailMenu, setRetailMenu] = useState<MegaMenuData>(perakendeMegaMenuData);
@@ -232,17 +233,34 @@ export function MobileNavDrawer({ isOpen, onClose, onOpenSearch }: MobileNavDraw
               );
             })}
 
-            <Link
-              to="/account"
-              onClick={onClose}
-              className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
-            >
-              <span className="flex items-center gap-2">
-                <User className="w-4 h-4 text-text-secondary" />
-                <span>{isAuthenticated ? 'Hesabım' : 'Giriş Yap / Kayıt Ol'}</span>
-              </span>
-              <ChevronRight className="w-4 h-4 text-text-muted" />
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                to="/account"
+                onClick={onClose}
+                className="flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary"
+              >
+                <span className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-text-secondary" />
+                  <span>Hesabım</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-text-muted" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenAuth?.();
+                }}
+                className="w-full flex items-center justify-between py-3 text-sm font-medium border-b border-border-subtle text-text-primary text-left cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-text-secondary" />
+                  <span>Giriş Yap / Kayıt Ol</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-text-muted" />
+              </button>
+            )}
 
             <Link
               to="/wishlist"
