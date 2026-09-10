@@ -119,7 +119,7 @@ export function PayTRPaymentFrame({
       </div>
 
       {/* Frame Container */}
-      <div className="relative border border-border-default rounded-sm bg-surface-primary transition-all duration-300 min-h-[500px]">
+      <div className="relative border border-border-default rounded-sm bg-surface-primary transition-all duration-300 min-h-[880px]">
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-surface-primary/90 z-10">
             <Loader2 className="w-6 h-6 animate-spin text-text-primary" />
@@ -134,7 +134,7 @@ export function PayTRPaymentFrame({
           id="paytriframe"
           frameBorder="0"
           scrolling="auto"
-          style={{ width: '100%', height: `${iframeHeight}px`, minHeight: '750px' }}
+          style={{ width: '100%', height: `${iframeHeight}px`, minHeight: '880px' }}
           className="w-full border-0 transition-opacity duration-300"
           onLoad={() => {
             setIsLoading(false);
