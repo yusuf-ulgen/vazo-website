@@ -133,6 +133,10 @@ export const adminAuthService = {
   async getCurrentAdmin(): Promise<AdminProfile | null> {
     const client = supabaseModule.supabase;
     if (client && supabaseModule.isSupabaseConfigured) {
+      // When Supabase is available, ONLY trust the live session.
+      // Never fall back to the localStorage dev-profile here: that profile carries
+      // a fake UUID (a0000000-...) which auth.uid() won't match, causing
+      // is_admin() to return false and RLS to block all mutations.
       try {
         const {
           data: { session },
@@ -144,10 +148,14 @@ export const adminAuthService = {
           if (profile) return profile;
         }
       } catch {
-        // Fallback to local session if Supabase is offline/unreachable
+        // Supabase unreachable — fall through to return null below.
       }
+      // Live Supabase is configured but no valid admin session found.
+      return null;
     }
 
+    // Supabase is NOT configured (offline / local dev without env vars).
+    // Only in this case do we trust the localStorage dev-profile.
     if (typeof window !== 'undefined') {
       try {
         const stored = localStorage.getItem(DEV_ADMIN_STORAGE_KEY);
