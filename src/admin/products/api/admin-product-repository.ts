@@ -448,48 +448,13 @@ export const adminProductRepository = {
     return this.updateProduct(id, { status });
   },
 
-  /**
-   * Checks whether a product has any historical order_items via its variants.
-   * Returns true if at least one order line references a variant of this product.
-   */
-  async productHasOrders(id: string): Promise<boolean> {
-    const client = getClient();
-
-    // Fetch variant ids for the product
-    const { data: variants, error: varErr } = await client
-      .from('product_variants')
-      .select('id')
-      .eq('product_id', id);
-
-    if (varErr || !variants || variants.length === 0) return false;
-
-    const variantIds = variants.map((v: { id: string }) => v.id);
-
-    const { count, error: orderErr } = await client
-      .from('order_items')
-      .select('id', { count: 'exact', head: true })
-      .in('variant_id', variantIds);
-
-    if (orderErr) return false;
-    return (count ?? 0) > 0;
-  },
-
   async deleteProduct(id: string): Promise<void> {
     const client = getClient();
 
-    // Guard: if there are order lines tied to this product's variants, we cannot
-    // hard-delete due to the ON DELETE RESTRICT constraint on order_items.variant_id.
-    const hasOrders = await this.productHasOrders(id);
-    if (hasOrders) {
-      // Throw a typed sentinel that the UI layer can detect and offer "archive" instead.
-      const err = new Error(
-        'HAS_ORDERS: Bu ürünün geçmişte gerçekleşmiş siparişleri bulunduğu için kalıcı olarak silinemez. Sipariş geçmişini korumak adına ürünü arşivleyebilirsiniz.'
-      );
-      throw err;
-    }
-
-    // Safe to hard-delete: manually remove child rows in dependency order to
-    // satisfy FK constraints before deleting the product itself.
+    // Delete child rows in dependency order before removing the product.
+    // product_variants cascade will automatically clean inventory_reservations
+    // and inventory_movements (FK ON DELETE CASCADE after migration).
+    // order_items.variant_id is ON DELETE SET NULL so order history is preserved.
     const childDeletes: Array<{ table: string; column: string }> = [
       { table: 'wholesale_price_tiers', column: 'product_id' },
       { table: 'product_categories', column: 'product_id' },
@@ -504,7 +469,6 @@ export const adminProductRepository = {
         .delete()
         .eq(column, id);
       if (childErr) {
-        // Non-fatal if table doesn't exist or row count is already 0
         console.warn(`[deleteProduct] Could not clear ${table}:`, childErr.message);
       }
     }
@@ -512,17 +476,6 @@ export const adminProductRepository = {
     const { error } = await client.from('products').delete().eq('id', id);
     if (error) {
       throw new Error(`Ürün silinemedi: ${error.message}`);
-    }
-  },
-
-  async archiveProduct(id: string): Promise<void> {
-    const client = getClient();
-    const { error } = await client
-      .from('products')
-      .update({ status: 'archived', updated_at: new Date().toISOString() })
-      .eq('id', id);
-    if (error) {
-      throw new Error(`Ürün arşivlenemedi: ${error.message}`);
     }
   },
 };

@@ -6,7 +6,6 @@ import {
   Trash2,
   ExternalLink,
   Layers,
-  AlertTriangle,
 } from 'lucide-react';
 import {
   AdminPageHeader,
@@ -53,9 +52,6 @@ export const AdminProductsPage: React.FC = () => {
 
   const [deletingProduct, setDeletingProduct] = useState<AdminProduct | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  // 'delete' = normal hard-delete dialog, 'archive' = orders-exist warning dialog
-  const [deleteMode, setDeleteMode] = useState<'delete' | 'archive'>('delete');
-  const [isCheckingOrders, setIsCheckingOrders] = useState(false);
 
   // Fetch taxonomy reference data once
   const loadTaxonomy = useCallback(async () => {
@@ -126,23 +122,6 @@ export const AdminProductsPage: React.FC = () => {
     }
   };
 
-  // Called when the trash icon is clicked — checks for orders first
-  const handleDeleteClick = async (prod: AdminProduct) => {
-    setDeleteMode('delete');
-    setDeletingProduct(prod);
-    setIsCheckingOrders(true);
-    try {
-      const hasOrders = await adminProductRepository.productHasOrders(prod.id);
-      if (hasOrders) {
-        setDeleteMode('archive');
-      }
-    } catch {
-      // If check fails, fall back to normal delete dialog
-    } finally {
-      setIsCheckingOrders(false);
-    }
-  };
-
   const handleDeleteConfirm = async () => {
     if (!deletingProduct) return;
 
@@ -154,23 +133,6 @@ export const AdminProductsPage: React.FC = () => {
       loadProducts();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Ürün silinirken bir hata oluştu.';
-      toastError('Hata', msg);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleArchiveConfirm = async () => {
-    if (!deletingProduct) return;
-
-    setIsDeleting(true);
-    try {
-      await adminProductRepository.archiveProduct(deletingProduct.id);
-      success('Ürün Arşivlendi', `"${deletingProduct.name}" arşivlendi ve sitede görünmez hale getirildi.`);
-      setDeletingProduct(null);
-      loadProducts();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Ürün arşivlenirken bir hata oluştu.';
       toastError('Hata', msg);
     } finally {
       setIsDeleting(false);
@@ -429,7 +391,7 @@ export const AdminProductsPage: React.FC = () => {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDeleteClick(product)}
+                      onClick={() => setDeletingProduct(product)}
                       aria-label={`${product.name} ürününü sil`}
                       title="Sil"
                       className="p-1.5 text-feedback-error/80 hover:text-feedback-error rounded transition-colors"
@@ -454,9 +416,9 @@ export const AdminProductsPage: React.FC = () => {
         collections={collections}
       />
 
-      {/* Delete Confirmation Dialog — normal (no orders) */}
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={Boolean(deletingProduct) && deleteMode === 'delete' && !isCheckingOrders}
+        isOpen={Boolean(deletingProduct)}
         onCancel={() => setDeletingProduct(null)}
         onConfirm={handleDeleteConfirm}
         title="Ürünü Sil"
@@ -464,35 +426,6 @@ export const AdminProductsPage: React.FC = () => {
         confirmLabel="Ürünü Sil"
         cancelLabel="Vazgeç"
         isDestructive
-        isLoading={isDeleting}
-      />
-
-      {/* Archive Warning Dialog — shown when product has order history */}
-      <ConfirmDialog
-        isOpen={Boolean(deletingProduct) && deleteMode === 'archive' && !isCheckingOrders}
-        onCancel={() => setDeletingProduct(null)}
-        onConfirm={handleArchiveConfirm}
-        title="Bu Ürün Silinemez"
-        message={
-          <div className="space-y-3">
-            <div className="flex items-start gap-2.5 p-3 rounded bg-amber-500/10 border border-amber-500/20">
-              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                <strong className="font-semibold">"{deletingProduct?.name}"</strong> adlı ürünün
-                geçmişte gerçekleşmiş siparişleri bulunuyor. Sipariş kayıtlarının bütünlüğünü
-                korumak adına bu ürün kalıcı olarak <strong>silinemez</strong>.
-              </p>
-            </div>
-            <p className="text-xs text-text-secondary leading-relaxed">
-              Ürünü <strong className="text-text-primary">arşivleyerek</strong> sitede
-              görünmez hale getirebilirsiniz. Arşivlenen ürünler mağazada listelenmez,
-              arama sonuçlarında çıkmaz ve satın alınamaz — sipariş geçmişi ise korunur.
-            </p>
-          </div>
-        }
-        confirmLabel="Ürünü Arşivle"
-        cancelLabel="Vazgeç"
-        isDestructive={false}
         isLoading={isDeleting}
       />
     </div>

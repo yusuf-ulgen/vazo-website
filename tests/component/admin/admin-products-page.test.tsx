@@ -319,8 +319,6 @@ describe('AdminProductsPage Component (Phase 2.5)', () => {
       totalPages: 1,
     });
 
-    // productHasOrders returns false → hard-delete path, normal confirm dialog
-    vi.spyOn(adminProductRepository, 'productHasOrders').mockResolvedValue(false);
     const deleteSpy = vi.spyOn(adminProductRepository, 'deleteProduct').mockResolvedValue();
 
     renderProductsPage();
@@ -332,10 +330,7 @@ describe('AdminProductsPage Component (Phase 2.5)', () => {
     const deleteBtn = screen.getByLabelText('Anfora Heykelsi Vazo ürününü sil');
     fireEvent.click(deleteBtn);
 
-    // handleDeleteClick is async (checks orders), wait for dialog to appear
-    await waitFor(() => {
-      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    });
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(screen.getByText(/adlı ürünü kalıcı olarak silmek istediğinizden emin misiniz/)).toBeInTheDocument();
 
     const confirmBtn = screen.getByRole('button', { name: 'Ürünü Sil' });
