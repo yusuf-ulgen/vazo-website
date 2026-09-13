@@ -90,6 +90,9 @@ const AdminOrderDetailPage = React.lazy(() =>
 const AdminPaymentsPage = React.lazy(() =>
   import('@/admin/payments/pages/AdminPaymentsPage').then((m) => ({ default: m.AdminPaymentsPage }))
 );
+const AdminDiscountsPage = React.lazy(() =>
+  import('@/admin/discounts/pages/AdminDiscountsPage').then((m) => ({ default: m.AdminDiscountsPage }))
+);
 
 const adminFallback = (
   <div className="min-h-screen bg-canvas-default flex items-center justify-center p-8 text-xs font-sans text-text-secondary">
@@ -461,6 +464,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={adminFallback}>
             <AdminShippingPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'discounts',
+        element: (
+          <Suspense fallback={adminFallback}>
+            <AdminDiscountsPage />
           </Suspense>
         ),
       },

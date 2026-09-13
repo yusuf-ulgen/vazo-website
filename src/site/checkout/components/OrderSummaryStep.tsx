@@ -1,12 +1,20 @@
 import { CheckoutQuoteResponse } from '@/entities/order/types';
 import { formatMoneyMinor } from '@/shared/lib/money';
-import { Truck, ShieldCheck } from 'lucide-react';
+import { Truck, ShieldCheck, Tag } from 'lucide-react';
+import { cartStore } from '@/shared/stores/cart-store';
+import { calculateDiscountAmount } from '@/shared/stores/cart-discount';
 
 interface OrderSummaryStepProps {
   quote: CheckoutQuoteResponse;
 }
 
 export function OrderSummaryStep({ quote }: OrderSummaryStepProps) {
+  const appliedDiscount = cartStore.getAppliedDiscount();
+  const cartItems = cartStore.getItems();
+  const calculatedDiscountLira = calculateDiscountAmount(appliedDiscount, cartItems);
+  const discountMinor = quote.discount_minor > 0 ? quote.discount_minor : calculatedDiscountLira * 100;
+  const effectiveTotalMinor = Math.max(0, quote.total_minor - (quote.discount_minor > 0 ? 0 : discountMinor));
+
   return (
     <div className="space-y-6 text-left">
       <div className="border-b border-border-subtle pb-4">
@@ -62,6 +70,18 @@ export function OrderSummaryStep({ quote }: OrderSummaryStepProps) {
           </span>
         </div>
 
+        {discountMinor > 0 && (
+          <div className="flex justify-between text-xs text-emerald-600 font-medium">
+            <div className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" />
+              <span>
+                İndirim Kuponu ({appliedDiscount?.code ? `${appliedDiscount.code} - %${appliedDiscount.discount_percentage}` : 'İndirim'})
+              </span>
+            </div>
+            <span>-{formatMoneyMinor(discountMinor, quote.currency)}</span>
+          </div>
+        )}
+
         <div className="flex justify-between text-xs text-text-secondary items-center">
           <div className="flex items-center gap-1.5">
             <Truck className="w-3.5 h-3.5 text-text-muted" />
@@ -90,7 +110,7 @@ export function OrderSummaryStep({ quote }: OrderSummaryStepProps) {
             </span>
           </div>
           <span className="font-display text-2xl font-semibold text-text-primary">
-            {formatMoneyMinor(quote.total_minor, quote.currency)}
+            {formatMoneyMinor(effectiveTotalMinor, quote.currency)}
           </span>
         </div>
       </div>

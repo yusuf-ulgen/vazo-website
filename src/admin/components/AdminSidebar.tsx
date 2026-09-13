@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   CreditCard,
   LogOut,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { useContext } from 'react';
@@ -47,6 +48,7 @@ export function AdminSidebar({
     { label: 'Koleksiyonlar', path: '/admin/collections', icon: Sparkles },
     { label: 'Stok & Envanter', path: '/admin/inventory', icon: Boxes },
     { label: 'Fiyatlandırma', path: '/admin/pricing', icon: Percent },
+    { label: 'İndirim Kodları', path: '/admin/discounts', icon: Tag },
     { label: 'Toptan Portalı', path: '/admin/wholesale', icon: Building2 },
     { label: 'İçerik & CMS', path: '/admin/content', icon: FileText },
     { label: 'Gelen Başvurular', path: '/admin/submissions', icon: Inbox },

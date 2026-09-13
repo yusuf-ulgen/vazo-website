@@ -314,6 +314,7 @@ export function CheckoutPage() {
         billing_address: useSameAddress ? shippingAddress : billingAddress || shippingAddress,
         accepted_preliminary_info: acceptedPreliminaryInfo,
         accepted_distance_sales: acceptedDistanceSales,
+        discount_code: cartStore.getAppliedDiscount()?.code || null,
       });
 
       // Preserve recovery state for pending order until authoritative payment success

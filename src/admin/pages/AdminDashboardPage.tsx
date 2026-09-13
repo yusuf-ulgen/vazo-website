@@ -16,6 +16,7 @@ import {
   RefreshCw,
   History,
   FolderTree,
+  Tag,
 } from 'lucide-react';
 import { AdminPageHeader, AdminCard, StatusBadge, LoadingSkeleton } from '../ui';
 import { useAdminAuth } from '../auth/AdminAuthContext';
@@ -222,6 +223,19 @@ export function AdminDashboardPage() {
                 <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
               </h3>
               <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Özel seriler ve koleksiyonlar.</p>
+            </div>
+          </Link>
+
+          <Link to="/admin/discounts" className="p-4 bg-surface-primary border border-border-default rounded-lg hover:border-text-primary/30 transition-all group flex items-start gap-3 shadow-xs">
+            <div className="p-2 bg-surface-secondary rounded-md text-text-secondary group-hover:text-text-primary transition-colors">
+              <Tag className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-semibold text-text-primary group-hover:text-accent-primary transition-colors flex items-center justify-between">
+                <span>İndirim Kodları</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+              </h3>
+              <p className="text-[11px] text-text-secondary mt-1 line-clamp-2">Kuponlar ve sepet indirimleri.</p>
             </div>
           </Link>
 

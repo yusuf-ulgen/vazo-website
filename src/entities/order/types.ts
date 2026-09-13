@@ -272,6 +272,7 @@ export interface CreateOrderRequest {
   billing_address?: CustomerAddress;
   accepted_preliminary_info: boolean;
   accepted_distance_sales: boolean;
+  discount_code?: string | null;
 }
 
 export interface CreateOrderResponse {
@@ -280,6 +281,7 @@ export interface CreateOrderResponse {
   status: OrderStatus;
   subtotal_minor: number;
   shipping_minor: number;
+  discount_minor?: number;
   total_minor: number;
   currency: CurrencyCode;
   expires_at: string;

@@ -1,0 +1,471 @@
+-- ==============================================================================
+-- Migration: 20260913161000_phase4_discount_order_rpc.sql
+-- Description: Phase 4 — Update create_checkout_order RPC to accept p_discount_code,
+--              validate coupon code and category/collection scope, apply discount_minor,
+--              increment usage_count, and persist to orders.discount_minor.
+-- ==============================================================================
+
+-- Drop old 8-argument signature to prevent function overload ambiguity
+DROP FUNCTION IF EXISTS public.create_checkout_order(UUID, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB, JSONB);
+
+CREATE OR REPLACE FUNCTION public.create_checkout_order(
+    p_customer_id UUID,
+    p_channel TEXT,
+    p_currency TEXT,
+    p_destination_country TEXT,
+    p_shipping_address JSONB,
+    p_billing_address JSONB,
+    p_items JSONB,
+    p_legal_consent JSONB,
+    p_discount_code TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+    v_is_checkout_enabled BOOLEAN;
+    v_first_name TEXT;
+    v_last_name TEXT;
+    v_profile_phone TEXT;
+    v_customer_name TEXT;
+    v_customer_email TEXT;
+    v_customer_phone TEXT;
+    v_clean_phone TEXT;
+    v_order_id UUID;
+    v_order_number TEXT;
+    v_quote JSONB;
+    v_subtotal_minor BIGINT;
+    v_shipping_minor BIGINT;
+    v_total_minor BIGINT;
+    v_tax_included_minor BIGINT;
+    v_preliminary_page JSONB;
+    v_distance_page JSONB;
+    v_reservation_expires_at TIMESTAMPTZ;
+    v_payment_expires_at TIMESTAMPTZ;
+    v_item JSONB;
+    v_is_wholesale_approved BOOLEAN := false;
+
+    -- Discount tracking variables
+    v_clean_discount_code TEXT := NULLIF(TRIM(p_discount_code), '');
+    v_discount_record RECORD;
+    v_discount_minor BIGINT := 0;
+    v_eligible_subtotal_minor BIGINT := 0;
+    v_item_product_id UUID;
+    v_item_line_total BIGINT;
+    v_is_item_eligible BOOLEAN;
+BEGIN
+    -- 1. Check Commerce Kill Switch
+    SELECT COALESCE((value->>'checkout_enabled')::BOOLEAN, false) INTO v_is_checkout_enabled
+    FROM public.site_settings
+    WHERE key = 'commerce';
+
+    IF NOT v_is_checkout_enabled THEN
+        RAISE EXCEPTION 'Ödeme ve sipariş sistemi şu anda kapalıdır. Lütfen daha sonra tekrar deneyin.';
+    END IF;
+
+    -- 2. Validate Customer Authentication & Session
+    IF p_customer_id IS NULL THEN
+        RAISE EXCEPTION 'Yetkisiz erişim: Sipariş oluşturan kullanıcı kimliği doğrulanamadı.';
+    END IF;
+
+    IF auth.uid() IS NOT NULL AND p_customer_id != auth.uid() THEN
+        RAISE EXCEPTION 'Yetkisiz erişim: Sipariş oluşturan kullanıcı kimliği doğrulanamadı.';
+    END IF;
+
+    -- 3. Validate Channel, Currency & Wholesale Entitlement
+    IF p_channel NOT IN ('retail', 'wholesale') THEN
+        RAISE EXCEPTION 'Geçersiz sipariş kanalı: %', p_channel;
+    END IF;
+
+    IF p_currency NOT IN ('TRY', 'USD', 'EUR', 'GBP') THEN
+        RAISE EXCEPTION 'Geçersiz para birimi: %', p_currency;
+    END IF;
+
+    IF p_channel = 'wholesale' THEN
+        SELECT (customer_type = 'wholesale' AND wholesale_approved_at IS NOT NULL) INTO v_is_wholesale_approved
+        FROM public.customer_profiles
+        WHERE user_id = p_customer_id;
+
+        IF NOT COALESCE(v_is_wholesale_approved, false) THEN
+            RAISE EXCEPTION 'Toptan sipariş oluşturmak için onaylı kurumsal hesap gereklidir.';
+        END IF;
+    END IF;
+
+    -- 4. Validate Legal Consents
+    IF NOT COALESCE((p_legal_consent->>'kvkk_accepted')::BOOLEAN, false) OR
+       NOT COALESCE((p_legal_consent->>'preliminary_info_accepted')::BOOLEAN, false) OR
+       NOT COALESCE((p_legal_consent->>'distance_sales_accepted')::BOOLEAN, false) THEN
+        RAISE EXCEPTION 'Sipariş oluşturmak için zorunlu yasal sözleşmelerin onaylanması gereklidir.';
+    END IF;
+
+    -- 5. Validate Shipping Address (Real Data Invariant - No Dummy Fallbacks)
+    IF p_shipping_address IS NULL OR
+       trim(COALESCE(p_shipping_address->>'recipient_name', '')) = '' OR
+       length(trim(COALESCE(p_shipping_address->>'recipient_name', ''))) < 2 OR
+       trim(COALESCE(p_shipping_address->>'city', '')) = '' THEN
+        RAISE EXCEPTION 'Geçerli ve açık bir teslimat adresi ile alıcı adı zorunludur.';
+    END IF;
+
+    IF p_billing_address IS NULL THEN
+        p_billing_address := p_shipping_address;
+    END IF;
+
+    -- 6. Validate Items Non-Empty & Pessimistic Row Locking
+    IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
+        RAISE EXCEPTION 'Sipariş için en az bir ürün seçilmelidir.';
+    END IF;
+
+    PERFORM id
+    FROM public.product_variants
+    WHERE id IN (
+        SELECT (elem->>'variant_id')::UUID
+        FROM jsonb_array_elements(p_items) AS elem
+    )
+    ORDER BY id
+    FOR UPDATE;
+
+    -- 7. Calculate Server-Authoritative Quote
+    v_quote := public.calculate_checkout_quote(
+        p_customer_id,
+        p_channel,
+        p_currency,
+        p_destination_country,
+        p_items
+    );
+
+    v_subtotal_minor := (v_quote->>'subtotal_minor')::BIGINT;
+    v_shipping_minor := (v_quote->>'shipping_minor')::BIGINT;
+    v_total_minor := (v_quote->>'total_minor')::BIGINT;
+    v_tax_included_minor := (v_quote->>'tax_included_minor')::BIGINT;
+
+    -- 7.1 Process Discount Code (if provided)
+    IF v_clean_discount_code IS NOT NULL THEN
+        SELECT * INTO v_discount_record
+        FROM public.discount_codes
+        WHERE UPPER(code) = UPPER(v_clean_discount_code)
+          AND is_active = true
+          AND (expires_at IS NULL OR expires_at > timezone('utc', now()))
+          AND (usage_limit IS NULL OR usage_count < usage_limit)
+        FOR UPDATE;
+
+        IF v_discount_record.id IS NULL THEN
+            RAISE EXCEPTION 'Girdiğiniz indirim kodu geçersiz veya süresi dolmuş.';
+        END IF;
+
+        IF v_discount_record.scope = 'all' THEN
+            v_eligible_subtotal_minor := v_subtotal_minor;
+        ELSIF v_discount_record.scope = 'category' THEN
+            -- Calculate total for items belonging to specified category
+            FOR v_item IN SELECT * FROM jsonb_array_elements(v_quote->'items')
+            LOOP
+                v_item_product_id := (v_item->>'product_id')::UUID;
+                v_item_line_total := (v_item->>'line_total_minor')::BIGINT;
+
+                SELECT EXISTS (
+                    SELECT 1 FROM public.product_categories
+                    WHERE product_id = v_item_product_id AND category_id = v_discount_record.scope_id
+                ) INTO v_is_item_eligible;
+
+                IF v_is_item_eligible THEN
+                    v_eligible_subtotal_minor := v_eligible_subtotal_minor + v_item_line_total;
+                END IF;
+            END LOOP;
+
+            IF v_eligible_subtotal_minor <= 0 THEN
+                RAISE EXCEPTION 'Bu indirim kodu sepetteki seçili kategoriye ait ürünler için geçerlidir.';
+            END IF;
+        ELSIF v_discount_record.scope = 'collection' THEN
+            -- Calculate total for items belonging to specified collection
+            FOR v_item IN SELECT * FROM jsonb_array_elements(v_quote->'items')
+            LOOP
+                v_item_product_id := (v_item->>'product_id')::UUID;
+                v_item_line_total := (v_item->>'line_total_minor')::BIGINT;
+
+                SELECT EXISTS (
+                    SELECT 1 FROM public.product_collections
+                    WHERE product_id = v_item_product_id AND collection_id = v_discount_record.scope_id
+                ) INTO v_is_item_eligible;
+
+                IF v_is_item_eligible THEN
+                    v_eligible_subtotal_minor := v_eligible_subtotal_minor + v_item_line_total;
+                END IF;
+            END LOOP;
+
+            IF v_eligible_subtotal_minor <= 0 THEN
+                RAISE EXCEPTION 'Bu indirim kodu sepetteki seçili koleksiyona ait ürünler için geçerlidir.';
+            END IF;
+        END IF;
+
+        -- Calculate discount amount
+        v_discount_minor := ROUND(v_eligible_subtotal_minor * (v_discount_record.discount_percentage / 100.0));
+        IF v_discount_minor > v_subtotal_minor THEN
+            v_discount_minor := v_subtotal_minor;
+        END IF;
+
+        -- Recompute total
+        v_total_minor := GREATEST(0, v_subtotal_minor - v_discount_minor + v_shipping_minor);
+
+        -- Increment usage count
+        UPDATE public.discount_codes
+        SET usage_count = usage_count + 1,
+            updated_at = timezone('utc', now())
+        WHERE id = v_discount_record.id;
+    END IF;
+
+    IF v_total_minor < 0 THEN
+        RAISE EXCEPTION 'Sipariş toplam tutarı 0''dan küçük olamaz.';
+    END IF;
+
+    -- 8. Fetch Customer Real Snapshot (Strictly No Dummy Values)
+    SELECT first_name, last_name, phone
+    INTO v_first_name, v_last_name, v_profile_phone
+    FROM public.customer_profiles
+    WHERE user_id = p_customer_id;
+
+    v_customer_name := COALESCE(
+        NULLIF(TRIM(COALESCE(v_first_name, '') || ' ' || COALESCE(v_last_name, '')), ''),
+        NULLIF(TRIM(COALESCE(p_shipping_address->>'recipient_name', '')), '')
+    );
+
+    IF v_customer_name IS NULL OR length(v_customer_name) < 2 OR v_customer_name IN ('Müşteri', 'Değerli Müşterimiz') THEN
+        RAISE EXCEPTION 'Geçerli bir müşteri/alıcı adı zorunludur. Lütfen profilinizi veya teslimat adresinizi güncelleyin.';
+    END IF;
+
+    v_customer_email := COALESCE(
+        NULLIF(TRIM(COALESCE((SELECT email FROM auth.users WHERE id = p_customer_id), '')), ''),
+        NULLIF(TRIM(COALESCE(p_shipping_address->>'email', '')), ''),
+        NULLIF(TRIM(COALESCE(auth.jwt()->>'email', '')), '')
+    );
+
+    IF v_customer_email IS NULL OR
+       v_customer_email NOT LIKE '%@%.%' OR
+       v_customer_email IN ('musteri@vazostudio.com', 'test@test.com', 'placeholder@example.com') THEN
+        RAISE EXCEPTION 'Geçerli bir müşteri e-posta adresi zorunludur. Lütfen profilinizdeki e-posta adresinizi doğrulayın.';
+    END IF;
+
+    v_clean_phone := regexp_replace(
+        COALESCE(
+            NULLIF(TRIM(COALESCE(v_profile_phone, '')), ''),
+            NULLIF(TRIM(COALESCE(p_shipping_address->>'phone', '')), '')
+        ),
+        '\D',
+        '',
+        'g'
+    );
+
+    IF v_clean_phone IS NOT NULL AND (length(v_clean_phone) < 10 OR v_clean_phone = '5550000000' OR v_clean_phone ~ '^(\d)\1+$') THEN
+        RAISE EXCEPTION 'Teslimat ve SMS bilgilendirmesi için geçerli bir telefon numarası zorunludur. Lütfen adresinizdeki telefon bilgisini güncelleyin.';
+    END IF;
+
+    v_customer_phone := COALESCE(v_clean_phone, '');
+
+    -- 9. Fetch Legal Page Snapshots
+    SELECT jsonb_build_object('id', id, 'title', title, 'sections', COALESCE(
+        (SELECT jsonb_agg(jsonb_build_object('key', section_key, 'title', title, 'content', content))
+         FROM public.content_sections WHERE page_id = content_pages.id AND active = true),
+        '[]'::jsonb
+    )) INTO v_preliminary_page
+    FROM public.content_pages
+    WHERE page_key = 'preliminary_info';
+
+    SELECT jsonb_build_object('id', id, 'title', title, 'sections', COALESCE(
+        (SELECT jsonb_agg(jsonb_build_object('key', section_key, 'title', title, 'content', content))
+         FROM public.content_sections WHERE page_id = content_pages.id AND active = true),
+        '[]'::jsonb
+    )) INTO v_distance_page
+    FROM public.content_pages
+    WHERE page_key = 'distance_sales';
+
+    -- Generate order number and expiration timestamps
+    v_order_number := public.generate_order_number();
+    v_reservation_expires_at := timezone('utc', now()) + INTERVAL '40 minutes';
+    v_payment_expires_at := timezone('utc', now()) + INTERVAL '30 minutes';
+
+    -- 10. Insert Order Record
+    INSERT INTO public.orders (
+        order_number,
+        customer_id,
+        channel,
+        status,
+        currency,
+        tax_included,
+        subtotal_minor,
+        shipping_minor,
+        discount_minor,
+        tax_included_minor,
+        total_minor,
+        shipping_carrier,
+        shipping_address,
+        billing_address,
+        seller_legal_snapshot,
+        customer_legal_snapshot,
+        created_at,
+        updated_at
+    ) VALUES (
+        v_order_number,
+        p_customer_id,
+        p_channel,
+        'pending_payment',
+        p_currency,
+        true,
+        v_subtotal_minor,
+        v_shipping_minor,
+        v_discount_minor,
+        v_tax_included_minor,
+        v_total_minor,
+        COALESCE(v_quote->'shipping_option'->>'carrier', 'Yurtiçi Kargo'),
+        p_shipping_address,
+        p_billing_address,
+        (SELECT value FROM public.site_settings WHERE key = 'seller_legal'),
+        jsonb_build_object(
+            'customer_id', p_customer_id,
+            'customer_name', v_customer_name,
+            'email', v_customer_email,
+            'phone', v_customer_phone,
+            'channel', p_channel,
+            'is_tax_exempt', false,
+            'legal_preliminary_accepted_at', timezone('utc', now()),
+            'legal_distance_sales_accepted_at', timezone('utc', now()),
+            'kvkk_accepted_at', timezone('utc', now()),
+            'payment_expires_at', v_payment_expires_at,
+            'preliminary_info', v_preliminary_page,
+            'distance_sales', v_distance_page,
+            'discount_code', CASE WHEN v_discount_record.id IS NOT NULL THEN v_discount_record.code ELSE NULL END,
+            'discount_percentage', CASE WHEN v_discount_record.id IS NOT NULL THEN v_discount_record.discount_percentage ELSE 0 END,
+            'discount_minor', v_discount_minor
+        ),
+        timezone('utc', now()),
+        timezone('utc', now())
+    )
+    RETURNING id INTO v_order_id;
+
+    -- 11. Insert Order Line Items & Inventory Reservations
+    FOR v_item IN SELECT * FROM jsonb_array_elements(v_quote->'items')
+    LOOP
+        INSERT INTO public.order_items (
+            order_id,
+            product_id,
+            variant_id,
+            sku_snapshot,
+            product_name_snapshot,
+            variant_name_snapshot,
+            image_url_snapshot,
+            unit_price_minor,
+            quantity,
+            line_total_minor,
+            currency,
+            channel,
+            metadata_snapshot,
+            created_at
+        ) VALUES (
+            v_order_id,
+            (v_item->>'product_id')::UUID,
+            (v_item->>'variant_id')::UUID,
+            COALESCE(v_item->>'sku', ''),
+            COALESCE(v_item->>'product_name', ''),
+            COALESCE(v_item->>'variant_name', ''),
+            v_item->>'image_url',
+            (v_item->>'unit_price_minor')::BIGINT,
+            (v_item->>'quantity')::INTEGER,
+            (v_item->>'line_total_minor')::BIGINT,
+            p_currency,
+            p_channel,
+            jsonb_build_object('source', p_channel || '_checkout'),
+            timezone('utc', now())
+        );
+
+        INSERT INTO public.inventory_reservations (
+            order_id,
+            variant_id,
+            quantity,
+            status,
+            expires_at,
+            reserved_at,
+            created_at
+        ) VALUES (
+            v_order_id,
+            (v_item->>'variant_id')::UUID,
+            (v_item->>'quantity')::INTEGER,
+            'reserved',
+            v_reservation_expires_at,
+            timezone('utc', now()),
+            timezone('utc', now())
+        );
+    END LOOP;
+
+    -- 12. Insert Immutable Legal Acceptances
+    INSERT INTO public.order_legal_acceptances (
+        order_id,
+        document_key,
+        document_version,
+        content_snapshot,
+        accepted_at
+    ) VALUES
+    (
+        v_order_id,
+        'preliminary_information_form',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'preliminary_info',
+            'title', COALESCE(v_preliminary_page->>'title', 'Ön Bilgilendirme Formu'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now()),
+            'content', v_preliminary_page
+        ),
+        timezone('utc', now())
+    ),
+    (
+        v_order_id,
+        'distance_sales_agreement',
+        '2026.08.v1',
+        jsonb_build_object(
+            'page_key', 'distance_sales',
+            'title', COALESCE(v_distance_page->>'title', 'Mesafeli Satış Sözleşmesi'),
+            'accepted_by_user_id', p_customer_id,
+            'ip_timestamp', timezone('utc', now()),
+            'content', v_distance_page
+        ),
+        timezone('utc', now())
+    );
+
+    -- 13. Record Initial Order Status History
+    INSERT INTO public.order_status_history (
+        order_id,
+        from_status,
+        to_status,
+        actor_type,
+        actor_id,
+        note,
+        created_at
+    ) VALUES (
+        v_order_id,
+        NULL,
+        'pending_payment',
+        'customer',
+        p_customer_id,
+        'Sipariş oluşturuldu, ödeme bekleniyor.',
+        timezone('utc', now())
+    );
+
+    -- 14. Return Order Creation Payload
+    RETURN jsonb_build_object(
+        'success', true,
+        'order_id', v_order_id,
+        'order_number', v_order_number,
+        'status', 'pending_payment',
+        'subtotal_minor', v_subtotal_minor,
+        'shipping_minor', v_shipping_minor,
+        'discount_minor', v_discount_minor,
+        'total_minor', v_total_minor,
+        'currency', p_currency,
+        'expires_at', v_payment_expires_at,
+        'payment_timeout_minutes', 30,
+        'reservation_timeout_minutes', 40
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_checkout_order(UUID, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB, JSONB, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_checkout_order(UUID, TEXT, TEXT, TEXT, JSONB, JSONB, JSONB, JSONB, TEXT) TO service_role;

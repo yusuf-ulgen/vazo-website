@@ -3,6 +3,13 @@ import { Product, ProductVariant, WholesalePricingTier } from '@/entities/produc
 import { isStorefrontMockEnabled } from '@/shared/lib/supabase';
 import { customerAuthStore } from './customer-auth-store';
 import { isWholesaleApprovedCustomer } from './customer-auth-helpers';
+import type { DiscountCode } from '@/admin/discounts/types';
+import {
+  getStoredAppliedDiscount,
+  saveStoredAppliedDiscount,
+  calculateDiscountAmount,
+  validateDiscountCode,
+} from './cart-discount';
 
 export interface CartItem {
   id: string; // product_id + variant_id
@@ -21,6 +28,8 @@ export interface CartItem {
   maxStock?: number;
   imageUrl?: string;
   wholesaleTiers?: WholesalePricingTier[];
+  categoryIds?: string[];
+  collectionIds?: string[];
 }
 
 export const CART_STORAGE_KEY = 'vazo_cart_items';
@@ -177,6 +186,8 @@ export function sanitizeCartItem(raw: unknown, authorized = isWholesaleAuthorize
     maxStock: typeof item.maxStock === 'number' && Number.isFinite(item.maxStock) ? item.maxStock : undefined,
     imageUrl: typeof item.imageUrl === 'string' ? item.imageUrl : undefined,
     wholesaleTiers: rawTiers,
+    categoryIds: Array.isArray(item.categoryIds) ? (item.categoryIds as string[]) : undefined,
+    collectionIds: Array.isArray(item.collectionIds) ? (item.collectionIds as string[]) : undefined,
   };
 }
 
@@ -257,6 +268,7 @@ export function getInitialCart(): CartItem[] {
 }
 
 let cartItems: CartItem[] = getInitialCart();
+let appliedDiscount: DiscountCode | null = getStoredAppliedDiscount();
 
 function notify() {
   saveCartEnvelope(cartItems);
@@ -362,7 +374,9 @@ export const cartStore = {
         wholesaleTiers: tiers,
         quantity: initialQuantity,
         maxStock: availableStock,
-        imageUrl: chosenVariant?.imageUrl || product.images[0]?.url,
+        imageUrl: chosenVariant?.imageUrl || product.images?.[0]?.url,
+        categoryIds: product.categoryIds,
+        collectionIds: product.collectionIds,
       });
     }
 
@@ -394,12 +408,34 @@ export const cartStore = {
 
   removeItem(itemId: string) {
     cartItems = cartItems.filter((item) => item.id !== itemId);
+    if (cartItems.length === 0) {
+      this.removeDiscount();
+    }
     notify();
   },
 
   clear() {
     cartItems = [];
+    this.removeDiscount();
     savePendingCheckoutInfo(null);
+    notify();
+  },
+
+  getAppliedDiscount(): DiscountCode | null {
+    return appliedDiscount;
+  },
+
+  async applyDiscountCode(code: string): Promise<DiscountCode> {
+    const validated = await validateDiscountCode(code, cartItems);
+    appliedDiscount = validated;
+    saveStoredAppliedDiscount(validated);
+    notify();
+    return validated;
+  },
+
+  removeDiscount(): void {
+    appliedDiscount = null;
+    saveStoredAppliedDiscount(null);
     notify();
   },
 
@@ -427,10 +463,12 @@ export const cartStore = {
 
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>(() => cartStore.getItems());
+  const [discount, setDiscount] = useState<DiscountCode | null>(() => cartStore.getAppliedDiscount());
 
   useEffect(() => {
     return cartStore.subscribe((newItems) => {
       setItems(newItems);
+      setDiscount(cartStore.getAppliedDiscount());
     });
   }, []);
 
@@ -439,9 +477,12 @@ export function useCart() {
     (sum, item) => sum + (item.unitPrice ?? item.retailPrice) * item.quantity,
     0
   );
+  const discountAmount = calculateDiscountAmount(discount, items);
+  const finalTotal = Math.max(0, subtotal - discountAmount);
+
   const freeShippingThreshold = 5000;
-  const isFreeShipping = subtotal >= freeShippingThreshold;
-  const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
+  const isFreeShipping = finalTotal >= freeShippingThreshold;
+  const freeShippingRemaining = Math.max(0, freeShippingThreshold - finalTotal);
 
   const hasWholesaleTier = items.some(
     (item) => Boolean(item.isWholesaleTierReached || (item.discountPercentage && item.discountPercentage > 0 && item.unitPrice < item.retailPrice))
@@ -451,10 +492,15 @@ export function useCart() {
     items,
     totalItems,
     subtotal,
+    appliedDiscount: discount,
+    discountAmount,
+    finalTotal,
     hasWholesaleTier,
     freeShippingThreshold,
     isFreeShipping,
     freeShippingRemaining,
+    applyDiscountCode: (code: string) => cartStore.applyDiscountCode(code),
+    removeDiscount: () => cartStore.removeDiscount(),
     addItem: (product: Product, variant?: ProductVariant, qty?: number) =>
       cartStore.addItem(product, variant, qty),
     updateQuantity: (id: string, qty: number) =>

@@ -95,6 +95,7 @@ export const orderRepository = {
         distance_sales_accepted: Boolean(request.accepted_distance_sales),
         kvkk_accepted: true,
       },
+      p_discount_code: request.discount_code || null,
     });
 
     if (error) {
@@ -262,6 +263,10 @@ export const orderRepository = {
       // ignore
     }
 
+    // If a discount code is provided in local mock mode, apply 20% discount
+    const mockDiscountMinor = request.discount_code ? Math.round(quote.subtotal_minor * 0.2) : 0;
+    const mockTotalMinor = Math.max(0, quote.subtotal_minor - mockDiscountMinor + quote.shipping_minor);
+
     const createdOrder: Order = {
       id: orderId,
       order_number: orderNumber,
@@ -272,15 +277,16 @@ export const orderRepository = {
       tax_included: true,
       subtotal_minor: quote.subtotal_minor,
       shipping_minor: quote.shipping_minor,
-      discount_minor: 0,
+      discount_minor: mockDiscountMinor,
       tax_included_minor: quote.tax_included_minor,
-      total_minor: quote.total_minor,
+      total_minor: mockTotalMinor,
       shipping_address: request.shipping_address,
       billing_address: request.billing_address || request.shipping_address,
       customer_legal_snapshot: {
         customer_name: request.shipping_address?.recipient_name || '',
         email: userEmail || (request.shipping_address as unknown as Record<string, unknown>)?.email || '',
         phone: request.shipping_address?.phone || '',
+        discount_code: request.discount_code || null,
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
